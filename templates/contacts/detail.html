@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="max-w-5xl mx-auto p-6">
+
+    <div class="bg-white rounded-2xl shadow-sm p-8">
+
+        <div class="flex items-start justify-between mb-8">
+
+            <div>
+
+                <h1 class="text-4xl font-bold text-gray-800">
+                    {{ contact.name }}
+                </h1>
+
+                <p class="text-gray-500 mt-2">
+                    {{ contact.phone }}
+                </p>
+
+            </div>
+
+            <div class="flex gap-3">
+
+                <a
+                    href="{% url 'contact_update' contact.id %}"
+                    class="px-5 py-3 rounded-xl bg-gray-900 text-white hover:bg-gray-800 transition">
+
+                    Editar
+                </a>
+
+                <a
+                    href="{% url 'contact_delete' contact.id %}"
+                    class="px-5 py-3 rounded-xl bg-red-600 text-white hover:bg-red-700 transition">
+
+                    Eliminar
+                </a>
+
+            </div>
+
+        </div>
+
+        <!-- Info -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+
+            <div class="bg-gray-50 rounded-xl p-5">
+
+                <p class="text-sm text-gray-500 mb-2">
+                    Email
+                </p>
+
+                <p class="font-medium">
+                    {{ contact.email|default:"—" }}
+                </p>
+
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-5">
+
+                <p class="text-sm text-gray-500 mb-2">
+                    Estado
+                </p>
+
+                <p class="font-medium">
+                    {{ contact.get_status_display }}
+                </p>
+
+            </div>
+
+        </div>
+
+        <!-- Properties -->
+        <div class="mb-8">
+
+            <h2 class="text-2xl font-semibold mb-4">
+                Inmuebles relacionados
+            </h2>
+
+            <div class="flex flex-wrap gap-3">
+
+                {% for property in contact.properties.all %}
+
+                    <a
+                        href="{% url 'property_detail' property.id %}"
+                        class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
+                    >
+                        {{ property.title }}
+                    </a>
+
+                {% empty %}
+
+                    <p class="text-gray-400">
+                        No hay inmuebles asociados.
+                    </p>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+        <!-- Notes -->
+        <div>
+
+            <h2 class="text-2xl font-semibold mb-4">
+                Notas
+            </h2>
+
+            <p class="text-gray-600 leading-relaxed">
+                {{ contact.notes|default:"Sin notas." }}
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

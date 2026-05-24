@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="max-w-3xl mx-auto p-6">
+
+    <div class="bg-white rounded-2xl shadow-sm p-8">
+
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">
+            {{ title }}
+        </h1>
+
+        <form method="POST" class="space-y-6">
+
+            {% csrf_token %}
+
+            <!-- Name -->
+            <div>
+
+                <label class="block mb-2 font-medium text-gray-700">
+                    Nombre
+                </label>
+
+                {{ form.name }}
+
+            </div>
+
+            <!-- Phone -->
+            <div>
+
+                <label class="block mb-2 font-medium text-gray-700">
+                    Teléfono
+                </label>
+
+                {{ form.phone }}
+
+            </div>
+
+            <!-- Email -->
+            <div>
+
+                <label class="block mb-2 font-medium text-gray-700">
+                    Email
+                </label>
+
+                {{ form.email }}
+
+            </div>
+
+            <!-- Status -->
+            <div>
+
+                <label class="block mb-2 font-medium text-gray-700">
+                    Estado
+                </label>
+
+                {{ form.status }}
+
+            </div>
+
+            <!-- Properties -->
+            <div>
+
+                <label class="block mb-2 font-medium text-gray-700">
+                    Inmuebles
+                </label>
+
+                {{ form.properties }}
+
+            </div>
+
+            <!-- Notes -->
+            <div>
+
+                <label class="block mb-2 font-medium text-gray-700">
+                    Notas
+                </label>
+
+                {{ form.notes }}
+
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-4 pt-4">
+
+                <button
+                    type="submit"
+                    class="bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-xl transition">
+
+                    Guardar
+                </button>
+
+                <a
+                    href="{% url 'contact_list' %}"
+                    class="text-gray-600 hover:text-gray-900">
+
+                    Cancelar
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}

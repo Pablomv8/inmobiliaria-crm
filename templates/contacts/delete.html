@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="max-w-xl mx-auto p-6">
+
+    <div class="bg-white rounded-2xl shadow-sm p-8 text-center">
+
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">
+            Eliminar contacto
+        </h1>
+
+        <p class="text-gray-600 mb-8">
+            ¿Seguro que quieres eliminar a
+            <strong>{{ contact.name }}</strong>?
+        </p>
+
+        <form method="POST">
+
+            {% csrf_token %}
+
+            <div class="flex items-center justify-center gap-4">
+
+                <button
+                    type="submit"
+                    class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl transition">
+
+                    Eliminar
+                </button>
+
+                <a
+                    href="{% url 'contacts' %}"
+                    class="text-gray-600 hover:text-gray-900">
+
+                    Cancelar
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}

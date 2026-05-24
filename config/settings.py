@@ -39,7 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'tailwind',
     'theme',
-    'webpack_boilerplate', 
+    'webpack_boilerplate',
+    'contacts',
+    'properties', 
 
 ]
 
