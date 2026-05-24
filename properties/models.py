@@ -1,17 +1,13 @@
 from django.db import models
 
-# Create your models here.
-from django.db import models
 
 class Property(models.Model):
 
     PROPERTY_TYPE_CHOICES = (
         ('flat', 'Piso'),
         ('house', 'Casa'),
-        ('solar', 'Solar'),
+        ('villa', 'Villa'),
         ('office', 'Oficina'),
-        ('local', 'Local'),
-
     )
 
     title = models.CharField(max_length=255)
@@ -29,6 +25,14 @@ class Property(models.Model):
         max_length=20,
         choices=PROPERTY_TYPE_CHOICES
     )
+
+    image = models.ImageField(
+        upload_to='properties/',
+        blank=True,
+        null=True
+    )
+
+    description = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 

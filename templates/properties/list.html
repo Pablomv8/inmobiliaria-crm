@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="p-4 sm:p-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">
+                Inmuebles
+            </h1>
+
+            <p class="text-gray-500 mt-2">
+                Gestiona todos los inmuebles.
+            </p>
+        </div>
+
+        <button class="bg-gray-900 text-white px-5 py-3 rounded-xl hover:bg-gray-800 transition">
+            + Nuevo inmueble
+        </button>
+
+    </div>
+
+    <!-- Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+        {% for property in properties %}
+
+        <a href="{% url 'property_detail' property.id %}"
+           class="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-lg transition">
+
+            <!-- Image -->
+            <div class="h-56 bg-gray-200">
+
+                {% if property.image %}
+
+                    <img
+                        src="{{ property.image.url }}"
+                        class="w-full h-full object-cover"
+                    >
+
+                {% else %}
+
+                    <div class="w-full h-full flex items-center justify-center text-gray-400">
+                        Sin imagen
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+            <!-- Content -->
+            <div class="p-5">
+
+                <div class="flex items-center justify-between mb-3">
+
+                    <h2 class="text-xl font-semibold text-gray-800">
+                        {{ property.title }}
+                    </h2>
+
+                    <span class="text-sm bg-gray-100 px-3 py-1 rounded-full">
+                        {{ property.get_property_type_display }}
+                    </span>
+
+                </div>
+
+                <p class="text-gray-500 text-sm mb-4">
+                    {{ property.address }}
+                </p>
+
+                <div class="flex items-center justify-between">
+
+                    <p class="text-2xl font-bold text-gray-900">
+                        €{{ property.price }}
+                    </p>
+
+                    <span class="text-sm text-gray-400">
+                        {{ property.city }}
+                    </span>
+
+                </div>
+
+            </div>
+
+        </a>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+{% endblock %}
