@@ -27,6 +27,7 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Inmueble</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Encargado</th>
                 </tr>
             </thead>
 
@@ -77,6 +78,19 @@
                             {% endif %}">
                             {{ contact.get_status_display }}
                         </span>
+                    </td>
+                    <td class="px-6 py-4 text-gray-700">
+
+                        {% if contact.assigned_agent %}
+
+                            {{ contact.assigned_agent.username }}
+
+                        {% else %}
+
+                            —
+
+                        {% endif %}
+
                     </td>
 
                 </tr>

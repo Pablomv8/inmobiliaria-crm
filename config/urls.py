@@ -24,6 +24,7 @@ urlpatterns = [
     path('', include('dashboard.urls')),
     path('contacts/', include('contacts.urls')),
     path('properties/', include('properties.urls')),
+    path('', include('users.urls')),
 ]
 
 urlpatterns += static(

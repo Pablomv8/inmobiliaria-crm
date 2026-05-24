@@ -2,6 +2,7 @@ from django.core.management.base import BaseCommand
 
 from contacts.models import Contact
 from properties.models import Property
+from django.contrib.auth import get_user_model
 
 
 class Command(BaseCommand):
@@ -9,6 +10,7 @@ class Command(BaseCommand):
     help = 'Populate database with demo data'
 
     def handle(self, *args, **kwargs):
+        User = get_user_model()
 
         self.stdout.write(self.style.WARNING('Deleting old data...'))
 
@@ -77,6 +79,24 @@ class Command(BaseCommand):
             phone="644222111",
             email="ana@test.com",
             status="new"
+        )
+
+        admin = User.objects.create_user(
+            username='admin',
+            password='admin123',
+            role='admin'
+        )
+
+        agent1 = User.objects.create_user(
+            username='carlos',
+            password='test123',
+            role='agent'
+        )
+
+        agent2 = User.objects.create_user(
+            username='marta',
+            password='test123',
+            role='agent'
         )
 
         self.stdout.write(self.style.SUCCESS('Assigning properties...'))

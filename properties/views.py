@@ -6,8 +6,9 @@ from django.shortcuts import (
 
 from .models import Property
 from .forms import PropertyForm
+from django.contrib.auth.decorators import login_required
 
-
+@login_required
 def property_list(request):
 
     properties = Property.objects.all()
@@ -16,7 +17,7 @@ def property_list(request):
         'properties': properties
     })
 
-
+@login_required
 def property_detail(request, pk):
 
     property = get_object_or_404(Property, pk=pk)
@@ -25,7 +26,7 @@ def property_detail(request, pk):
         'property': property
     })
 
-
+@login_required
 def property_create(request):
 
     if request.method == 'POST':
@@ -50,7 +51,7 @@ def property_create(request):
         'title': 'Nuevo inmueble'
     })
 
-
+@login_required
 def property_update(request, pk):
 
     property = get_object_or_404(Property, pk=pk)
@@ -78,7 +79,7 @@ def property_update(request, pk):
         'title': 'Editar inmueble'
     })
 
-
+@login_required
 def property_delete(request, pk):
 
     property = get_object_or_404(Property, pk=pk)
