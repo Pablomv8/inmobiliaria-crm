@@ -12,99 +12,113 @@
         </a>
     </div>
         <form method="get"
-        class="bg-white p-4 rounded-xl shadow mb-6">
+            class="bg-white border border-gray-100 shadow-sm rounded-2xl p-3 mb-6">
 
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="flex flex-wrap items-center gap-3">
 
-            <!-- BUSCADOR -->
-            <input
-                type="text"
-                name="search"
-                placeholder="Buscar tarea..."
-                value="{{ request.GET.search }}"
-                class="rounded-xl border-gray-300 focus:ring-gray-500 focus:border-gray-500"
-            >
+                <!-- BUSCADOR -->
+                <div class="relative w-48">
 
-            <!-- ESTADO -->
-            <select
-                name="status"
-                class="rounded-xl border-gray-300">
+                    <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                        🔍
+                    </div>
 
-                <option value="">Todos los estados</option>
+                    <input
+                        type="text"
+                        name="search"
+                        value="{{ request.GET.search }}"
+                        placeholder="         Buscar..."
+                        class="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 text-sm
+                            focus:ring-gray-500 focus:border-gray-500"
+                    >
 
-                {% for value, label in tasks.model.STATUS_CHOICES %}
+                </div>
 
-                    <option value="{{ value }}"
-                        {% if request.GET.status == value %}selected{% endif %}>
-                        {{ label }}
+                <!-- ESTADO -->
+                <select name="status"
+                        onchange="this.form.submit()"
+                        class="px-3 py-2 rounded-xl text-sm border-gray-200 bg-blue-50 text-blue-700 font-medium">
+
+                    <option value="">Estado</option>
+
+                    {% for value, label in tasks.model.STATUS_CHOICES %}
+                        <option value="{{ value }}"
+                            {% if request.GET.status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+
+                </select>
+
+                <!-- PRIORIDAD -->
+                <select name="priority"
+                        onchange="this.form.submit()"
+                        class="px-3 py-2 rounded-xl text-sm border-gray-200 bg-red-50 text-red-700 font-medium">
+
+                    <option value="">Prioridad</option>
+
+                    {% for value, label in tasks.model.PRIORITY_CHOICES %}
+                        <option value="{{ value }}"
+                            {% if request.GET.priority == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+
+                </select>
+
+                <!-- AGENTE -->
+                <select name="agent"
+                        onchange="this.form.submit()"
+                        class="px-3 py-2 rounded-xl text-sm border-gray-200 bg-gray-50 text-gray-700 font-medium">
+
+                    <option value="">Agente</option>
+
+                    {% for agent in agents %}
+                        <option value="{{ agent.id }}"
+                            {% if request.GET.agent == agent.id|stringformat:"s" %}
+                                selected
+                            {% endif %}>
+                            {{ agent.username }}
+                        </option>
+                    {% endfor %}
+
+                </select>
+
+                <!-- ORDEN -->
+                <select name="ordering"
+                        onchange="this.form.submit()"
+                        class="px-3 py-2 rounded-xl text-sm border-gray-200 bg-purple-50 text-purple-700 font-medium">
+
+                    <option value="">Ordenar</option>
+
+                    <option value="due_date"
+                        {% if request.GET.ordering == "due_date" %}selected{% endif %}>
+                        Fecha
                     </option>
 
-                {% endfor %}
-
-            </select>
-
-            <!-- PRIORIDAD -->
-            <select
-                name="priority"
-                class="rounded-xl border-gray-300">
-
-                <option value="">Todas las prioridades</option>
-
-                {% for value, label in tasks.model.PRIORITY_CHOICES %}
-
-                    <option value="{{ value }}"
-                        {% if request.GET.priority == value %}selected{% endif %}>
-                        {{ label }}
+                    <option value="priority"
+                        {% if request.GET.ordering == "priority" %}selected{% endif %}>
+                        Prioridad
                     </option>
 
-                {% endfor %}
-
-            </select>
-
-            <!-- AGENTE -->
-            <select
-                name="agent"
-                class="rounded-xl border-gray-300">
-
-                <option value="">Todos los agentes</option>
-
-                {% for agent in agents %}
-
-                    <option value="{{ agent.id }}"
-                        {% if request.GET.agent == agent.id|stringformat:"s" %}
-                            selected
-                        {% endif %}>
-
-                        {{ agent.username }}
-
+                    <option value="status"
+                        {% if request.GET.ordering == "status" %}selected{% endif %}>
+                        Estado
                     </option>
 
-                {% endfor %}
+                </select>
 
-            </select>
+                <!-- LIMPIAR -->
+                <a href="{% url 'task_list' %}"
+                class="ml-auto px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm transition">
 
-        </div>
+                    Limpiar
 
-        <div class="mt-4 flex gap-3">
+                </a>
 
-            <button
-                type="submit"
-                class="bg-gray-900 text-white px-5 py-2 rounded-xl hover:bg-gray-800 transition">
+            </div>
 
-                Filtrar
-
-            </button>
-
-            <a href="{% url 'task_list' %}"
-            class="px-5 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 transition">
-
-                Limpiar
-
-            </a>
-
-        </div>
-
-    </form>
+        </form>
 
     <!-- DESKTOP -->
     <div class="hidden md:block bg-white shadow rounded-xl overflow-x-auto">
