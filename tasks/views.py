@@ -7,6 +7,9 @@ from django.contrib.auth.decorators import login_required
 from .models import Task
 from contacts.models import Contact
 from django.http import HttpResponseForbidden
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 def dispatch(self, request, *args, **kwargs):
     user = request.user
@@ -25,20 +28,65 @@ class TaskListView(LoginRequiredMixin, ListView):
     context_object_name = "tasks"
 
     def get_queryset(self):
+
         user = self.request.user
 
-        qs = Task.objects.select_related("assigned_to", "contact").all()
+        qs = Task.objects.select_related(
+            "assigned_to",
+            "contact"
+        )
 
+        # agentes solo ven sus tareas
         if user.role == "agent":
             qs = qs.filter(assigned_to=user)
 
+        # FILTRO ESTADO
         status = self.request.GET.get("status")
+
         if status:
             qs = qs.filter(status=status)
 
-        return qs
-    
+        # FILTRO PRIORIDAD
+        priority = self.request.GET.get("priority")
 
+        if priority:
+            qs = qs.filter(priority=priority)
+
+        # FILTRO AGENTE
+        agent = self.request.GET.get("agent")
+
+        if agent:
+            qs = qs.filter(assigned_to_id=agent)
+
+        # BÚSQUEDA
+        search = self.request.GET.get("search")
+
+        if search:
+            qs = qs.filter(title__icontains=search)
+
+        ordering = self.request.GET.get("ordering")
+
+        if ordering == "due_date":
+            qs = qs.order_by("due_date")
+
+        elif ordering == "priority":
+            qs = qs.order_by("-priority")
+
+        elif ordering == "status":
+            qs = qs.order_by("status")
+
+        else:
+            qs = qs.order_by("-created_at")
+
+        return qs.order_by("-created_at")
+        
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+
+        context["agents"] = User.objects.filter(role="agent")
+
+        return context
 
 # -----------------------
 # DETALLE
@@ -111,5 +159,47 @@ def task_delete(request, pk):
     if request.method == "POST":
         task.delete()
         return redirect("task_list")
+
+    return redirect("task_list")
+
+# -----------------------
+# cambiar estado (solo admin/manager)
+# -----------------------
+@login_required
+def task_update_status(request, pk):
+
+    task = get_object_or_404(Task, pk=pk)
+
+    if request.method == "POST":
+
+        # agentes solo pueden modificar sus tareas
+        if request.user.role == "agent" and task.assigned_to != request.user:
+            return redirect("task_list")
+
+        status = request.POST.get("status")
+
+        if status in dict(Task.STATUS_CHOICES):
+            task.status = status
+            task.save()
+
+    return redirect("task_list")
+
+
+@login_required
+def task_update_priority(request, pk):
+
+    task = get_object_or_404(Task, pk=pk)
+
+    if request.method == "POST":
+
+        # agentes solo pueden modificar sus tareas
+        if request.user.role == "agent" and task.assigned_to != request.user:
+            return redirect("task_list")
+
+        priority = request.POST.get("priority")
+
+        if priority in dict(Task.PRIORITY_CHOICES):
+            task.priority = priority
+            task.save()
 
     return redirect("task_list")
