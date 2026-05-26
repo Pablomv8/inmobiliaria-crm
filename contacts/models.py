@@ -47,3 +47,12 @@ class Contact(models.Model):
 
     def __str__(self):
         return self.name
+    
+    def status_color(self):
+        return {
+            'new': 'bg-blue-100 text-blue-700',
+            'interested': 'bg-green-100 text-green-700',
+            'visit': 'bg-yellow-100 text-yellow-700',
+            'negotiation': 'bg-orange-100 text-orange-700',
+            'closed': 'bg-gray-200 text-gray-700',
+        }.get(self.status, '')

@@ -23,33 +23,43 @@
     <nav class="flex-1 p-4 space-y-2">
 
         <a href="{% url 'dashboard' %}"
-           class="flex items-center gap-3 px-4 py-3 rounded-xl
-           {% if request.resolver_match.url_name == 'dashboard' %}
+        class="flex items-center gap-3 px-4 py-3 rounded-xl
+        {% if request.resolver_match.url_name == 'dashboard' %}
                 bg-gray-900 text-white
-           {% else %}
+        {% else %}
                 text-gray-700 hover:bg-gray-100
-           {% endif %}">
+        {% endif %}">
             Dashboard
         </a>
 
         <a href="{% url 'contact_list' %}"
-           class="flex items-center gap-3 px-4 py-3 rounded-xl
-           {% if request.resolver_match.url_name == 'contact_list' %}
+        class="flex items-center gap-3 px-4 py-3 rounded-xl
+        {% if request.resolver_match.url_name == 'contact_list' %}
                 bg-gray-900 text-white
-           {% else %}
+        {% else %}
                 text-gray-700 hover:bg-gray-100
-           {% endif %}">
+        {% endif %}">
             Contactos
         </a>
 
-        <a href="{% url 'properties' %}"
-           class="flex items-center gap-3 px-4 py-3 rounded-xl
-           {% if request.resolver_match.url_name == 'properties' %}
+        <a href="{% url 'task_list' %}"
+        class="flex items-center gap-3 px-4 py-3 rounded-xl
+        {% if request.resolver_match.url_name == 'task_list' %}
                 bg-gray-900 text-white
-           {% else %}
+        {% else %}
                 text-gray-700 hover:bg-gray-100
-           {% endif %}">
-            Inmueble
+        {% endif %}">
+            Tareas
+        </a>
+
+        <a href="{% url 'properties' %}"
+        class="flex items-center gap-3 px-4 py-3 rounded-xl
+        {% if request.resolver_match.url_name == 'properties' %}
+                bg-gray-900 text-white
+        {% else %}
+                text-gray-700 hover:bg-gray-100
+        {% endif %}">
+            Inmuebles
         </a>
 
     </nav>

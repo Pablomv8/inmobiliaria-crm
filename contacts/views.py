@@ -8,7 +8,7 @@ from .forms import ContactForm
 @login_required
 def contact_list(request):
 
-    contacts= Contact.objects.prefetch_related('properties')
+    contacts= Contact.objects.prefetch_related('properties', 'assigned_agent')
 
     return render(request, 'contacts/list.html', {
         'contacts': contacts

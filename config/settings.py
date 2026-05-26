@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'webpack_boilerplate',
     'contacts',
     'properties',
-    'users'
+    'users',
+    'tasks',
 ]
 
 TAILWIND_APP_NAME = 'theme'

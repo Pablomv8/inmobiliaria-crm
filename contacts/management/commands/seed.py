@@ -2,7 +2,11 @@ from django.core.management.base import BaseCommand
 
 from contacts.models import Contact
 from properties.models import Property
+from tasks.models import Task
 from django.contrib.auth import get_user_model
+
+from datetime import datetime, timedelta
+from django.utils import timezone
 
 
 class Command(BaseCommand):
@@ -14,8 +18,11 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.WARNING('Deleting old data...'))
 
+        Task.objects.all().delete()
         Contact.objects.all().delete()
         Property.objects.all().delete()
+        User = get_user_model()
+        User.objects.filter(is_superuser=False).delete()
 
         self.stdout.write(self.style.SUCCESS('Creating properties...'))
 
@@ -81,6 +88,8 @@ class Command(BaseCommand):
             status="new"
         )
 
+        self.stdout.write(self.style.SUCCESS('Creating users...'))
+
         admin = User.objects.create_user(
             username='admin',
             password='admin123',
@@ -102,12 +111,60 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('Assigning properties...'))
 
         c1.properties.add(p1)
-
         c2.properties.add(p1, p2)
-
         c3.properties.add(p3)
-
         c4.properties.add(p2, p4)
+
+        self.stdout.write(self.style.SUCCESS('Creating tasks...'))
+
+        now = timezone.now()
+
+        Task.objects.create(
+            title="Llamar a Juan para seguimiento",
+            description="Contactar para confirmar interés en el piso de Madrid",
+            contact=c1,
+            property=p1,
+            assigned_to=agent1,
+            created_by=admin,
+            status="pending",
+            priority="high",
+            due_date=now + timedelta(days=1)
+        )
+
+        Task.objects.create(
+            title="Agendar visita con Laura",
+            description="Coordinar visita al ático en Valencia",
+            contact=c2,
+            property=p2,
+            assigned_to=agent2,
+            created_by=admin,
+            status="in_progress",
+            priority="medium",
+            due_date=now + timedelta(days=2)
+        )
+
+        Task.objects.create(
+            title="Negociación Pedro",
+            description="Revisar oferta del chalet",
+            contact=c3,
+            property=p3,
+            assigned_to=agent1,
+            created_by=admin,
+            status="pending",
+            priority="high",
+            due_date=now + timedelta(days=3)
+        )
+
+        Task.objects.create(
+            title="Primer contacto Ana",
+            description="Llamar para presentar propiedades disponibles",
+            contact=c4,
+            assigned_to=agent2,
+            created_by=admin,
+            status="done",
+            priority="low",
+            due_date=now + timedelta(days=5)
+        )
 
         self.stdout.write(
             self.style.SUCCESS('Database seeded successfully!')
