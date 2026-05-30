@@ -1,12 +1,22 @@
-<aside class="w-72 bg-white border-r border-gray-200 flex flex-col">
+<aside class="w-72 h-screen bg-white border-r border-gray-200 flex flex-col">
 
     <!-- Logo -->
-    <div class="h-20 flex items-center px-6 border-b border-gray-200">
+    <div class="h-20 flex items-center justify-between px-6 border-b border-gray-200">
 
+        
+
+        <!-- Botón cerrar (solo móvil) -->
+        <button
+            class="xl:hidden p-2 rounded hover:bg-gray-100 text-xl"
+            @click="sidebarOpen = false"
+        >
+            ✕
+        </button>
+
+        
         <h1 class="text-2xl font-bold text-gray-800">
             InmoCRM
         </h1>
-
     </div>
 
     <!-- Navigation -->
@@ -32,6 +42,16 @@
             Contactos
         </a>
 
+        <a href="{% url 'task_list' %}"
+        class="flex items-center gap-3 px-4 py-3 rounded-xl
+        {% if request.resolver_match.url_name == 'task_list' %}
+                bg-gray-900 text-white
+        {% else %}
+                text-gray-700 hover:bg-gray-100
+        {% endif %}">
+            Tareas
+        </a>
+
         <a href="{% url 'properties' %}"
         class="flex items-center gap-3 px-4 py-3 rounded-xl
         {% if request.resolver_match.url_name == 'properties' %}
@@ -39,21 +59,7 @@
         {% else %}
                 text-gray-700 hover:bg-gray-100
         {% endif %}">
-            Inmueble
-        </a>
-
-
-
-        <a href="#"
-           class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-gray-100">
-
-            Tareas
-        </a>
-
-        <a href="#"
-           class="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-700 hover:bg-gray-100">
-
-            Agentes
+            Inmuebles
         </a>
 
     </nav>

@@ -17,31 +17,44 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
 </head>
-
 <body class="bg-gray-100">
 
-    <div class="flex min-h-screen">
+<div x-data="{ sidebarOpen: false }" class="flex min-h-screen">
 
-        <!-- Sidebar -->
+    <!-- Overlay -->
+    <div
+        x-show="sidebarOpen"
+        x-transition.opacity
+        class="fixed inset-0 bg-black/40 z-40 lg:hidden"
+        @click="sidebarOpen = false"
+    ></div>
+
+    <!-- Sidebar -->
+    <aside
+        class="fixed xl:static z-50 w-72 h-screen bg-white border-r border-gray-200 flex flex-col
+            transform transition-transform duration-300 ease-out
+            xl:translate-x-0"
+        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full xl:translate-x-0'"
+    >
         {% include 'partials/sidebar.html' %}
+    </aside>
 
-        <!-- Main Content -->
-        <div class="flex-1 flex flex-col">
 
-            <!-- Navbar -->
-            {% include 'partials/navbar.html' %}
 
-            <!-- Page Content -->
-            <main class="p-8">
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col w-full">
 
-                {% block content %}
-                {% endblock %}
+        <!-- Navbar -->
+        {% include 'partials/navbar.html' %}
 
-            </main>
-
-        </div>
+        <!-- Page Content -->
+        <main class="p-8">
+            {% block content %}{% endblock %}
+        </main>
 
     </div>
 
+</div>
+{% block extra_js %}{% endblock %}
 </body>
 </html>

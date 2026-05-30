@@ -1,5 +1,14 @@
 <header class="h-20 bg-white border-b border-gray-200 px-8 flex items-center justify-between">
 
+
+
+    <!-- Botón menú móvil -->
+        <button
+            class="xl:hidden text-2xl text-gray-700"
+            @click="sidebarOpen = true"
+        >
+            ☰
+        </button>
     <!-- Search -->
     <div class="w-96">
 
@@ -17,12 +26,19 @@
         <div class="text-right">
 
             <p class="font-semibold text-gray-800">
-                Admin
+                {{ request.user.username }}
             </p>
 
             <p class="text-sm text-gray-500">
-                Administrador
+                {{request.user.rol}}
             </p>
+            <a
+                href="{% url 'logout' %}"
+                class="text-sm text-red-500 hover:text-red-700"
+            >
+                Cerrar sesión
+            </a>
+
 
         </div>
 

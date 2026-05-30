@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<script>
+function openDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('hidden');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+}
+</script>
+
+<div class="p-6 max-w-3xl">
+
+    <div class="flex justify-between items-center mb-6">
+
+        <h1 class="text-2xl font-bold text-gray-800">
+            {{ task.title }}
+        </h1>
+
+        <div class="flex gap-2">
+
+            <a href="{% url 'task_update' task.id %}"
+               class="px-4 py-2 bg-gray-900 text-white rounded-xl">
+                Editar
+            </a>
+
+            <button
+                type="button"
+                onclick="openDeleteModal()"
+                class="px-4 py-2 bg-red-600 text-white rounded-xl">
+                Eliminar
+            </button>
+
+        </div>
+
+    </div>
+
+    <div class="bg-white shadow rounded-xl p-6 space-y-4">
+
+        <p><span class="font-semibold">Contacto:</span> {{ task.contact.name }}</p>
+
+        <p><span class="font-semibold">Asignado:</span>
+            {{ task.assigned_to.username|default:"—" }}
+        </p>
+
+        <p><span class="font-semibold">Prioridad:</span> {{ task.get_priority_display }}</p>
+
+        <p><span class="font-semibold">Estado:</span> {{ task.get_status_display }}</p>
+
+        <p><span class="font-semibold">Fecha límite:</span> {{ task.due_date|default:"—" }}</p>
+
+        <div>
+            <p class="font-semibold mb-1">Descripción</p>
+            <p class="text-gray-700">
+                {{ task.description|default:"Sin descripción" }}
+            </p>
+        </div>
+
+    </div>
+
+</div>
+
+<div id="deleteModal"
+     class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+
+    <div class="bg-white p-6 rounded-xl w-full max-w-md">
+
+        <h2 class="text-lg font-bold mb-4">
+            ¿Eliminar tarea?
+        </h2>
+
+        <p class="text-gray-600 mb-6">
+            Esta acción no se puede deshacer.
+        </p>
+
+        <form method="post" action="{% url 'task_delete' task.id %}">
+            {% csrf_token %}
+
+            <div class="flex justify-end gap-3">
+
+                <button type="button"
+                        onclick="closeDeleteModal()"
+                        class="px-4 py-2 bg-gray-200 rounded-xl">
+                    Cancelar
+                </button>
+
+                <button type="submit"
+                        class="px-4 py-2 bg-red-600 text-white rounded-xl">
+                    Sí, eliminar
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+</div>
+{% endblock %}

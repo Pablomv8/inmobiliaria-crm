@@ -4,7 +4,7 @@
 
 <div class="p-4 sm:p-6">
 
-    <div class="flex items-center justify-between mb-8"></div>
+    <div class="flex items-center justify-between mb-8">
 
         <h1 class="text-2xl font-bold text-gray-800 mb-6">
             Contactos
@@ -27,6 +27,7 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Inmueble</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Encargado</th>
                 </tr>
             </thead>
 
@@ -68,15 +69,22 @@
                     </td>
 
                     <td class="px-6 py-4">
-                        <span class="px-3 py-1 text-xs rounded-full
-                            {% if contact.status == 'new' %} bg-blue-100 text-blue-700
-                            {% elif contact.status == 'interested' %} bg-green-100 text-green-700
-                            {% elif contact.status == 'visit' %} bg-yellow-100 text-yellow-700
-                            {% elif contact.status == 'negotiation' %} bg-orange-100 text-orange-700
-                            {% elif contact.status == 'closed' %} bg-gray-200 text-gray-700
-                            {% endif %}">
+                        <span class="px-3 py-1 text-xs rounded-full {{ contact.status_color }}">
                             {{ contact.get_status_display }}
                         </span>
+                    </td>
+                    <td class="px-6 py-4 text-gray-700">
+
+                        {% if contact.assigned_agent %}
+
+                            {{ contact.assigned_agent.username }}
+
+                        {% else %}
+
+                            —
+
+                        {% endif %}
+
                     </td>
 
                 </tr>

@@ -32,7 +32,8 @@ class ContactForm(forms.ModelForm):
             'email',
             'status',
             'notes',
-            'properties'
+            'properties',
+            'assigned_agent'
         ]
 
         widgets = {
@@ -59,6 +60,10 @@ class ContactForm(forms.ModelForm):
             }),
 
             'properties': forms.SelectMultiple(attrs={
+                'class': INPUT_CLASS
+            }),
+
+            'assigned_agent': forms.Select(attrs={
                 'class': INPUT_CLASS
             }),
         }

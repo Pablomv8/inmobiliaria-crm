@@ -1,19 +1,20 @@
 from django.shortcuts import render, redirect, get_object_or_404
-
+from django.contrib.auth.decorators import login_required
 
 from .models import Contact
 from .forms import ContactForm
 
 # Create your views here.
+@login_required
 def contact_list(request):
 
-    contacts= Contact.objects.prefetch_related('properties')
+    contacts= Contact.objects.prefetch_related('properties', 'assigned_agent')
 
     return render(request, 'contacts/list.html', {
         'contacts': contacts
     })
 
-
+@login_required
 def contact_detail(request, pk):
 
     contact = get_object_or_404(Contact, pk=pk)
@@ -22,7 +23,7 @@ def contact_detail(request, pk):
         'contact': contact
     })
 
-
+@login_required
 def contact_create(request):
 
     if request.method == 'POST':
@@ -44,7 +45,7 @@ def contact_create(request):
         'title': 'Nuevo contacto'
     })
 
-
+@login_required
 def contact_update(request, pk):
 
     contact = get_object_or_404(Contact, pk=pk)
@@ -68,7 +69,7 @@ def contact_update(request, pk):
         'title': 'Editar contacto'
     })
 
-
+@login_required
 def contact_delete(request, pk):
 
     contact = get_object_or_404(Contact, pk=pk)

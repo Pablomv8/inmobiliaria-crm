@@ -1,0 +1,472 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="p-6">
+
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">Tareas</h1>
+
+        <a href="{% url 'task_create' %}"
+           class="bg-gray-900 text-white px-5 py-3 rounded-xl hover:bg-gray-800 transition">
+            + Nueva tarea
+        </a>
+    </div>
+        <form method="get"
+            class="bg-white border border-gray-100 shadow-sm rounded-2xl p-3 mb-6">
+
+            <div class="flex flex-wrap items-center gap-3">
+
+                <!-- BUSCADOR -->
+                <div class="relative w-48">
+
+                    <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                        🔍
+                    </div>
+
+                    <input
+                        type="text"
+                        name="search"
+                        value="{{ request.GET.search }}"
+                        placeholder="         Buscar..."
+                        class="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 text-sm
+                            focus:ring-gray-500 focus:border-gray-500"
+                    >
+
+                </div>
+
+                <!-- ESTADO -->
+                <select name="status"
+                        onchange="this.form.submit()"
+                        class="px-3 py-2 rounded-xl text-sm border-gray-200 bg-blue-50 text-blue-700 font-medium">
+
+                    <option value="">Estado</option>
+
+                    {% for value, label in tasks.model.STATUS_CHOICES %}
+                        <option value="{{ value }}"
+                            {% if request.GET.status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+
+                </select>
+
+                <!-- PRIORIDAD -->
+                <select name="priority"
+                        onchange="this.form.submit()"
+                        class="px-3 py-2 rounded-xl text-sm border-gray-200 bg-red-50 text-red-700 font-medium">
+
+                    <option value="">Prioridad</option>
+
+                    {% for value, label in tasks.model.PRIORITY_CHOICES %}
+                        <option value="{{ value }}"
+                            {% if request.GET.priority == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+
+                </select>
+
+                <!-- AGENTE -->
+                <select name="agent"
+                        onchange="this.form.submit()"
+                        class="px-3 py-2 rounded-xl text-sm border-gray-200 bg-gray-50 text-gray-700 font-medium">
+
+                    <option value="">Agente</option>
+
+                    {% for agent in agents %}
+                        <option value="{{ agent.id }}"
+                            {% if request.GET.agent == agent.id|stringformat:"s" %}
+                                selected
+                            {% endif %}>
+                            {{ agent.username }}
+                        </option>
+                    {% endfor %}
+
+                </select>
+
+                <!-- ORDEN -->
+                <select name="ordering"
+                        onchange="this.form.submit()"
+                        class="px-3 py-2 rounded-xl text-sm border-gray-200 bg-purple-50 text-purple-700 font-medium">
+
+                    <option value="">Ordenar</option>
+
+                    <option value="due_date"
+                        {% if request.GET.ordering == "due_date" %}selected{% endif %}>
+                        Fecha
+                    </option>
+
+                    <option value="priority"
+                        {% if request.GET.ordering == "priority" %}selected{% endif %}>
+                        Prioridad
+                    </option>
+
+                    <option value="status"
+                        {% if request.GET.ordering == "status" %}selected{% endif %}>
+                        Estado
+                    </option>
+
+                </select>
+
+                <!-- LIMPIAR -->
+                <a href="{% url 'task_list' %}"
+                class="ml-auto px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm transition">
+
+                    Limpiar
+
+                </a>
+
+            </div>
+
+        </form>
+
+    <!-- DESKTOP -->
+    <div class="hidden md:block bg-white shadow rounded-xl overflow-x-auto">
+
+        <table class="min-w-full divide-y divide-gray-200">
+
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Título</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contacto</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Asignado</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Prioridad</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody class="bg-white divide-y divide-gray-100">
+
+                {% for task in tasks %}
+                <tr class="hover:bg-gray-50">
+
+                    <td class="px-6 py-4 font-medium text-gray-900">
+                        <a href="{% url 'task_detail' task.id %}" class="hover:text-gray-600">
+                            {{ task.title }}
+                        </a>
+                    </td>
+
+                    <td class="px-6 py-4 text-gray-700">
+                        {{ task.contact.name }}
+                    </td>
+
+                    <td class="px-6 py-4 text-gray-700">
+                        {{ task.assigned_to.username|default:"—" }}
+                    </td>
+
+                    <td class="px-6 py-4">
+                        
+                        <div id="priority-wrapper-{{ task.id }}"
+                                    data-task-id="{{ task.id }}"
+                            class="inline-block rounded-full px-3 py-1 text-xs font-medium
+
+                            {% if task.priority == 'low' %}
+                                bg-green-100 text-green-700
+                            {% elif task.priority == 'medium' %}
+                                bg-yellow-100 text-yellow-700
+                            {% elif task.priority == 'high' %}
+                                bg-red-100 text-red-700
+                            {% endif %}
+                        ">
+
+                            <select
+                                data-url="{% url 'task_update_priority' task.id %}"
+                                onchange="updateTaskPriority(this)"
+                                class="bg-transparent border-0 text-sm font-medium focus:ring-0 cursor-pointer">
+
+                                {% for value, label in task.PRIORITY_CHOICES %}
+                                    <option value="{{ value }}"
+                                        {% if task.priority == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+
+                            </select>
+
+                        </div>
+
+                    </td>
+
+                    <td class="px-6 py-4">
+
+                        <div id="status-wrapper-{{ task.id }}"
+                            class="inline-block rounded-full px-3 py-1 text-xs font-medium
+
+                            {% if task.status == 'pending' %}
+                                bg-yellow-100 text-yellow-700
+                            {% elif task.status == 'in_progress' %}
+                                bg-blue-100 text-blue-700
+                            {% elif task.status == 'done' %}
+                                bg-green-100 text-green-700
+                            {% elif task.status == 'cancelled' %}
+                                bg-red-100 text-red-700
+                            {% endif %}
+                        ">
+
+                            <select
+                                data-url="{% url 'task_update_status' task.id %}"
+                                onchange="updateTaskStatus(this)"
+                                class="bg-transparent border-0 text-sm font-medium focus:ring-0 cursor-pointer">
+
+                                {% for value, label in task.STATUS_CHOICES %}
+                                    <option value="{{ value }}"
+                                        {% if task.status == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+
+                            </select>
+
+                        </div>
+
+                    </td>
+
+                    <td class="px-6 py-4 text-gray-700">
+                        {{ task.due_date|default:"—" }}
+                    </td>
+
+                    <td class="px-6 py-4">
+                        <div class="flex gap-3 items-center">
+
+                            <!-- EDITAR -->
+                            <a href="{% url 'task_update' task.id %}"
+                            class="text-gray-600 hover:text-gray-900"
+                            title="Editar">
+
+                                <!-- icono lápiz -->
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                    class="w-5 h-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor">
+
+                                    <path stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M11 5h2m-1 0v14m7-7H5" />
+                                </svg>
+
+                            </a>
+
+                            <!-- ELIMINAR -->
+                            <!-- BOTÓN en el listado -->
+                            <button
+                                type="button"
+                                onclick="abrirModal()"
+                                class="text-red-600 hover:text-red-800 transition"
+                                title="Eliminar">
+
+                                <!-- icono papelera -->
+                                <svg xmlns="http://www.w3.org/2000/svg"
+                                    class="w-5 h-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor">
+
+                                    <path stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862
+                                            a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4
+                                            a1 1 0 00-1-1m-4 0h4" />
+                                </svg>
+
+                            </button>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+                {% endfor %}
+
+            </tbody>
+        </table>
+    </div>
+
+    <!-- MOBILE -->
+    <div class="space-y-4 md:hidden">
+
+        {% for task in tasks %}
+        <div class="bg-white shadow rounded-xl p-4">
+
+            <div class="flex justify-between items-start">
+                <a class="font-semibold text-gray-900" href="{% url 'task_detail' task.id %}">
+                    {{ task.title }}
+                </a>
+
+                <span class="px-3 py-1 text-xs rounded-full
+                    {% if task.priority == 'high' %} bg-red-100 text-red-700
+                    {% elif task.priority == 'medium' %} bg-yellow-100 text-yellow-700
+                    {% elif task.priority == 'low' %} bg-green-100 text-green-700
+                    {% endif %}">
+                    {{ task.get_priority_display }}
+                </span>
+
+                <span class="px-3 py-1 text-xs rounded-full
+                    {% if task.status == 'pending' %} bg-blue-100 text-blue-700
+                    {% elif task.status == 'in_progress' %} bg-yellow-100 text-yellow-700
+                    {% elif task.status == 'done' %} bg-green-100 text-green-700
+                    {% elif task.status == 'cancelled' %} bg-red-100 text-red-700
+                    {% endif %}">
+                    {{ task.get_status_display }}
+                </span>
+                
+            </div>
+
+            <p class="text-sm text-gray-600 mt-2">
+                {{ task.contact.name }}
+            </p>
+
+        </div>
+        {% endfor %}
+
+    </div>
+
+</div>
+
+<!-- MODAL -->
+<div id="modalConfirmacion"
+    class="fixed inset-0 hidden
+           items-center justify-center z-50">
+
+    <div class="bg-white rounded-2xl shadow-xl p-6 w-96">
+
+        <h2 class="text-xl font-bold text-gray-800 mb-4">
+            Confirmar eliminación
+        </h2>
+
+        <p class="text-gray-600 mb-6">
+            ¿Seguro que quieres eliminar este elemento?
+        </p>
+
+        <div class="flex justify-end gap-3">
+
+            <!-- cancelar -->
+            <button
+                onclick="cerrarModal()"
+                class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition">
+                Cancelar
+            </button>
+
+            <!-- confirmar -->
+            <button
+                onclick="eliminarElemento()"
+                class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition">
+                Eliminar
+            </button>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+
+<script>
+    function abrirModal() {
+        const modal = document.getElementById('modalConfirmacion');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function cerrarModal() {
+        const modal = document.getElementById('modalConfirmacion');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    function eliminarElemento() {
+        // aquí pones tu lógica de borrado
+        alert('Elemento eliminado');
+
+        cerrarModal();
+    }
+</script>
+
+<script>
+
+    const STATUS_CLASSES = {
+        pending: ["bg-yellow-100", "text-yellow-700"],
+        in_progress: ["bg-blue-100", "text-blue-700"],
+        done: ["bg-green-100", "text-green-700"],
+        cancelled: ["bg-red-100", "text-red-700"],
+    };
+
+    const PRIORITY_CLASSES = {
+        low: ["bg-green-100", "text-green-700"],
+        medium: ["bg-yellow-100", "text-yellow-700"],
+        high: ["bg-red-100", "text-red-700"],
+    };
+
+    function updateBadgeClasses(element, mapping, value) {
+
+        Object.values(mapping).flat().forEach(cls => {
+            element.classList.remove(cls);
+        });
+
+        if (mapping[value]) {
+            element.classList.add(...mapping[value]);
+        }
+    }
+
+    function getCookie(name) {
+
+        let cookieValue = null;
+
+        if (document.cookie && document.cookie !== '') {
+
+            const cookies = document.cookie.split(';');
+
+            for (let i = 0; i < cookies.length; i++) {
+
+                const cookie = cookies[i].trim();
+
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+
+                    cookieValue = decodeURIComponent(
+                        cookie.substring(name.length + 1)
+                    );
+
+                    break;
+                }
+            }
+        }
+
+        return cookieValue;
+    }
+
+    function updateField(select, endpoint, mapping, fieldName) {
+
+        const badge = select.parentElement;
+
+        fetch(endpoint, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": getCookie("csrftoken"),
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+                [fieldName]: select.value
+            })
+        })
+        .then(res => res.json())
+        .then(() => {
+            updateBadgeClasses(badge, mapping, select.value);
+        });
+
+    }
+
+    function updateTaskStatus(select) {
+        updateField(select, select.dataset.url, STATUS_CLASSES, "status");
+    }
+
+    function updateTaskPriority(select) {
+        updateField(select, select.dataset.url, PRIORITY_CLASSES, "priority");
+    }
+</script>
+
+{% endblock %}
