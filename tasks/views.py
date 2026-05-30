@@ -96,6 +96,19 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
     template_name = "tasks/task_detail.html"
     context_object_name = "task"
 
+    def get_queryset(self):
+
+        user = self.request.user
+
+        qs = Task.objects.select_related("assigned_to", "contact")
+
+        # Admin y manager ven todo
+        if user.role in ["admin", "manager"]:
+            return qs
+
+        # Agent solo ve sus tareas
+        return qs.filter(assigned_to=user)
+
 
 # -----------------------
 # CREAR TAREA (MANAGER / ADMIN)
@@ -165,41 +178,51 @@ def task_delete(request, pk):
 # -----------------------
 # cambiar estado (solo admin/manager)
 # -----------------------
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+
+
+@require_POST
 @login_required
 def task_update_status(request, pk):
 
     task = get_object_or_404(Task, pk=pk)
 
-    if request.method == "POST":
+    if request.user.role == "agent" and task.assigned_to != request.user:
+        return JsonResponse({"success": False}, status=403)
 
-        # agentes solo pueden modificar sus tareas
-        if request.user.role == "agent" and task.assigned_to != request.user:
-            return redirect("task_list")
+    status = request.POST.get("status")
 
-        status = request.POST.get("status")
+    if status in dict(Task.STATUS_CHOICES):
+        task.status = status
+        task.save()
 
-        if status in dict(Task.STATUS_CHOICES):
-            task.status = status
-            task.save()
+        return JsonResponse({
+            "success": True,
+            "status": task.get_status_display()
+        })
 
-    return redirect("task_list")
+    return JsonResponse({"success": False}, status=400)
 
 
+@require_POST
 @login_required
 def task_update_priority(request, pk):
 
     task = get_object_or_404(Task, pk=pk)
 
-    if request.method == "POST":
+    if request.user.role == "agent" and task.assigned_to != request.user:
+        return JsonResponse({"success": False}, status=403)
 
-        # agentes solo pueden modificar sus tareas
-        if request.user.role == "agent" and task.assigned_to != request.user:
-            return redirect("task_list")
+    priority = request.POST.get("priority")
 
-        priority = request.POST.get("priority")
+    if priority in dict(Task.PRIORITY_CHOICES):
+        task.priority = priority
+        task.save()
 
-        if priority in dict(Task.PRIORITY_CHOICES):
-            task.priority = priority
-            task.save()
+        return JsonResponse({
+            "success": True,
+            "priority": task.get_priority_display()
+        })
 
-    return redirect("task_list")
+    return JsonResponse({"success": False}, status=400)

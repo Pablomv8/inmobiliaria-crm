@@ -159,82 +159,69 @@
                     </td>
 
                     <td class="px-6 py-4">
-                        <form method="post"
-                            action="{% url 'task_update_priority' task.id %}">
+                        
+                        <div id="priority-wrapper-{{ task.id }}"
+                                    data-task-id="{{ task.id }}"
+                            class="inline-block rounded-full px-3 py-1 text-xs font-medium
 
-                            {% csrf_token %}
+                            {% if task.priority == 'low' %}
+                                bg-green-100 text-green-700
+                            {% elif task.priority == 'medium' %}
+                                bg-yellow-100 text-yellow-700
+                            {% elif task.priority == 'high' %}
+                                bg-red-100 text-red-700
+                            {% endif %}
+                        ">
 
-                            <div class="inline-block rounded-full px-3 py-1 text-xs font-medium cursor-pointer
+                            <select
+                                data-url="{% url 'task_update_priority' task.id %}"
+                                onchange="updateTaskPriority(this)"
+                                class="bg-transparent border-0 text-sm font-medium focus:ring-0 cursor-pointer">
 
-                                {% if task.priority == 'low' %}
-                                    bg-green-100 text-green-700
-                                {% elif task.priority == 'medium' %}
-                                    bg-yellow-100 text-yellow-700
-                                {% elif task.priority == 'high' %}
-                                    bg-red-100 text-red-700
-                                {% endif %}
-                            ">
+                                {% for value, label in task.PRIORITY_CHOICES %}
+                                    <option value="{{ value }}"
+                                        {% if task.priority == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
 
-                                <select
-                                    name="priority"
-                                    onchange="this.form.submit()"
-                                    class="bg-transparent border-0 text-sm font-medium focus:ring-0 cursor-pointer">
+                            </select>
 
-                                    {% for value, label in task.PRIORITY_CHOICES %}
-
-                                        <option value="{{ value }}"
-                                            {% if task.priority == value %}selected{% endif %}>
-
-                                            {{ label }}
-
-                                        </option>
-
-                                    {% endfor %}
-
-                                </select>
-
-                            </div>
-
-                        </form>
+                        </div>
 
                     </td>
 
                     <td class="px-6 py-4">
-                        <form method="post"
-                            action="{% url 'task_update_status' task.id %}">
 
-                            {% csrf_token %}
+                        <div id="status-wrapper-{{ task.id }}"
+                            class="inline-block rounded-full px-3 py-1 text-xs font-medium
 
-                            <div class="inline-block rounded-full px-3 py-1 text-xs font-medium cursor-pointer hover:opacity-80 transition
+                            {% if task.status == 'pending' %}
+                                bg-yellow-100 text-yellow-700
+                            {% elif task.status == 'in_progress' %}
+                                bg-blue-100 text-blue-700
+                            {% elif task.status == 'done' %}
+                                bg-green-100 text-green-700
+                            {% elif task.status == 'cancelled' %}
+                                bg-red-100 text-red-700
+                            {% endif %}
+                        ">
 
-                                {% if task.status == 'pending' %}
-                                    bg-yellow-100 text-yellow-700
-                                {% elif task.status == 'in_progress' %}
-                                    bg-blue-100 text-blue-700
-                                {% elif task.status == 'done' %}
-                                    bg-green-100 text-green-700
-                                {% endif %}">
-                                <select
-                                    name="status"
-                                    onchange="this.form.submit()"
-                                    class="bg-transparent border-0 text-sm font-medium focus:ring-0">
+                            <select
+                                data-url="{% url 'task_update_status' task.id %}"
+                                onchange="updateTaskStatus(this)"
+                                class="bg-transparent border-0 text-sm font-medium focus:ring-0 cursor-pointer">
 
-                                    {% for value, label in task.STATUS_CHOICES %}
+                                {% for value, label in task.STATUS_CHOICES %}
+                                    <option value="{{ value }}"
+                                        {% if task.status == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
 
-                                        <option value="{{ value }}"
-                                            {% if task.status == value %}selected{% endif %}>
+                            </select>
 
-                                            {{ label }}
-
-                                        </option>
-
-                                    {% endfor %}
-
-                                </select>
-
-                            </div>
-
-                        </form>
+                        </div>
 
                     </td>
 
@@ -313,12 +300,22 @@
                 </a>
 
                 <span class="px-3 py-1 text-xs rounded-full
+                    {% if task.priority == 'high' %} bg-red-100 text-red-700
+                    {% elif task.priority == 'medium' %} bg-yellow-100 text-yellow-700
+                    {% elif task.priority == 'low' %} bg-green-100 text-green-700
+                    {% endif %}">
+                    {{ task.get_priority_display }}
+                </span>
+
+                <span class="px-3 py-1 text-xs rounded-full
                     {% if task.status == 'pending' %} bg-blue-100 text-blue-700
                     {% elif task.status == 'in_progress' %} bg-yellow-100 text-yellow-700
                     {% elif task.status == 'done' %} bg-green-100 text-green-700
+                    {% elif task.status == 'cancelled' %} bg-red-100 text-red-700
                     {% endif %}">
                     {{ task.get_status_display }}
                 </span>
+                
             </div>
 
             <p class="text-sm text-gray-600 mt-2">
@@ -389,4 +386,87 @@
         cerrarModal();
     }
 </script>
+
+<script>
+
+    const STATUS_CLASSES = {
+        pending: ["bg-yellow-100", "text-yellow-700"],
+        in_progress: ["bg-blue-100", "text-blue-700"],
+        done: ["bg-green-100", "text-green-700"],
+        cancelled: ["bg-red-100", "text-red-700"],
+    };
+
+    const PRIORITY_CLASSES = {
+        low: ["bg-green-100", "text-green-700"],
+        medium: ["bg-yellow-100", "text-yellow-700"],
+        high: ["bg-red-100", "text-red-700"],
+    };
+
+    function updateBadgeClasses(element, mapping, value) {
+
+        Object.values(mapping).flat().forEach(cls => {
+            element.classList.remove(cls);
+        });
+
+        if (mapping[value]) {
+            element.classList.add(...mapping[value]);
+        }
+    }
+
+    function getCookie(name) {
+
+        let cookieValue = null;
+
+        if (document.cookie && document.cookie !== '') {
+
+            const cookies = document.cookie.split(';');
+
+            for (let i = 0; i < cookies.length; i++) {
+
+                const cookie = cookies[i].trim();
+
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+
+                    cookieValue = decodeURIComponent(
+                        cookie.substring(name.length + 1)
+                    );
+
+                    break;
+                }
+            }
+        }
+
+        return cookieValue;
+    }
+
+    function updateField(select, endpoint, mapping, fieldName) {
+
+        const badge = select.parentElement;
+
+        fetch(endpoint, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": getCookie("csrftoken"),
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+                [fieldName]: select.value
+            })
+        })
+        .then(res => res.json())
+        .then(() => {
+            updateBadgeClasses(badge, mapping, select.value);
+        });
+
+    }
+
+    function updateTaskStatus(select) {
+        updateField(select, select.dataset.url, STATUS_CLASSES, "status");
+    }
+
+    function updateTaskPriority(select) {
+        updateField(select, select.dataset.url, PRIORITY_CLASSES, "priority");
+    }
+</script>
+
 {% endblock %}
