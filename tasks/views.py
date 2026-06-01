@@ -8,6 +8,7 @@ from .models import Task
 from contacts.models import Contact
 from django.http import HttpResponseForbidden
 from django.contrib.auth import get_user_model
+from activities.utils import log_activity
 
 User = get_user_model()
 
@@ -119,7 +120,7 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
         "title",
         "description",
         "contact",
-        "property",
+        "related_property",
         "assigned_to",
         "status",
         "priority",
@@ -129,8 +130,18 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
     success_url = reverse_lazy("task_list")
 
     def form_valid(self, form):
+
         form.instance.created_by = self.request.user
-        return super().form_valid(form)
+
+        response = super().form_valid(form)
+
+        log_activity(
+            self.request.user,
+            "task_created",
+            f"Creó la tarea '{self.object.title}'"
+        )
+
+        return response
 
 
 # -----------------------
@@ -148,6 +159,63 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
     ]
     template_name = "tasks/task_form.html"
     success_url = reverse_lazy("task_list")
+
+    def form_valid(self, form):
+
+        task = self.get_object()
+
+        old_status = task.status
+        old_priority = task.priority
+        old_assigned = task.assigned_to
+
+        response = super().form_valid(form)
+
+        if old_status != self.object.status:
+            new_status = self.object.status
+            if new_status == "done":
+                log_activity(
+                    self.request.user,
+                    "task_completed",
+                    f"Completó la tarea '{task.title}'"
+                )
+            else:
+                old_status_display = dict(Task.STATUS_CHOICES).get(old_status)
+                new_status_display = self.object.get_status_display()
+                log_activity(
+                    self.request.user,
+                    "task_status_changed",
+                    f"Cambió el estado de '{self.object.title}' "
+                    f"de '{old_status_display}' a '{new_status_display}'"
+                )
+
+        if old_priority != self.object.priority:
+
+            old_priority_display = dict(Task.PRIORITY_CHOICES).get(old_priority)
+            new_priority_display = self.object.get_priority_display()
+
+            log_activity(
+                self.request.user,
+                "task_priority_changed",
+                f"Cambió la prioridad de '{self.object.title}' de "
+                f"{old_priority_display} a {new_priority_display}"
+            )
+
+        if old_assigned != self.object.assigned_to:
+
+            assigned_to_name = (
+                self.object.assigned_to.username
+                if self.object.assigned_to
+                else "Sin asignar"
+            )
+
+            log_activity(
+                self.request.user,
+                "task_reassigned",
+                f"Reasignó la tarea '{self.object.title}' a "
+                f"{assigned_to_name}"
+            )
+
+        return response
 
     def get_queryset(self):
         user = self.request.user
@@ -171,6 +239,10 @@ def task_delete(request, pk):
 
     if request.method == "POST":
         task.delete()
+        log_activity(
+                request.user,
+                "task_reassigned",
+                f"Eliminó la tarea '{task.title}'")
         return redirect("task_list")
 
     return redirect("task_list")
@@ -192,10 +264,28 @@ def task_update_status(request, pk):
         return JsonResponse({"success": False}, status=403)
 
     status = request.POST.get("status")
+    old_status = task.status
+    
+    
 
     if status in dict(Task.STATUS_CHOICES):
         task.status = status
         task.save()
+        if status == "done":
+            log_activity(
+                request.user,
+                "task_completed",
+                f"Completó la tarea '{task.title}'"
+             )
+        else:
+            old_status_display = dict(Task.STATUS_CHOICES).get(old_status)
+            new_status_display = dict(Task.STATUS_CHOICES).get(status)
+            log_activity(
+                request.user,
+                "task_status_changed",
+                f"Cambió el estado de '{task.title}' "
+                f"de '{old_status_display}' a '{new_status_display}'"
+            )
 
         return JsonResponse({
             "success": True,
@@ -210,7 +300,7 @@ def task_update_status(request, pk):
 def task_update_priority(request, pk):
 
     task = get_object_or_404(Task, pk=pk)
-
+    old_priority = task.priority
     if request.user.role == "agent" and task.assigned_to != request.user:
         return JsonResponse({"success": False}, status=403)
 
@@ -219,6 +309,15 @@ def task_update_priority(request, pk):
     if priority in dict(Task.PRIORITY_CHOICES):
         task.priority = priority
         task.save()
+
+        old_priority_display = dict(Task.PRIORITY_CHOICES).get(old_priority)
+        new_priority_display = task.get_priority_display()
+
+        log_activity(
+            request.user,
+            "task_priority_changed",
+            f"Cambió la prioridad de la tarea '{task.title}' de '{old_priority_display}' a {new_priority_display}"
+        )
 
         return JsonResponse({
             "success": True,
