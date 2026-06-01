@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'properties',
     'users',
     'tasks',
+    'activities',
 ]
 
 TAILWIND_APP_NAME = 'theme'

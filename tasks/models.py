@@ -2,6 +2,8 @@ from django.db import models
 from django.conf import settings
 from contacts.models import Contact
 from properties.models import Property
+from django.utils import timezone
+from datetime import timedelta
 
 
 class Task(models.Model):
@@ -29,7 +31,7 @@ class Task(models.Model):
         related_name='tasks'
     )
 
-    property = models.ForeignKey(
+    related_property = models.ForeignKey(
         Property,
         on_delete=models.SET_NULL,
         null=True,
@@ -72,3 +74,20 @@ class Task(models.Model):
 
     def __str__(self):
         return self.title
+    
+    @property
+    def due_label(self):
+
+        if not self.due_date:
+            return "Sin fecha"
+
+        now = timezone.localtime()
+        due = timezone.localtime(self.due_date)
+
+        if due.date() == now.date():
+            return due.strftime("%H:%M")
+
+        if due.date() == (now + timedelta(days=1)).date():
+            return "Mañana"
+
+        return due.strftime("%d %b")
