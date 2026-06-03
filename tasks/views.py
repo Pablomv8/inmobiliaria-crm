@@ -9,6 +9,7 @@ from contacts.models import Contact
 from django.http import HttpResponseForbidden
 from django.contrib.auth import get_user_model
 from activities.utils import log_activity
+from activities.models import Activity
 
 User = get_user_model()
 
@@ -97,6 +98,7 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
     template_name = "tasks/task_detail.html"
     context_object_name = "task"
 
+
     def get_queryset(self):
 
         user = self.request.user
@@ -109,6 +111,20 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
 
         # Agent solo ve sus tareas
         return qs.filter(assigned_to=user)
+    
+
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+
+        context["activities"] = (
+            Activity.objects
+            .filter(task=self.object)
+            .select_related("user")
+            .order_by("-created_at")[:20]
+        )
+
+        return context
 
 
 # -----------------------
@@ -138,7 +154,9 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
         log_activity(
             self.request.user,
             "task_created",
-            f"Creó la tarea '{self.object.title}'"
+            f"Creó la tarea '{self.object.title}'",
+            contact=self.object.contact,
+            task=self.object
         )
 
         return response
@@ -197,7 +215,9 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
                 self.request.user,
                 "task_priority_changed",
                 f"Cambió la prioridad de '{self.object.title}' de "
-                f"{old_priority_display} a {new_priority_display}"
+                f"{old_priority_display} a {new_priority_display}",
+                contact=task.contact,
+                task=task
             )
 
         if old_assigned != self.object.assigned_to:
@@ -212,7 +232,9 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
                 self.request.user,
                 "task_reassigned",
                 f"Reasignó la tarea '{self.object.title}' a "
-                f"{assigned_to_name}"
+                f"{assigned_to_name}",
+                contact=task.contact,
+                task=task
             )
 
         return response
@@ -242,7 +264,10 @@ def task_delete(request, pk):
         log_activity(
                 request.user,
                 "task_reassigned",
-                f"Eliminó la tarea '{task.title}'")
+                f"Eliminó la tarea '{task.title}'",
+                contact=task.contact,
+                task=task),
+                
         return redirect("task_list")
 
     return redirect("task_list")
@@ -275,7 +300,9 @@ def task_update_status(request, pk):
             log_activity(
                 request.user,
                 "task_completed",
-                f"Completó la tarea '{task.title}'"
+                f"Completó la tarea '{task.title}'",
+                contact=task.contact,
+                task=task
              )
         else:
             old_status_display = dict(Task.STATUS_CHOICES).get(old_status)
@@ -284,7 +311,9 @@ def task_update_status(request, pk):
                 request.user,
                 "task_status_changed",
                 f"Cambió el estado de '{task.title}' "
-                f"de '{old_status_display}' a '{new_status_display}'"
+                f"de '{old_status_display}' a '{new_status_display}'",
+                contact=task.contact,
+                task=task
             )
 
         return JsonResponse({
@@ -316,7 +345,9 @@ def task_update_priority(request, pk):
         log_activity(
             request.user,
             "task_priority_changed",
-            f"Cambió la prioridad de la tarea '{task.title}' de '{old_priority_display}' a {new_priority_display}"
+            f"Cambió la prioridad de la tarea '{task.title}' de '{old_priority_display}' a {new_priority_display}",
+            contact=task.contact,
+            task=task
         )
 
         return JsonResponse({
@@ -325,3 +356,4 @@ def task_update_priority(request, pk):
         })
 
     return JsonResponse({"success": False}, status=400)
+

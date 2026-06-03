@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="p-6">
+
+    <div class="mb-6">
+
+        <h1 class="text-2xl font-bold text-gray-800">
+            Actividad
+        </h1>
+
+        <p class="text-gray-500 mt-1">
+            Historial de acciones realizadas en el CRM
+        </p>
+
+    </div>
+
+    <!-- filtros -->
+
+    <form method="get"
+          class="bg-white rounded-2xl shadow-sm p-4 mb-6">
+
+        <div class="flex flex-wrap gap-3">
+
+            {% if request.user.role != "agent" %}
+
+                <select
+                    name="user"
+                    onchange="this.form.submit()"
+                    class="rounded-xl border-gray-200">
+
+                    <option value="">
+                        Todos los agentes
+                    </option>
+
+                    {% for user in users %}
+
+                        <option
+                            value="{{ user.id }}"
+                            {% if request.GET.user == user.id|stringformat:"s" %}
+                                selected
+                            {% endif %}
+                        >
+
+                            {{ user.username }}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+            {% endif %}
+
+            <select
+                name="action"
+                onchange="this.form.submit()"
+                class="rounded-xl border-gray-200">
+
+                <option value="">
+                    Todas las acciones
+                </option>
+
+                <option value="task_created">
+                    Tareas creadas
+                </option>
+
+                <option value="task_completed">
+                    Tareas completadas
+                </option>
+
+                <option value="task_updated">
+                    Tareas editadas
+                </option>
+
+                <option value="contact_created">
+                    Contactos creados
+                </option>
+
+                <option value="contact_updated">
+                    Contactos editados
+                </option>
+
+            </select>
+
+        </div>
+
+    </form>
+
+    <!-- timeline -->
+
+    <div class="bg-white rounded-2xl shadow-sm">
+
+        <div class="divide-y divide-gray-100">
+
+            {% for activity in activities %}
+
+                <div class="p-5 hover:bg-gray-50 transition">
+
+                    <div class="flex items-start gap-4">
+
+                        <div
+                            class="w-10 h-10 rounded-full bg-blue-100
+                                   flex items-center justify-center
+                                   text-blue-700 font-semibold">
+
+                            {{ activity.user.username|first|upper }}
+
+                        </div>
+
+                        <div class="w-10 h-10 rounded-full bg-gray-100
+                                    flex items-center justify-center">
+
+                            {{ activity.icon }}
+
+                        </div>
+
+                        <div class="flex-1">
+
+                            <p class="text-gray-800">
+
+                                {{ activity.description }}
+
+                            </p>
+
+                            <p class="text-sm text-gray-400 mt-1">
+
+                                {{ activity.user.username }}
+                                ·
+                                {{ activity.created_at|timesince }}
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            {% empty %}
+
+                <div class="p-10 text-center text-gray-400">
+
+                    No hay actividad registrada
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

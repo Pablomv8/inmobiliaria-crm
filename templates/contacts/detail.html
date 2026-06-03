@@ -2,9 +2,9 @@
 
 {% block content %}
 
-<div class="max-w-5xl mx-auto p-6">
+<div class="max-w-7xl mx-auto ml-1 p-6 flex flex-col lg:flex-row gap-6">
 
-    <div class="bg-white rounded-2xl shadow-sm p-8">
+    <div class="bg-white rounded-2xl shadow-sm p-8 lg:w-2/3">
 
         <div class="flex items-start justify-between mb-8">
 
@@ -113,7 +113,50 @@
         </div>
 
     </div>
+    <div class="bg-white rounded-2xl shadow-sm p-6 lg:w-1/3">
+
+        <h3 class="text-lg font-semibold mb-4">
+            Actividad reciente
+        </h3>
+
+        <div class="space-y-4">
+
+            {% for activity in activities %}
+
+                <div class="border-l-4 border-blue-500 pl-4">
+
+                    <p class="text-gray-800">
+
+                        {{ activity.description }}
+
+                    </p>
+
+                    <p class="text-xs text-gray-400 mt-1">
+
+                        {{ activity.user.username }}
+                        ·
+                        {{ activity.created_at|timesince }}
+
+                    </p>
+
+                </div>
+
+            {% empty %}
+
+                <p class="text-gray-400">
+
+                    No hay actividad registrada.
+
+                </p>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
 
 </div>
+
+
 
 {% endblock %}

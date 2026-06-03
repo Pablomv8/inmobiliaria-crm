@@ -7,6 +7,7 @@ from django.contrib.auth import get_user_model
 
 from .models import Contact
 from .forms import ContactForm
+from activities.models import Activity
 
 from activities.utils import log_activity
 
@@ -74,7 +75,8 @@ def contact_create(request):
             log_activity(
                 request.user,
                 "contact_created",
-                f"Creó el contacto {contact.name}"
+                f"Creó el contacto {contact.name}",
+                contact=contact
             )
 
             return redirect('contact_list')
@@ -104,7 +106,8 @@ def contact_update(request, pk):
             log_activity(
                 request.user,
                 "contact_updated",
-                f"Editó el contacto {contact.name}"
+                f"Editó el contacto {contact.name}",
+                contact=contact
             )
 
             return redirect('contact_list')
@@ -131,7 +134,8 @@ def contact_delete(request, pk):
         log_activity(
             request.user,
             "contact_deleted",
-            f"Eliminó el contacto {name}"
+            f"Eliminó el contacto {name}",
+            contact=contact
         )
         
 
@@ -156,6 +160,13 @@ def contact_update_status(request, pk):
     if status in dict(Contact.STATUS_CHOICES):
         contact.status = status
         contact.save()
+
+        log_activity(
+                request.user,
+                "contact_updated",
+                f"Editó el contacto {contact.name}",
+                contact=contact
+            )
 
         return JsonResponse({
             "success": True,
@@ -196,3 +207,26 @@ def contact_assign_agent(request, pk):
         "success": True,
         "agent": agent.username
     })
+
+
+def contact_detail(request, pk):
+
+    contact = get_object_or_404(
+        Contact,
+        pk=pk
+    )
+
+    activities = Activity.objects.filter(
+        contact=contact
+    ).select_related(
+        "user"
+    )[:20]
+
+    return render(
+        request,
+        "contacts/detail.html",
+        {
+            "contact": contact,
+            "activities": activities
+        }
+    )
