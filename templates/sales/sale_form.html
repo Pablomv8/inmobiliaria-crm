@@ -2,22 +2,19 @@
 
 {% block content %}
 
-<div class="max-w-4xl mx-auto p-6">
+<div class="max-w-5xl mx-auto p-6">
 
     <div class="bg-white rounded-2xl shadow-sm p-8">
 
+        <!-- HEADER -->
         <div class="mb-8">
 
             <h1 class="text-2xl font-bold text-gray-800">
-
-                Registrar venta
-
+                Nueva venta
             </h1>
 
             <p class="text-gray-500 mt-1">
-
-                Introduce los datos de la operación
-
+                Registra una operación inmobiliaria
             </p>
 
         </div>
@@ -26,113 +23,85 @@
 
             {% csrf_token %}
 
+            <!-- GRID -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 <!-- INMUEBLE -->
                 <div>
-
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-
+                    <label class="text-sm font-medium text-gray-700">
                         Inmueble
-
                     </label>
-
-                    {{ form.related_property }}
-
-                    {% if form.related_property.errors %}
-                        <p class="text-red-500 text-sm mt-1">
-                            {{ form.related_property.errors.0 }}
-                        </p>
-                    {% endif %}
-
+                    <div class="mt-2">
+                        {{ form.related_property }}
+                    </div>
                 </div>
 
                 <!-- COMPRADOR -->
                 <div>
-
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-
+                    <label class="text-sm font-medium text-gray-700">
                         Comprador
-
                     </label>
-
-                    {{ form.buyer }}
-
-                    {% if form.buyer.errors %}
-                        <p class="text-red-500 text-sm mt-1">
-                            {{ form.buyer.errors.0 }}
-                        </p>
-                    {% endif %}
-
+                    <div class="mt-2">
+                        {{ form.buyer }}
+                    </div>
                 </div>
 
                 <!-- AGENTE -->
                 <div>
-
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-
+                    <label class="text-sm font-medium text-gray-700">
                         Agente
-
                     </label>
-
-                    {{ form.agent }}
-
+                    <div class="mt-2">
+                        {{ form.agent }}
+                    </div>
                 </div>
 
                 <!-- PRECIO -->
                 <div>
-
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-
-                        Precio de venta (€)
-
+                    <label class="text-sm font-medium text-gray-700">
+                        Precio de venta
                     </label>
-
-                    {{ form.sale_price }}
-
+                    <div class="mt-2">
+                        {{ form.sale_price }}
+                    </div>
                 </div>
 
                 <!-- COMISIÓN -->
                 <div>
-
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-
+                    <label class="text-sm font-medium text-gray-700">
                         Comisión (%)
-
                     </label>
-
-                    {{ form.commission_percent }}
-
+                    <div class="mt-2">
+                        {{ form.commission_percent }}
+                    </div>
                 </div>
 
                 <!-- FECHA -->
                 <div>
-
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-
+                    <label class="text-sm font-medium text-gray-700">
                         Fecha de venta
-
                     </label>
-
-                    {{ form.sale_date }}
-
+                    <div class="mt-2">
+                        {{ form.sale_date }}
+                    </div>
                 </div>
 
             </div>
 
-            <!-- OBSERVACIONES -->
+            <!-- NOTAS -->
             <div class="mt-6">
 
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-
+                <label class="text-sm font-medium text-gray-700">
                     Observaciones
-
                 </label>
 
-                {{ form.notes }}
+                <div class="mt-2">
+                    {{ form.notes }}
+                </div>
 
             </div>
 
+            <!-- BOTONES -->
             <div class="flex justify-end gap-3 mt-8">
 
                 <a href="{% url 'sale_list' %}"
@@ -145,7 +114,7 @@
                 <button type="submit"
                         class="px-5 py-3 rounded-xl bg-gray-900 text-white hover:bg-gray-800 transition">
 
-                    Registrar venta
+                    Guardar venta
 
                 </button>
 

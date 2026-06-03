@@ -2,7 +2,27 @@ from django import forms
 from .models import Sale
 from properties.models import Property
 
+INPUT_CLASS = """
+w-full
+rounded-xl
+border
+border-gray-300
+bg-gray-50
+px-4
+py-3
+text-gray-800
+placeholder-gray-400
+focus:bg-white
+focus:border-gray-900
+focus:ring-2
+focus:ring-gray-200
+focus:outline-none
+transition
+"""
+
+
 class SaleForm(forms.ModelForm):
+    
 
     class Meta:
         model = Sale
@@ -19,35 +39,35 @@ class SaleForm(forms.ModelForm):
 
         widgets = {
             "related_property": forms.Select(attrs={
-                "class": "w-full rounded-xl border-gray-300"
+                "class": INPUT_CLASS
             }),
 
             "buyer": forms.Select(attrs={
-                "class": "w-full rounded-xl border-gray-300"
+                "class": INPUT_CLASS
             }),
 
             "agent": forms.Select(attrs={
-                "class": "w-full rounded-xl border-gray-300"
+                "class": INPUT_CLASS
             }),
 
             "sale_price": forms.NumberInput(attrs={
-                "class": "w-full rounded-xl border-gray-300"
+                "class":INPUT_CLASS
             }),
 
             "commission_percent": forms.NumberInput(attrs={
-                "class": "w-full rounded-xl border-gray-300"
+                "class": INPUT_CLASS
             }),
 
             "sale_date": forms.DateInput(
                 attrs={
                     "type": "date",
-                    "class": "w-full rounded-xl border-gray-300"
+                    "class": INPUT_CLASS
                 }
             ),
 
             "notes": forms.Textarea(attrs={
                 "rows": 4,
-                "class": "w-full rounded-xl border-gray-300"
+                "class": INPUT_CLASS
             }),
         }
 

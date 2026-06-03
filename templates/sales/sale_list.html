@@ -4,14 +4,21 @@
 
 <div class="p-6">
 
-    <div class="flex justify-between mb-6">
+    <!-- HEADER -->
+    <div class="flex items-center justify-between mb-6">
 
-        <h1 class="text-2xl font-bold">
-            Ventas
-        </h1>
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">
+                Ventas
+            </h1>
+
+            <p class="text-gray-500 text-sm mt-1">
+                Historial de operaciones
+            </p>
+        </div>
 
         <a href="{% url 'sale_create' %}"
-           class="bg-gray-900 text-white px-4 py-2 rounded-xl">
+           class="bg-gray-900 text-white px-5 py-3 rounded-xl hover:bg-gray-800 transition">
 
             + Nueva venta
 
@@ -19,64 +26,193 @@
 
     </div>
 
-    <div class="bg-white rounded-2xl shadow">
+    <!-- CARDS / TABLE WRAPPER -->
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
 
-        <table class="w-full">
+        <!-- HEADER TABLE -->
+        <div class="grid grid-cols-6 bg-gray-50 text-xs font-semibold text-gray-500 uppercase px-6 py-4">
 
-            <thead>
+            <div>Fecha</div>
+            <div>Inmueble</div>
+            <div>Comprador</div>
+            <div>Agente encargado</div>
+            <div>Estado</div>
+            <div>Importe</div>
 
-                <tr>
+        </div>
 
-                    <th>Fecha</th>
+        <!-- ROWS -->
+        <div class="divide-y divide-gray-100">
 
-                    <th>Inmueble</th>
+            {% for sale in sales %}
 
-                    <th>Comprador</th>
+                <div class="grid grid-cols-6 px-6 py-4 items-center hover:bg-gray-50 transition">
+                    <!-- FECHA -->
+                    <div class="text-sm text-gray-600">
 
-                    <th>Agente</th>
-
-                    <th>Precio</th>
-
-                </tr>
-
-            </thead>
-
-            <tbody>
-
-                {% for sale in sales %}
-
-                <tr>
-
-                    <td>
                         {{ sale.sale_date }}
-                    </td>
 
-                    <td>
+                    </div>
+
+                    <!-- INMUEBLE -->
+                    <div class="font-medium text-gray-900">
+
                         {{ sale.related_property.title }}
-                    </td>
 
-                    <td>
+                    </div>
+
+                    <!-- COMPRADOR -->
+                    <div class="text-sm text-gray-700">
+
                         {{ sale.buyer.name }}
-                    </td>
 
-                    <td>
+                    </div>
+
+                    <!-- AGENTE -->
+                    <div class="text-sm text-gray-700">
+
                         {{ sale.agent.username }}
-                    </td>
 
-                    <td>
-                        {{ sale.sale_price }} €
-                    </td>
+                    </div>
 
-                </tr>
+                    <!-- ESTADO -->
+                    <div class="text-sm text-gray-700">
 
-                {% endfor %}
+                        <div
+                            id="sale-status-wrapper-{{ sale.id }}"
+                            class="inline-block rounded-full px-3 py-1 text-xs font-medium
 
-            </tbody>
+                            {% if sale.status == 'draft' %}
+                                bg-yellow-100 text-yellow-700
+                            {% elif sale.status == 'signed' %}
+                                bg-green-100 text-green-700
+                            {% elif sale.status == 'cancelled' %}
+                                bg-red-100 text-red-700
+                            {% endif %}
+                        ">
 
-        </table>
+                            <select
+                                data-sale-id="{{ sale.id }}"
+                                data-url="{% url 'sale_update_status' sale.id %}"
+                                onchange="updateSaleStatus(this)"
+                                class="bg-transparent border-0 text-xs font-medium focus:ring-0 cursor-pointer">
+
+                                {% for value, label in sale.STATUS_CHOICES %}
+
+                                    <option value="{{ value }}"
+                                        {% if sale.status == value %}selected{% endif %}>
+
+                                        {{ label }}
+
+                                    </option>
+
+                                {% endfor %}
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <!-- PRECIO -->
+                    <div>
+
+                        <span class="inline-flex items-center px-3 py-1 rounded-full
+                                     bg-green-100 text-green-700 text-sm font-semibold">
+
+                            {{ sale.sale_price }} €
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+            {% empty %}
+
+                <div class="p-10 text-center text-gray-400">
+
+                    No hay ventas registradas
+
+                </div>
+
+            {% endfor %}
+
+        </div>
 
     </div>
 
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+
+<script>
+function getCookie(name) {
+
+        let cookieValue = null;
+
+        if (document.cookie && document.cookie !== '') {
+
+            const cookies = document.cookie.split(';');
+
+            for (let i = 0; i < cookies.length; i++) {
+
+                const cookie = cookies[i].trim();
+
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+
+                    cookieValue = decodeURIComponent(
+                        cookie.substring(name.length + 1)
+                    );
+
+                    break;
+                }
+            }
+        }
+
+        return cookieValue;
+    }
+function getSaleStatusClasses(status) {
+
+    const classes = {
+        draft: "bg-yellow-100 text-yellow-700",
+        signed: "bg-green-100 text-green-700",
+        cancelled: "bg-red-100 text-red-700"
+    };
+
+    return classes[status] || "";
+}
+
+async function updateSaleStatus(select) {
+
+    const url = select.dataset.url;
+
+    const response = await fetch(url, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({
+            status: select.value
+        })
+    });
+
+    if (!response.ok) {
+        return;
+    }
+
+    const wrapper =
+        document.getElementById(
+            `sale-status-wrapper-${select.dataset.saleId}`
+        );
+
+    wrapper.className =
+        "inline-block rounded-full px-3 py-1 text-xs font-medium " +
+        getSaleStatusClasses(select.value);
+}
+
+</script>
 {% endblock %}

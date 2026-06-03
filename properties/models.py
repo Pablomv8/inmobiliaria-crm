@@ -9,7 +9,7 @@ class Property(models.Model):
         ('villa', 'Villa'),
         ('office', 'Oficina'),
     )
-    
+
     STATUS_CHOICES = [
         ("active", "Activo"),
         ("reserved", "Reservado"),
@@ -18,9 +18,27 @@ class Property(models.Model):
 
     title = models.CharField(max_length=255)
 
-    address = models.CharField(max_length=255)
+    street = models.CharField(
+        max_length=255
+    )
 
-    city = models.CharField(max_length=100)
+    number = models.CharField(
+        max_length=20
+    )
+
+    postal_code = models.CharField(
+        max_length=10,
+        blank=True
+    )
+
+    city = models.CharField(
+        max_length=100
+    )
+
+    province = models.CharField(
+        max_length=100,
+        blank=True
+    )
 
     price = models.DecimalField(
         max_digits=12,
@@ -49,5 +67,27 @@ class Property(models.Model):
         default="active"
     )
 
+    latitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True
+    )
+
+    longitude = models.DecimalField(
+        max_digits=9,
+        decimal_places=6,
+        null=True,
+        blank=True
+    )
+
     def __str__(self):
         return self.title
+    
+    @property
+    def full_address(self):
+
+        return (
+            f"{self.street} {self.number}, "
+            f"{self.city}"
+        )

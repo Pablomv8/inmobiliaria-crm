@@ -29,36 +29,71 @@ class PropertyForm(forms.ModelForm):
 
         fields = [
             'title',
-            'address',
+            'street',
+            'number',
+            'postal_code',
             'city',
+            'province',
             'price',
             'property_type',
             'image',
             'description',
+            'status',
         ]
 
         widgets = {
 
+            # TITLE
             'title': forms.TextInput(attrs={
                 'class': INPUT_CLASS
             }),
 
-            'address': forms.TextInput(attrs={
+            # STREET
+            'street': forms.TextInput(attrs={
                 'class': INPUT_CLASS
             }),
 
+            # NUMBER
+            'number': forms.TextInput(attrs={
+                'class': INPUT_CLASS
+            }),
+
+            # POSTAL CODE
+            'postal_code': forms.TextInput(attrs={
+                'class': INPUT_CLASS
+            }),
+
+            # CITY
             'city': forms.TextInput(attrs={
                 'class': INPUT_CLASS
             }),
 
+            # PROVINCE
+            'province': forms.TextInput(attrs={
+                'class': INPUT_CLASS
+            }),
+
+            # PRICE
             'price': forms.NumberInput(attrs={
                 'class': INPUT_CLASS
             }),
 
+            # TYPE
             'property_type': forms.Select(attrs={
                 'class': INPUT_CLASS
             }),
 
+            # STATUS (IMPORTANTE PARA CRM)
+            'status': forms.Select(attrs={
+                'class': INPUT_CLASS
+            }),
+
+            # IMAGE
+            'image': forms.ClearableFileInput(attrs={
+                'class': INPUT_CLASS
+            }),
+
+            # DESCRIPTION
             'description': forms.Textarea(attrs={
                 'class': INPUT_CLASS,
                 'rows': 5

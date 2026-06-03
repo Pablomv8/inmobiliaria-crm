@@ -47,7 +47,7 @@ class Sale(models.Model):
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
-        default="signed"
+        default="draft"
     )
 
     notes = models.TextField(
@@ -59,7 +59,7 @@ class Sale(models.Model):
     )
 
     def __str__(self):
-        return f"{self.property.title}"
+        return f"Venta de {self.related_property.title}"
 
     @property
     def commission_amount(self):
@@ -68,3 +68,33 @@ class Sale(models.Model):
             self.sale_price *
             self.commission_percent / 100
         )
+    
+    def save(self, *args, **kwargs):
+
+        is_new = self.pk is None
+
+        old_status = None
+
+        if not is_new:
+            old_status = Sale.objects.get(pk=self.pk).status
+
+        super().save(*args, **kwargs)
+
+        # SOLO reaccionar si cambia estado o es nueva
+        if is_new or old_status != self.status:
+
+            # VENTA COMPLETADA
+            if self.status == "signed":
+
+                self.related_property.status = "sold"
+                self.related_property.save()
+
+                # cerrar contacto
+                self.buyer.status = "closed"
+                self.buyer.save()
+
+            # VENTA CANCELADA
+            if self.status == "cancelled":
+
+                self.related_property.status = "active"
+                self.related_property.save()

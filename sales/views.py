@@ -6,6 +6,9 @@ from django.urls import reverse_lazy
 from .models import Sale
 from .forms import SaleForm
 
+from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404, redirect
+
 from activities.utils import log_activity
 
 
@@ -53,3 +56,14 @@ class SaleCreateView(CreateView):
         )
 
         return response
+    
+
+@require_POST
+def sale_update_status(request, pk):
+
+    sale = get_object_or_404(Sale, pk=pk)
+
+    sale.status = request.POST.get("status")
+    sale.save()  # aquí se ejecuta la lógica del modelo
+
+    return redirect("sale_list")
