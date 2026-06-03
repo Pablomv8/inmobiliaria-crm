@@ -27,6 +27,7 @@ urlpatterns = [
     path('', include('users.urls')),
     path("tasks/", include("tasks.urls")),
     path("activities/", include("activities.urls")),
+    path("sales/", include('sales.urls')),
 ]
 
 urlpatterns += static(

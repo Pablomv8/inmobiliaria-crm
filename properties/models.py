@@ -9,6 +9,12 @@ class Property(models.Model):
         ('villa', 'Villa'),
         ('office', 'Oficina'),
     )
+    
+    STATUS_CHOICES = [
+        ("active", "Activo"),
+        ("reserved", "Reservado"),
+        ("sold", "Vendido"),
+    ]
 
     title = models.CharField(max_length=255)
 
@@ -35,6 +41,13 @@ class Property(models.Model):
     description = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="active"
+    )
 
     def __str__(self):
         return self.title

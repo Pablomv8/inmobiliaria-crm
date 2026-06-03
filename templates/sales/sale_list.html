@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="p-6">
+
+    <div class="flex justify-between mb-6">
+
+        <h1 class="text-2xl font-bold">
+            Ventas
+        </h1>
+
+        <a href="{% url 'sale_create' %}"
+           class="bg-gray-900 text-white px-4 py-2 rounded-xl">
+
+            + Nueva venta
+
+        </a>
+
+    </div>
+
+    <div class="bg-white rounded-2xl shadow">
+
+        <table class="w-full">
+
+            <thead>
+
+                <tr>
+
+                    <th>Fecha</th>
+
+                    <th>Inmueble</th>
+
+                    <th>Comprador</th>
+
+                    <th>Agente</th>
+
+                    <th>Precio</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for sale in sales %}
+
+                <tr>
+
+                    <td>
+                        {{ sale.sale_date }}
+                    </td>
+
+                    <td>
+                        {{ sale.related_property.title }}
+                    </td>
+
+                    <td>
+                        {{ sale.buyer.name }}
+                    </td>
+
+                    <td>
+                        {{ sale.agent.username }}
+                    </td>
+
+                    <td>
+                        {{ sale.sale_price }} €
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}
