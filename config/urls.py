@@ -26,6 +26,7 @@ urlpatterns = [
     path('properties/', include('properties.urls')),
     path('', include('users.urls')),
     path("tasks/", include("tasks.urls")),
+    path("activities/", include("activities.urls")),
 ]
 
 urlpatterns += static(
