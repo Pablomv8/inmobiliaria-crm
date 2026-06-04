@@ -40,7 +40,12 @@
                 </h1>
 
                 <p class="text-gray-500 mt-2">
-                    {{ property.address }}
+
+                    {{ property.street }} {{ property.number }},
+                    {{ property.postal_code }}
+                    {{ property.city }},
+                    {{ property.province }}
+
                 </p>
 
             </div>
@@ -67,17 +72,57 @@
 
         </div>
 
-        <div>
 
-            <h3 class="text-xl font-semibold mb-4">
-                Descripción
-            </h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div>
 
-            <p class="text-gray-600 leading-relaxed">
-                {{ property.description|default:"Sin descripción." }}
-            </p>
+                <h3 class="text-xl font-semibold mb-4">
+                    Descripción
+                </h3>
 
+                <p class="text-gray-600 leading-relaxed">
+                    {{ property.description|default:"Sin descripción." }}
+                </p>
+
+            </div>
+
+            <div class="mt-4">
+                <div
+                    id="property-status-wrapper"
+                    class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium
+
+                    {% if property.status == 'active' %}
+                        bg-green-100 text-green-700
+                    {% elif property.status == 'reserved' %}
+                        bg-yellow-100 text-yellow-700
+                    {% elif property.status == 'sold' %}
+                        bg-red-100 text-red-700
+                    {% endif %}
+                ">
+
+                    <select
+                        data-url="{% url 'property_update_status' property.id %}"
+                        onchange="updatePropertyStatus(this)"
+                        class="bg-transparent border-0 focus:ring-0 cursor-pointer text-sm">
+
+                        {% for value,label in property.STATUS_CHOICES %}
+
+                            <option value="{{ value }}"
+                                {% if property.status == value %}selected{% endif %}>
+
+                                {{ label }}
+
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+            </div>
         </div>
+        
 
         <div class="flex justify-end gap-3 mt-6">
 
@@ -100,5 +145,99 @@
     </div>
 
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+
+<script>
+
+    function getCookie(name) {
+
+        let cookieValue = null;
+
+        if (document.cookie && document.cookie !== '') {
+
+            const cookies = document.cookie.split(';');
+
+            for (let i = 0; i < cookies.length; i++) {
+
+                const cookie = cookies[i].trim();
+
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+
+                    cookieValue = decodeURIComponent(
+                        cookie.substring(name.length + 1)
+                    );
+
+                    break;
+                }
+            }
+        }
+
+        return cookieValue;
+    }
+
+    function updatePropertyStatus(select) {
+
+        const wrapper =
+            document.getElementById(
+                "property-status-wrapper"
+            );
+
+        fetch(select.dataset.url, {
+
+            method: "POST",
+
+            headers: {
+                "X-CSRFToken": getCookie("csrftoken"),
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+
+            body: new URLSearchParams({
+                status: select.value
+            })
+
+        })
+        .then(response => response.json())
+        .then(data => {
+
+            wrapper.classList.remove(
+                "bg-green-100",
+                "text-green-700",
+                "bg-yellow-100",
+                "text-yellow-700",
+                "bg-red-100",
+                "text-red-700"
+            );
+
+            const colors = {
+
+                active: [
+                    "bg-green-100",
+                    "text-green-700"
+                ],
+
+                reserved: [
+                    "bg-yellow-100",
+                    "text-yellow-700"
+                ],
+
+                sold: [
+                    "bg-red-100",
+                    "text-red-700"
+                ]
+
+            };
+
+            wrapper.classList.add(
+                ...colors[select.value]
+            );
+
+        });
+
+    }
+
+</script>
 
 {% endblock %}

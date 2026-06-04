@@ -6,6 +6,7 @@ from .views import (
     property_create,
     property_update,
     property_delete,
+    property_update_status,
 )
 
 urlpatterns = [
@@ -19,4 +20,7 @@ urlpatterns = [
     path('<int:pk>/edit/', property_update, name='property_update'),
 
     path('<int:pk>/delete/', property_delete, name='property_delete'),
+
+    path('<int:pk>/update_status/', property_update_status, name = 'property_update_status' ),
+    
 ]
