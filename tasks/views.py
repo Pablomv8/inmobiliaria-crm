@@ -3,6 +3,8 @@ from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+
 
 from .models import Task
 from contacts.models import Contact
@@ -297,6 +299,8 @@ def task_update_status(request, pk):
         task.status = status
         task.save()
         if status == "done":
+            task.completed_at = timezone.now()
+            task.save()
             log_activity(
                 request.user,
                 "task_completed",
@@ -307,6 +311,9 @@ def task_update_status(request, pk):
         else:
             old_status_display = dict(Task.STATUS_CHOICES).get(old_status)
             new_status_display = dict(Task.STATUS_CHOICES).get(status)
+            task.completed_at = None
+            task.save()
+
             log_activity(
                 request.user,
                 "task_status_changed",

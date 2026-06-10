@@ -26,6 +26,132 @@
 
     </div>
 
+
+    <form method="get"
+      class="bg-white border border-gray-100 shadow-sm rounded-2xl p-4 mb-6">
+
+        <div class="flex flex-wrap items-center gap-3">
+
+            <!-- BUSCADOR -->
+            <div class="relative w-56">
+
+                <div class="absolute inset-y-0 left-3 flex items-center text-gray-400">
+                    🔍
+                </div>
+
+                <input
+                    type="text"
+                    name="search"
+                    value="{{ request.GET.search }}"
+                    placeholder="Buscar..."
+                    class="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 text-sm">
+
+            </div>
+
+            <!-- ESTADO -->
+            <select
+                name="status"
+                class="px-3 py-2 rounded-xl text-sm
+                    bg-blue-50 text-blue-700">
+
+                <option value="">
+                    Estado
+                </option>
+
+                {% for value,label in sales.model.STATUS_CHOICES %}
+
+                    <option value="{{ value }}"
+                        {% if request.GET.status == value %}selected{% endif %}>
+
+                        {{ label }}
+
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+            <!-- AGENTE -->
+            <select
+                name="agent"
+                class="px-3 py-2 rounded-xl text-sm
+                    bg-green-50 text-green-700">
+
+                <option value="">
+                    Agente
+                </option>
+
+                {% for agent in agents %}
+
+                    <option value="{{ agent.id }}"
+                        {% if request.GET.agent == agent.id|stringformat:"s" %}
+                            selected
+                        {% endif %}
+                    >
+
+                        {{ agent.username }}
+
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+            <!-- ORDEN -->
+            <select
+                name="ordering"
+                class="px-3 py-2 rounded-xl text-sm
+                    bg-purple-50 text-purple-700">
+
+                <option value="">
+                    Ordenar
+                </option>
+
+                <option value="date_desc"
+                    {% if request.GET.ordering == "date_desc" %}selected{% endif %}>
+                    Más recientes
+                </option>
+
+                <option value="date_asc"
+                    {% if request.GET.ordering == "date_asc" %}selected{% endif %}>
+                    Más antiguas
+                </option>
+
+                <option value="price_desc"
+                    {% if request.GET.ordering == "price_desc" %}selected{% endif %}>
+                    Mayor importe
+                </option>
+
+                <option value="price_asc"
+                    {% if request.GET.ordering == "price_asc" %}selected{% endif %}>
+                    Menor importe
+                </option>
+
+            </select>
+
+            <!-- FILTRAR -->
+            <button
+                type="submit"
+                class="px-4 py-2 rounded-xl
+                    bg-gray-900 text-white">
+
+                Filtrar
+
+            </button>
+
+            <!-- LIMPIAR -->
+            <a href="{% url 'sale_list' %}"
+            class="ml-2 px-4 py-2 rounded-xl
+                    bg-gray-100 hover:bg-gray-200">
+
+                Limpiar
+
+            </a>
+
+        </div>
+
+    </form>
+
     <!-- CARDS / TABLE WRAPPER -->
     <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
 
@@ -149,7 +275,7 @@
 {% block extra_js %}
 
 <script>
-function getCookie(name) {
+    function getCookie(name) {
 
         let cookieValue = null;
 

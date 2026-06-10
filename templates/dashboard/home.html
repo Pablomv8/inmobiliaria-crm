@@ -320,66 +320,257 @@
 </div>
 
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 mt-6">
 
-    <!-- CONTACTOS POR ESTADO -->
-    <div class="bg-white rounded-2xl shadow p-6">
+{% if request.user.role == "admin" or request.user.role == "manager" %}
+<div class="bg-white rounded-2xl p-6 shadow-sm mt-6">
 
-        <h2 class="text-lg font-bold mb-4">
-            Contactos por estado
-        </h2>
+    <div class="flex justify-between items-center mb-6">
 
-        <div class="divide-y divide-gray-100">
+        <h3 class="text-xl font-semibold">
+            Actividad de la oficina
+        </h3>
 
-            {% for item in contacts_by_status %}
-
-                <div class="flex justify-between">
-
-                    <span>
-                        {{ item.status }}
-                    </span>
-
-                    <span class="font-semibold">
-                        {{ item.total }}
-                    </span>
-
-                </div>
-
-            {% endfor %}
-
-        </div>
+        <span class="text-sm text-gray-400">
+            Últimos 30 días
+        </span>
 
     </div>
 
-    <!-- ÚLTIMOS CONTACTOS -->
-    <div class="bg-white rounded-2xl shadow p-6">
-
-        <h2 class="text-lg font-bold mb-4">
-            Últimos contactos
-        </h2>
-
-        <div class="divide-y divide-gray-100">
-
-            {% for contact in latest_contacts %}
-
-                <a
-                    href="{% url 'contact_detail' contact.id %}"
-                    class="block hover:bg-gray-50 rounded-lg p-2 transition"
-                >
-                    {{ contact.name }}
-                </a>
-
-            {% endfor %}
-
-        </div>
-
+    <div class="h-96">
+        <canvas id="activityChart"></canvas>
     </div>
 
 </div>
+{% endif %}
+
+ <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mt-8">
+
+    <div class="bg-white rounded-2xl p-6 shadow-sm">
+
+        <div class="flex items-center justify-between">
+
+            <div>
+
+                <p class="text-sm text-gray-500">
+                    Facturación
+                </p>
+
+                <h3 class="text-3xl font-bold mt-2">
+                    {{ total_revenue|floatformat:0 }} €
+                </h3>
+
+            </div>
+
+            <div class="text-4xl">
+                💰
+            </div>
+
+        </div>
+    </div>
 
 
+    <div class="bg-white rounded-2xl p-6 shadow-sm">
+
+        <div class="flex items-center justify-between">
+
+            <div>
+
+                <p class="text-sm text-gray-500">
+                    Ventas cerradas
+                </p>
+
+                <h3 class="text-3xl font-bold mt-2">
+                    {{ completed_sales_count }}
+                </h3>
+
+            </div>
+
+            <div class="text-4xl">
+                🏠
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 shadow-sm">
+        <div class="flex items-center justify-between">
+
+            <div>
+
+                <p class="text-sm text-gray-500">
+                    Comisión
+                </p>
+
+                <h3 class="text-3xl font-bold mt-2">
+                    {{ total_commission|floatformat:0 }} €
+                </h3>
+
+            </div>
+
+            <div class="text-4xl">
+                📈
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="bg-white rounded-2xl p-6 shadow-sm">
+
+        <div class="flex items-center justify-between">
+
+            <div>
+
+                <p class="text-sm text-gray-500">
+                    Ticket medio
+                </p>
+
+                <h3 class="text-3xl font-bold mt-2">
+                    {{ average_sale|floatformat:0 }} €
+                </h3>
+
+            </div>
+
+            <div class="text-4xl">
+                💎
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
 
 
+<script>
 
+document.addEventListener("DOMContentLoaded", function () {
+
+    const labels = JSON.parse('{{ activity_labels|escapejs }}');
+    const contacts = JSON.parse('{{ contacts_data|escapejs }}');
+    const sales = JSON.parse('{{ sales_data|escapejs }}');
+    const tasks = JSON.parse('{{ tasks_data|escapejs }}');
+
+    const ctx = document.getElementById("activityChart");
+
+    new Chart(ctx, {
+
+        type: "line",
+
+        data: {
+
+            labels: labels,
+
+            datasets: [
+
+                {
+                    label: "Contactos",
+                    data: contacts,
+                    borderColor: "#3B82F6",
+                    backgroundColor: "rgba(59,130,246,0.12)",
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: "#3B82F6",
+                    borderWidth: 2
+                },
+
+                {
+                    label: "Ventas",
+                    data: sales,
+                    borderColor: "#10B981",
+                    backgroundColor: "rgba(16,185,129,0.12)",
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: "#10B981",
+                    borderWidth: 2
+                },
+
+                {
+                    label: "Tareas completadas",
+                    data: tasks,
+                    borderColor: "#F59E0B",
+                    backgroundColor: "rgba(245,158,11,0.12)",
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: "#F59E0B",
+                    borderWidth: 2
+                }
+
+            ]
+
+        },
+
+        options: {
+
+            responsive: true,
+            maintainAspectRatio: false,
+
+            interaction: {
+                mode: "index",
+                intersect: false
+            },
+
+            plugins: {
+
+                legend: {
+                    position: "top",
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                },
+
+                tooltip: {
+                    backgroundColor: "#111827",
+                    titleColor: "#fff",
+                    bodyColor: "#d1d5db",
+                    padding: 12,
+                    displayColors: true
+                }
+
+            },
+
+            scales: {
+
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: "#6b7280"
+                    }
+                },
+
+                y: {
+                    grid: {
+                        color: "rgba(0,0,0,0.05)"
+                    },
+                    ticks: {
+                        color: "#6b7280"
+                    },
+                    beginAtZero: true
+                }
+
+            }
+
+        }
+
+    });
+
+});
+
+</script>
 
 {% endblock %}

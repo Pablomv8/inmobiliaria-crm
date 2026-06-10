@@ -4,12 +4,13 @@ from .views import (
     SaleListView,
     SaleCreateView,
     sale_update_status,
+    sale_list,
 )
 
 urlpatterns = [
     path(
         "",
-        SaleListView.as_view(),
+        sale_list,
         name="sale_list"
     ),
 
