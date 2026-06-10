@@ -319,9 +319,92 @@
 
 </div>
 
-
-
 {% if request.user.role == "admin" or request.user.role == "manager" %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+
+    <!-- CONTACTOS -->
+    <div class="bg-white rounded-2xl p-6 shadow-sm">
+
+        <p class="text-sm text-gray-500">Contactos (últimos 30 días)</p>
+
+        <div class="flex items-end justify-between mt-2">
+
+            <h3 class="text-3xl font-bold">
+                {{ contacts_current }}
+            </h3>
+
+            <span class="text-sm font-semibold flex items-center gap-1
+                {% if contacts_trend == 'up' %}text-green-600
+                {% elif contacts_trend == 'down' %}text-red-500
+                {% else %}text-gray-500{% endif %}">
+
+                {% if contacts_trend == 'up' %}⬆️
+                {% elif contacts_trend == 'down' %}⬇️
+                {% else %}➡️{% endif %}
+
+                {{ contacts_growth }}%
+            </span>
+
+        </div>
+
+    </div>
+
+    <!-- VENTAS -->
+    <div class="bg-white rounded-2xl p-6 shadow-sm">
+
+        <p class="text-sm text-gray-500">Ventas (últimos 30 días)</p>
+
+        <div class="flex items-end justify-between mt-2">
+
+            <h3 class="text-3xl font-bold">
+                {{ sales_current }}
+            </h3>
+
+            <span class="text-sm font-semibold flex items-center gap-1
+                {% if sales_trend == 'up' %}text-green-600
+                {% elif sales_trend == 'down' %}text-red-500
+                {% else %}text-gray-500{% endif %}">
+
+                {% if sales_trend == 'up' %}⬆️
+                {% elif sales_trend == 'down' %}⬇️
+                {% else %}➡️{% endif %}
+
+                {{ sales_growth }}%
+            </span>
+
+        </div>
+
+    </div>
+
+    <!-- FACTURACIÓN -->
+    <div class="bg-white rounded-2xl p-6 shadow-sm">
+
+        <p class="text-sm text-gray-500">Facturación</p>
+
+        <div class="flex items-end justify-between mt-2">
+
+            <h3 class="text-3xl font-bold">
+                {{ revenue_current|floatformat:0 }} €
+            </h3>
+
+            <span class="text-sm font-semibold flex items-center gap-1
+                {% if revenue_trend == 'up' %}text-green-600
+                {% elif revenue_trend == 'down' %}text-red-500
+                {% else %}text-gray-500{% endif %}">
+
+                {% if revenue_trend == 'up' %}⬆️
+                {% elif revenue_trend == 'down' %}⬇️
+                {% else %}➡️{% endif %}
+
+                {{ revenue_growth }}%
+            </span>
+        </div>
+
+    </div>
+
+</div>
+
+
 <div class="bg-white rounded-2xl p-6 shadow-sm mt-6">
 
     <div class="flex justify-between items-center mb-6">
@@ -330,11 +413,38 @@
             Actividad de la oficina
         </h3>
 
-        <span class="text-sm text-gray-400">
-            Últimos 30 días
-        </span>
+        <p class="text-sm text-gray-400">
+            Últimos {{ selected_days }} días
+        </p>
 
     </div>
+
+    <form method="get">
+
+        <select
+            name="days"
+            onchange="this.form.submit()"
+            class="rounded-xl border border-gray-300 px-4 py-2 text-sm"
+        >
+
+            <option value="7"
+                {% if selected_days == 7 %}selected{% endif %}>
+                7 días
+            </option>
+
+            <option value="30"
+                {% if selected_days == 30 %}selected{% endif %}>
+                30 días
+            </option>
+
+            <option value="90"
+                {% if selected_days == 90 %}selected{% endif %}>
+                90 días
+            </option>
+
+        </select>
+
+    </form>
 
     <div class="h-96">
         <canvas id="activityChart"></canvas>
@@ -343,103 +453,6 @@
 </div>
 {% endif %}
 
- <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mt-8">
-
-    <div class="bg-white rounded-2xl p-6 shadow-sm">
-
-        <div class="flex items-center justify-between">
-
-            <div>
-
-                <p class="text-sm text-gray-500">
-                    Facturación
-                </p>
-
-                <h3 class="text-3xl font-bold mt-2">
-                    {{ total_revenue|floatformat:0 }} €
-                </h3>
-
-            </div>
-
-            <div class="text-4xl">
-                💰
-            </div>
-
-        </div>
-    </div>
-
-
-    <div class="bg-white rounded-2xl p-6 shadow-sm">
-
-        <div class="flex items-center justify-between">
-
-            <div>
-
-                <p class="text-sm text-gray-500">
-                    Ventas cerradas
-                </p>
-
-                <h3 class="text-3xl font-bold mt-2">
-                    {{ completed_sales_count }}
-                </h3>
-
-            </div>
-
-            <div class="text-4xl">
-                🏠
-            </div>
-
-        </div>
-
-    </div>
-
-    <div class="bg-white rounded-2xl p-6 shadow-sm">
-        <div class="flex items-center justify-between">
-
-            <div>
-
-                <p class="text-sm text-gray-500">
-                    Comisión
-                </p>
-
-                <h3 class="text-3xl font-bold mt-2">
-                    {{ total_commission|floatformat:0 }} €
-                </h3>
-
-            </div>
-
-            <div class="text-4xl">
-                📈
-            </div>
-
-        </div>
-
-    </div>
-
-    <div class="bg-white rounded-2xl p-6 shadow-sm">
-
-        <div class="flex items-center justify-between">
-
-            <div>
-
-                <p class="text-sm text-gray-500">
-                    Ticket medio
-                </p>
-
-                <h3 class="text-3xl font-bold mt-2">
-                    {{ average_sale|floatformat:0 }} €
-                </h3>
-
-            </div>
-
-            <div class="text-4xl">
-                💎
-            </div>
-
-        </div>
-
-    </div>
-</div>
 
 </div>
 

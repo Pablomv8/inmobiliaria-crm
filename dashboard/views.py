@@ -15,6 +15,29 @@ from tasks.models import Task
 from activities.models import Activity
 from collections import defaultdict
 
+today = timezone.now().date()
+start = today - timedelta(days=30)
+previous_start = today - timedelta(days=60)
+previous_end = today - timedelta(days=30)
+
+
+
+def growth(current, previous):
+
+    if previous == 0:
+        if current > 0:
+            return 100, "up"
+        return 0, "flat"
+
+    change = ((current - previous) / previous) * 100
+    change = round(change, 1)
+
+    if change > 0:
+        return change, "up"
+    elif change < 0:
+        return change, "down"
+    return change, "flat"
+
 def home(request):
     return render(request, 'dashboard/home.html')
 
@@ -27,6 +50,33 @@ def dashboard(request):
     contacts_data = []
     sales_data = []
     tasks_data = []
+
+    contacts_current = Contact.objects.filter(
+        created_at__date__gte=start
+    ).count()
+
+    contacts_previous = Contact.objects.filter(
+        created_at__date__gte=previous_start,
+        created_at__date__lt=start
+    ).count()
+
+    sales_current = Sale.objects.filter(
+        sale_date__gte=start, status= 'signed'
+    ).count()
+
+    sales_previous = Sale.objects.filter(
+        sale_date__gte=previous_start,
+        sale_date__lt=start, status='signed'
+    ).count()
+
+    revenue_current = Sale.objects.filter(
+        sale_date__gte=start, status = 'signed'
+    ).aggregate(total=Sum("sale_price"))["total"] or 0
+
+    revenue_previous = Sale.objects.filter(
+        sale_date__gte=previous_start,
+        sale_date__lt=start, status = 'signed'
+    ).aggregate(total=Sum("sale_price"))["total"] or 0
 
 
     if user.role in ["admin", "manager"]:
@@ -92,11 +142,12 @@ def dashboard(request):
     latest_tasks = tasks.order_by(
         "-created_at"
     )[:5]
+    
 
     upcoming_tasks = tasks.filter(
         due_date__isnull=False,
         due_date__gte=timezone.now()
-    ).order_by("due_date")[:5]
+    ).exclude(status= "done").order_by("due_date")[:5]
 
     completed_tasks = tasks.filter(
         status="done"
@@ -230,7 +281,20 @@ def dashboard(request):
             ] = item["total"]
 
             #########Eje X###########33
-        for i in range(30):
+
+        selected_days = int(
+            request.GET.get("days", 30)
+        )
+
+        start_date = timezone.now().date() - timedelta(days=30)
+
+        end_date = timezone.now().date()
+
+        start_date = end_date - timedelta(
+            days=selected_days - 1
+        )
+
+        for i in range(selected_days):
 
             day = start_date + timedelta(days=i)
 
@@ -251,6 +315,11 @@ def dashboard(request):
             )
 
 
+    contacts_growth, contacts_trend = growth(contacts_current, contacts_previous)
+
+    sales_growth, sales_trend = growth(sales_current, sales_previous)
+
+    revenue_growth, revenue_trend = growth(revenue_current, revenue_previous)
 
     return render(request, "dashboard/home.html", {
         "total_contacts": total_contacts,
@@ -277,4 +346,18 @@ def dashboard(request):
         "contacts_data": json.dumps(contacts_data),
         "sales_data": json.dumps(sales_data),
         "tasks_data": json.dumps(tasks_data),
+        "contacts_current": contacts_current,
+        "contacts_growth": contacts_growth,
+        "contacts_trend": contacts_trend,
+        "selected_days": selected_days,
+
+        "sales_current": sales_current,
+        "sales_growth": sales_growth,
+        "sales_trend": sales_trend,
+
+        "revenue_current": revenue_current,
+        "revenue_growth": revenue_growth,
+        "revenue_trend": revenue_trend,
+
+
     })
