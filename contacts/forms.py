@@ -30,6 +30,7 @@ class ContactForm(forms.ModelForm):
             'name',
             'phone',
             'email',
+            'contact_type',
             'status',
             'notes',
             'properties',
@@ -48,6 +49,10 @@ class ContactForm(forms.ModelForm):
 
             'email': forms.EmailInput(attrs={
                 'class': INPUT_CLASS
+            }),
+
+            "contact_type": forms.Select(attrs={
+                "class": INPUT_CLASS,
             }),
 
             'status': forms.Select(attrs={

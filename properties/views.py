@@ -4,7 +4,7 @@ from django.shortcuts import (
     get_object_or_404
 )
 
-from .models import Property
+from .models import Property, Zone
 from .forms import PropertyForm
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
@@ -29,6 +29,17 @@ def property_list(request):
     max_price = request.GET.get("max_price")
 
     ordering = request.GET.get("ordering")
+
+    zones = Zone.objects.all()
+    selected_zone = request.GET.get("zone")
+
+    properties = Property.objects.all()
+
+    if selected_zone:
+
+        properties = properties.filter(
+            zone_id=selected_zone
+        )
 
     # BUSCADOR
     if search:
@@ -87,6 +98,7 @@ def property_list(request):
         "properties/list.html",
         {
             "properties": properties,
+            "zones": zones
         }
     )
 

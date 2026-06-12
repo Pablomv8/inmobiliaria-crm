@@ -34,6 +34,7 @@ class PropertyForm(forms.ModelForm):
             'postal_code',
             'city',
             'province',
+            'zone',
             'price',
             'property_type',
             'image',
@@ -71,6 +72,10 @@ class PropertyForm(forms.ModelForm):
             # PROVINCE
             'province': forms.TextInput(attrs={
                 'class': INPUT_CLASS
+            }),
+
+            "zone": forms.Select(attrs={
+                "class": INPUT_CLASS,
             }),
 
             # PRICE

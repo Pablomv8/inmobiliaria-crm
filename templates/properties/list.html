@@ -92,6 +92,33 @@
 
             </select>
 
+            <select
+                name="zone"
+                onchange="this.form.submit()"
+                class="px-3 py-2 rounded-xl text-sm bg-gray-50 text-black-700"
+            >
+
+                <option value="">
+                    Todas las zonas
+                </option>
+
+                {% for zone in zones %}
+
+                    <option
+                        value="{{ zone.id }}"
+                        {% if request.GET.zone == zone.id|stringformat:"s" %}
+                            selected
+                        {% endif %}
+                    >
+
+                        {{ zone.name }}
+
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
             <!-- CIUDAD -->
             <input
                 type="text"

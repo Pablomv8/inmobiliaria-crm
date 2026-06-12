@@ -7,6 +7,11 @@ from django.conf import settings
 
 class Contact(models.Model):
 
+    CONTACT_TYPE_CHOICES = [
+        ("owner", "Propietario"),
+        ("buyer", "Comprador"),
+    ]
+
     STATUS_CHOICES = (
         ('new', 'Nuevo'),
         ('interested', 'Interesado'),
@@ -15,11 +20,12 @@ class Contact(models.Model):
         ('closed', 'Cerrado'),
     )
 
+
     name = models.CharField(max_length=255)
 
     phone = models.CharField(max_length=20)
 
-    email = models.EmailField(blank=True)
+    email = models.EmailField(blank=True, null=True)
 
     status = models.CharField(
         max_length=20,
@@ -32,7 +38,8 @@ class Contact(models.Model):
     properties = models.ManyToManyField(
         Property,
         related_name='contacts',
-        blank=True
+        blank=True,
+        null=True
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -43,6 +50,12 @@ class Contact(models.Model):
         null=True,
         blank=True,
         related_name='contacts'
+    )
+
+    contact_type = models.CharField(
+        max_length=20,
+        choices=CONTACT_TYPE_CHOICES,
+        default="owner",
     )
 
     def __str__(self):

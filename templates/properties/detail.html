@@ -59,8 +59,17 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
 
             <div class="bg-gray-100 p-4 rounded-xl">
-                <p class="text-sm text-gray-500">Ciudad</p>
-                <p class="font-semibold">{{ property.city }}</p>
+
+                <p class="text-sm text-gray-500">
+                    Zona
+                </p>
+
+                <p class="font-semibold">
+
+                    {{ property.zone|default:"Sin asignar" }}
+
+                </p>
+
             </div>
 
             <div class="bg-gray-100 p-4 rounded-xl">

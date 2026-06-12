@@ -1,6 +1,25 @@
 from django.db import models
 
 
+class Zone(models.Model):
+
+    name = models.CharField(
+        max_length=100,
+        unique=True,
+    )
+
+    description = models.TextField(
+        blank=True,
+    )
+
+    class Meta:
+
+        ordering = ["name"]
+
+    def __str__(self):
+
+        return self.name
+
 class Property(models.Model):
 
     PROPERTY_TYPE_CHOICES = (
@@ -50,6 +69,14 @@ class Property(models.Model):
         choices=PROPERTY_TYPE_CHOICES
     )
 
+    zone = models.ForeignKey(
+        Zone,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="properties",
+    )
+
     image = models.ImageField(
         upload_to='properties/',
         blank=True,
@@ -91,3 +118,5 @@ class Property(models.Model):
             f"{self.street} {self.number}, "
             f"{self.city}"
         )
+    
+

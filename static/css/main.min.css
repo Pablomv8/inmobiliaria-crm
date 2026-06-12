@@ -385,9 +385,6 @@
   .h-2 {
     height: calc(var(--spacing) * 2);
   }
-  .h-4 {
-    height: calc(var(--spacing) * 4);
-  }
   .h-5 {
     height: calc(var(--spacing) * 5);
   }
@@ -426,9 +423,6 @@
   }
   .w-2 {
     width: calc(var(--spacing) * 2);
-  }
-  .w-4 {
-    width: calc(var(--spacing) * 4);
   }
   .w-5 {
     width: calc(var(--spacing) * 5);
@@ -798,15 +792,6 @@
   .to-rose-600 {
     --tw-gradient-to: var(--color-rose-600);
     --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position), var(--tw-gradient-from) var(--tw-gradient-from-position), var(--tw-gradient-to) var(--tw-gradient-to-position));
-  }
-  .stroke-gray-400 {
-    stroke: var(--color-gray-400);
-  }
-  .stroke-green-600 {
-    stroke: var(--color-green-600);
-  }
-  .stroke-red-500 {
-    stroke: var(--color-red-500);
   }
   .object-cover {
     object-fit: cover;
