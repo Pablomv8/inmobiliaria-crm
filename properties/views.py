@@ -28,6 +28,9 @@ def property_list(request):
     min_price = request.GET.get("min_price")
     max_price = request.GET.get("max_price")
 
+    bedrooms = request.GET.get("bedrooms")
+    bathrooms = request.GET.get("bathrooms")
+
     ordering = request.GET.get("ordering")
 
     zones = Zone.objects.all()
@@ -77,6 +80,17 @@ def property_list(request):
             price__lte=max_price
         )
 
+    if bedrooms:
+        properties = properties.filter(
+            bedrooms__gte=bedrooms
+        )
+
+    if bathrooms:
+        properties = properties.filter(
+            bathrooms__gte=bathrooms
+        )
+    
+
     # ORDENACIÓN
     ordering_options = {
         "recent": "-created_at",
@@ -98,7 +112,9 @@ def property_list(request):
         "properties/list.html",
         {
             "properties": properties,
-            "zones": zones
+            "zones": zones,
+            "property_types": Property.PROPERTY_TYPE_CHOICES,
+            "status_choices": Property.STATUS_CHOICES,
         }
     )
 

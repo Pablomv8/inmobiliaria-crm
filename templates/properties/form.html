@@ -98,6 +98,54 @@
 
             </div>
 
+            <h2 class="text-lg font-semibold text-gray-800 mt-8">
+                Características
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-4">
+
+                <div>
+
+                    <label class="block mb-2 text-sm font-semibold text-gray-700">
+                        Habitaciones
+                    </label>
+
+                    {{ form.bedrooms }}
+
+                </div>
+
+                <div>
+
+                    <label class="block mb-2 text-sm font-semibold text-gray-700">
+                        Baños
+                    </label>
+
+                    {{ form.bathrooms }}
+
+                </div>
+
+                <div>
+
+                    <label class="block mb-2 text-sm font-semibold text-gray-700">
+                        Superficie (m²)
+                    </label>
+
+                    {{ form.area }}
+
+                </div>
+
+                <div>
+
+                    <label class="block mb-2 text-sm font-semibold text-gray-700">
+                        Superficie construida (m²)
+                    </label>
+
+                    {{ form.built_area }}
+
+                </div>
+
+            </div>
+
             <!-- IMAGEN -->
             <div>
                 <label class="block mb-2 text-sm font-semibold text-gray-700">

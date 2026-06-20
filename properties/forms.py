@@ -35,6 +35,10 @@ class PropertyForm(forms.ModelForm):
             'city',
             'province',
             'zone',
+            "bedrooms",
+            "bathrooms",
+            "area",
+            "built_area",
             'price',
             'property_type',
             'image',
@@ -76,6 +80,26 @@ class PropertyForm(forms.ModelForm):
 
             "zone": forms.Select(attrs={
                 "class": INPUT_CLASS,
+            }),
+
+            "bedrooms": forms.NumberInput(attrs={
+                "class": INPUT_CLASS,
+                "min": 0,
+            }),
+
+            "bathrooms": forms.NumberInput(attrs={
+                "class": INPUT_CLASS,
+                "min": 0,
+            }),
+
+            "area": forms.NumberInput(attrs={
+                "class": INPUT_CLASS,
+                "min": 0,
+            }),
+
+            "built_area": forms.NumberInput(attrs={
+                "class": INPUT_CLASS,
+                "min": 0,
             }),
 
             # PRICE

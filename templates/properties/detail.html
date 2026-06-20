@@ -2,6 +2,9 @@
 
 {% block content %}
 
+
+
+
 <div class="max-w-6xl mx-auto p-6">
 
     <!-- Image -->
@@ -56,26 +59,109 @@
 
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
 
-            <div class="bg-gray-100 p-4 rounded-xl">
+            <!-- Zona -->
+            <div class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="bg-blue-100 p-2 rounded-lg text-blue-600">
+                        <!-- Icono ubicación -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </div>
 
-                <p class="text-sm text-gray-500">
-                    Zona
-                </p>
+                    <p class="text-sm text-gray-500">Zona</p>
+                </div>
 
-                <p class="font-semibold">
-
+                <p class="font-semibold text-gray-800">
                     {{ property.zone|default:"Sin asignar" }}
-
                 </p>
-
             </div>
 
-            <div class="bg-gray-100 p-4 rounded-xl">
-                <p class="text-sm text-gray-500">Tipo</p>
-                <p class="font-semibold">
+            <!-- Tipo -->
+            <div class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="bg-purple-100 p-2 rounded-lg text-purple-600">
+                        <!-- Icono casa -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 10l9-7 9 7v10a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1V10z"/>
+                        </svg>
+                    </div>
+
+                    <p class="text-sm text-gray-500">Tipo</p>
+                </div>
+
+                <p class="font-semibold text-gray-800">
                     {{ property.get_property_type_display }}
+                </p>
+            </div>
+
+            <!-- Habitaciones -->
+            <div class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="bg-green-100 p-2 rounded-lg text-green-600">
+                        <!-- Icono cama -->
+                        🛏️
+                    </div>
+
+                    <p class="text-sm text-gray-500">Habitaciones</p>
+                </div>
+
+                <p class="font-semibold text-gray-800">
+                    {{ property.bedrooms|default:"-" }}
+                </p>
+            </div>
+
+            <!-- Baños -->
+            <div class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="bg-cyan-100 p-2 rounded-lg text-cyan-600">
+                        <!-- Icono baño -->
+                        🚿
+                    </div>
+
+                    <p class="text-sm text-gray-500">Baños</p>
+                </div>
+
+                <p class="font-semibold text-gray-800">
+                    {{ property.bathrooms|default:"-" }}
+                </p>
+            </div>
+
+            <!-- Superficie -->
+            <div class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="bg-orange-100 p-2 rounded-lg text-orange-600">
+                        📐
+                    </div>
+
+                    <p class="text-sm text-gray-500">Superficie</p>
+                </div>
+
+                <p class="font-semibold text-gray-800">
+                    {{ property.area|default:"-" }} m²
+                </p>
+            </div>
+
+            <!-- Superficie construida -->
+            <div class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="bg-red-100 p-2 rounded-lg text-red-600">
+                        🏗️
+                    </div>
+
+                    <p class="text-sm text-gray-500">Construidos</p>
+                </div>
+
+                <p class="font-semibold text-gray-800">
+                    {{ property.built_area|default:"-" }} m²
                 </p>
             </div>
 

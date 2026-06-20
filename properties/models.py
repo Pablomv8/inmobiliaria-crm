@@ -33,6 +33,8 @@ class Property(models.Model):
         ("active", "Activo"),
         ("reserved", "Reservado"),
         ("sold", "Vendido"),
+        ("rented", "Alquilado"),
+        ("prospect", "Borrador")
     ]
 
     title = models.CharField(max_length=255)
@@ -91,7 +93,7 @@ class Property(models.Model):
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
-        default="active"
+        default="prospect"
     )
 
     latitude = models.DecimalField(
@@ -106,6 +108,28 @@ class Property(models.Model):
         decimal_places=6,
         null=True,
         blank=True
+    )
+
+    bedrooms = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+    )
+
+    bathrooms = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+    )
+
+    area = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Superficie en m²",
+    )
+
+    built_area = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Superficie construida en m²",
     )
 
     def __str__(self):

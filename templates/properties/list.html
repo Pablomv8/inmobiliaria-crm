@@ -51,6 +51,7 @@
             <!-- ESTADO -->
             <select
                 name="status"
+                onchange="this.form.submit()"
                 class="px-3 py-2 rounded-xl text-sm bg-blue-50 text-blue-700">
 
                 <option value="">
@@ -73,6 +74,7 @@
             <!-- TIPO -->
             <select
                 name="type"
+                onchange="this.form.submit()"
                 class="px-3 py-2 rounded-xl text-sm bg-green-50 text-green-700">
 
                 <option value="">
@@ -142,6 +144,14 @@
                 value="{{ request.GET.max_price }}"
                 placeholder="Precio máx."
                 class="px-4 py-2 rounded-xl border border-gray-200 text-sm w-32">
+
+            <input type="number"
+                name="bathrooms"
+                min="1"
+                value="{{ request.GET.bathrooms }}"
+                placeholder="Nº Baños mín."
+                class="px-4 py-2 rounded-xl border border-gray-200 text-sm w-32">
+            
 
             <!-- ORDEN -->
             <select
