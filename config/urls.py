@@ -28,6 +28,8 @@ urlpatterns = [
     path("tasks/", include("tasks.urls")),
     path("activities/", include("activities.urls")),
     path("sales/", include('sales.urls')),
+    path("news/",include("news.urls")),
+    path("calendar/", include("calendar_app.urls")),
 ]
 
 urlpatterns += static(

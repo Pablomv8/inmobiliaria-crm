@@ -217,9 +217,88 @@
 
             </div>
         </div>
+
+        <div class="bg-white rounded-2xl p-8 shadow-sm mt-6">
+
+            <div class="flex justify-between items-center mb-6">
+
+                <h2 class="text-xl font-semibold">
+
+                    Noticias
+
+                </h2>
+
+                <a
+                    href="{% url 'news_create' property.id %}"
+                    class="text-blue-600"
+                >
+                    + Nueva noticia
+                </a>
+
+            </div>
+
+            {% for news in property.news.all %}
+
+                <a
+                    href="{% url 'news_detail' news.id %}"
+                    class="block border border-gray-100 rounded-xl p-4 mb-3 hover:bg-gray-50"
+                >
+
+                    <div class="flex justify-between">
+
+                        <div>
+
+                            <p class="font-medium">
+
+                                {{ news.get_motivation_display }}
+
+                            </p>
+
+                            <p class="text-sm text-gray-500">
+
+                                {{ news.created_at|date:"d/m/Y" }}
+
+                            </p>
+
+                        </div>
+
+                        <div class="text-right">
+
+                            <p>
+
+                                Dif:
+                                {{ news.price_difference }} €
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </a>
+
+            {% empty %}
+
+                <p class="text-gray-400">
+
+                    No hay noticias registradas
+
+                </p>
+
+            {% endfor %}
+
+        </div>
         
 
         <div class="flex justify-end gap-3 mt-6">
+
+            <a
+                href="{% url 'news_create' property.id %}"
+                class="px-5 py-3 rounded-xl text-white transition"
+                style="background-color:#2563eb;"
+            >
+                + Crear noticia
+            </a>
 
             <a
                 href="{% url 'property_update' property.id %}"

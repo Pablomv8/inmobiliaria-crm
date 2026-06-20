@@ -1,0 +1,311 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="max-w-6xl mx-auto p-6 space-y-6">
+
+    <!-- HEADER -->
+    <div class="flex items-start justify-between">
+
+        <div>
+
+            <h1 class="text-3xl font-bold text-gray-900">
+                {{ news.property.title }}
+            </h1>
+
+            <p class="text-gray-500 mt-1">
+                Noticia · {{ news.get_motivation_display }}
+            </p>
+
+        </div>
+
+        <span class="px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
+            {{ news.get_status_display }}
+        </span>
+
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- INMUEBLE -->
+        <div class="lg:col-span-4 mb-3">
+
+            <div class="rounded-2xl border border-gray-100 bg-white p-6 space-y-5 h-full">
+
+                <h2 class="text-lg font-semibold text-gray-800 mb-2">
+                    Inmueble asociado
+                </h2>
+
+                <div class="p-4 rounded-xl bg-gray-50 border border-gray-100" href="{% url 'property_detail' news.related_property.id %}">
+
+                    <a class="font-semibold text-gray-900"  href="{% url 'property_detail' news.related_property.id %}">
+                        {{ news.related_property.title }}
+                    </a>
+
+                    <p class="text-sm text-gray-500 mt-1">
+                        {{ news.related_property.full_address }}
+                    </p>
+
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- NOTICIA -->
+        <div class="lg:col-span-4 mb-3">
+
+            <div class="rounded-2xl border border-gray-100 bg-white p-6 space-y-5 h-full">
+
+                <h2 class="text-lg font-semibold text-gray-800 mb-2">
+                    Detalles de la noticia
+                </h2>
+
+                <div class="space-y-4 text-sm">
+
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Motivación</span>
+                        <span class="font-medium text-gray-800">
+                            {{ news.get_motivation_display }}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Estado</span>
+                        <span class="font-medium text-gray-800">
+                            {{ news.get_status_display }}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Fecha de creación</span>
+                        <span class="font-medium text-gray-800">
+                            {{ news.created_at|date:"d/m/Y" }}
+                        </span>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ECONÓMICO -->
+        <div class="lg:col-span-4">
+
+            <div class="rounded-2xl border border-gray-100 bg-white p-6 space-y-5 h-full">
+
+                <h2 class="text-lg font-semibold text-gray-800">
+                    Información económica
+                </h2>
+
+                <div class="space-y-4 text-sm">
+
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Precio cliente</span>
+                        <span class="font-semibold text-gray-900">
+                            {{ news.client_price }} €
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Valoración</span>
+                        <span class="font-semibold text-gray-900">
+                            {{ news.estimated_price }} €
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between pt-3 border-t">
+                        <span class="text-gray-500">Diferencia</span>
+                        <span class="font-bold text-gray-900">
+                            {{ news.price_difference }} €
+                        </span>
+                    </div>
+
+                </div>
+
+                <!-- ACCIONES -->
+                <div class="space-y-3 pt-4">
+
+
+                    <a
+                        href="{% url 'appointment_create' news.id 'call' %}"
+                        class="w-full py-3 rounded-xl bg-black text-white hover:bg-gray-800 transition text-center block"
+                    >
+                       📞 Programar llamada
+                    </a>
+
+                    <a
+                        href="{% url 'appointment_create' news.id 'acquisition' %}"
+                        class="w-full py-3 rounded-xl bg-black text-white hover:bg-gray-800 transition text-center block"
+                    >
+                        📅 Programar cita de adquisición
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="bg-white border rounded-2xl p-6">
+
+        <h2 class="font-semibold text-lg mb-4">
+            Actividad
+        </h2>
+
+        <div class="space-y-4">
+
+            {% for activity in activities %}
+
+                <div class="flex gap-3 p-4 bg-gray-50 rounded-xl">
+
+                    <!-- ICONO -->
+                    <div class="text-xl">
+
+                        {% if activity.activity_type == "Call" %}
+                            📞
+                        {% elif activity.activity_type == "Appointment" %}
+                            📅
+                        {% else %}
+                            💬
+                        {% endif %}
+
+                    </div>
+
+                    <!-- CONTENIDO -->
+                    <div class="flex-1">
+
+                        <div class="flex justify-between">
+
+                            <p class="font-medium">
+
+                                {% if activity.activity_type == "Call" %}
+                                    Llamada
+
+                                {% elif activity.activity_type == "Appointment" %}
+                                    {{ activity.get_appointment_type_display }}
+
+                                {% else %}
+                                    Comentario
+                                {% endif %}
+
+                            </p>
+
+                            <span class="text-xs text-gray-400">
+                                {{ activity.created_at|date:"d/m H:i" }}
+                            </span>
+
+                        </div>
+
+                        <p class="text-sm text-gray-600 mt-1">
+
+                            {% if activity.notes %}
+                                {{ activity.notes }}
+                            {% elif activity.text %}
+                                {{ activity.text }}
+                            {% else %}
+                                Sin detalles
+                            {% endif %}
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+            {% empty %}
+
+                <p class="text-gray-400 text-center">
+                    Sin actividad
+                </p>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+    <!-- COMMENTS -->
+    <div class="rounded-2xl border border-gray-100 bg-white p-6">
+
+        <h2 class="text-lg font-semibold mb-6">
+            Comentarios
+        </h2>
+
+        <div class="space-y-4">
+
+            {% for comment in comments %}
+
+                <div class="p-4 rounded-xl bg-gray-50 border border-gray-100 mb-2">
+
+                    <div class="flex justify-between mb-2">
+
+                        <span class="font-medium text-gray-800">
+                            {{ comment.user }}
+                        </span>
+
+                        <span class="text-xs text-gray-400">
+                            {{ comment.created_at|date:"d/m/Y H:i" }}
+                        </span>
+
+                    </div>
+
+                    <p class="text-gray-700 text-sm leading-relaxed">
+                        {{ comment.text }}
+                    </p>
+
+                </div>
+
+            {% empty %}
+
+                <p class="text-center text-gray-400 py-6">
+                    Sin comentarios todavía
+                </p>
+
+            {% endfor %}
+
+        </div>
+
+        <form method="post" action="{% url 'news_add_comment' news.id %}" class="mb-6">
+
+            {% csrf_token %}
+
+            <p class="text-xs text-gray-400 text-right">
+                <span id="counter">0</span>/500
+            </p>
+
+            <div class="space-y-3">
+
+                {{ form.text }}
+
+                <button class="px-4 py-2 rounded-lg bg-black text-white hover:bg-gray-800 transition">
+                    Añadir comentario
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const textarea = document.querySelector("textarea");
+const counter = document.getElementById("counter");
+
+if (textarea) {
+    textarea.addEventListener("input", () => {
+        counter.textContent = textarea.value.length;
+    });
+}
+</script>
+{% endblock %}
