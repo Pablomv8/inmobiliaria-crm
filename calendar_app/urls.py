@@ -16,4 +16,16 @@ urlpatterns = [
         views.calendar_events,
         name="calendar_events"
     ),
+
+    path(
+        "calls/<int:pk>/",
+        views.call_detail,
+        name="call_detail"
+    ),
+
+    path(
+        "appointments/<int:pk>/",
+        views.appointment_detail,
+        name="appointment_detail"
+    ),
 ]

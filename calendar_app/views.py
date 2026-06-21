@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404, redirect, render
 from django.http import JsonResponse
+from django.urls import reverse
 
 from .models import Appointment, Call
 from .forms import AppointmentForm, CallForm
@@ -9,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 
 from itertools import chain
 
+@login_required
 def create_appointment(request, news_id):
 
     news = get_object_or_404(News, id=news_id)
@@ -39,6 +41,7 @@ def create_appointment(request, news_id):
         "news": news
     })
 
+@login_required
 def create_call(request, news_id):
 
     news = get_object_or_404(News, id=news_id)
@@ -67,6 +70,38 @@ def create_call(request, news_id):
         "form": form,
         "news": news
     })
+
+@login_required
+def appointment_detail(request, pk):
+
+    appointment = get_object_or_404(
+        Appointment,
+        pk=pk
+    )
+
+    return render(
+        request,
+        "calendar_app/appointment_detail.html",
+        {
+            "appointment": appointment
+        }
+    )
+
+@login_required
+def call_detail(request, pk):
+
+    call = get_object_or_404(
+        Call,
+        pk=pk
+    )
+
+    return render(
+        request,
+        "calendar_app/call_detail.html",
+        {
+            "call": call
+        }
+    )
 
 @login_required
 def calendar_view(request):
@@ -99,6 +134,10 @@ def calendar_events(request):
                 f"{appointment.time}"
             ),
             "color": "#16a34a",
+            "url": reverse(
+                "appointment_detail",
+                args=[appointment.id]
+            )
         })
 
     calls = Call.objects.filter(
@@ -119,6 +158,10 @@ def calendar_events(request):
                 f"{call.time}"
             ),
             "color": "#2563eb",
+            "url": reverse(
+                "call_detail",
+                args=[call.id]
+            )
         })
 
     return JsonResponse(
