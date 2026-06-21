@@ -7,6 +7,7 @@ from .forms import AppointmentForm, CallForm
 from news.models import News
 from contacts.models import Contact
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 
 from itertools import chain
 
@@ -14,6 +15,17 @@ from itertools import chain
 def create_appointment(request, news_id):
 
     news = get_object_or_404(News, id=news_id)
+
+    if not news.comments.exists():
+
+        messages.warning(
+            request,
+            (
+                "Esta noticia no tiene comentarios registrados. "
+                "Se recomienda documentar la conversación antes "
+                "de programar una cita."
+            )
+        )
 
     if request.method == "POST":
 
@@ -125,8 +137,8 @@ def calendar_events(request):
         events.append({
             "id": f"appointment-{appointment.id}",
             "title": (
-                f"📅 "
-                f"{appointment.get_appointment_type_display()}"
+                f"📅 Cita de {appointment.get_appointment_type_display()}\n"
+                f"{appointment.related_property.full_address}"
             ),
             "start": (
                 f"{appointment.date}"
@@ -149,7 +161,7 @@ def calendar_events(request):
         events.append({
             "id": f"call-{call.id}",
             "title": (
-                f"📞 "
+                f"📞 Llamada a "
                 f"{call.contact.name}"
             ),
             "start": (

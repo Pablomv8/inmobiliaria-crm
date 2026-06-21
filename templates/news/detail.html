@@ -140,6 +140,12 @@
                     <a
                         href="{% url 'create_appointment' news.id %}"
                         class="w-full py-3 rounded-xl bg-black text-white hover:bg-gray-800 transition text-center block"
+
+                        {% if not has_comments %}
+                        onclick="return confirm(
+                            'Esta noticia no tiene ningún comentario registrado. ¿Estás seguro de que quieres programar una cita de adquisición?'
+                        )"
+                        {% endif %}
                     >
                         📅 Programar cita de adquisición
                     </a>

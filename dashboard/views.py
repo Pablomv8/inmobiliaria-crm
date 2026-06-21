@@ -50,7 +50,7 @@ def dashboard(request):
     contacts_data = []
     sales_data = []
     tasks_data = []
-
+    selected_days=[]
     contacts_current = Contact.objects.filter(
         created_at__date__gte=start
     ).count()

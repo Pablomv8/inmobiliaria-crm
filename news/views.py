@@ -87,6 +87,8 @@ def news_detail(request, pk):
         reverse=True
     )
 
+    has_comments = news.comments.exists()
+
 
     for a in activities:
         a.activity_type = get_activity_type(a)
@@ -101,6 +103,7 @@ def news_detail(request, pk):
             "appointments": appointments,
             "calls": calls,
             "activities": activities,
+            "has_comments": has_comments,
         }
     )
 
