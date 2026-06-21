@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404, redirect, render
+from django.http import JsonResponse
 
 from .models import Appointment, Call
 from .forms import AppointmentForm, CallForm
@@ -67,6 +68,63 @@ def create_call(request, news_id):
         "news": news
     })
 
+@login_required
+def calendar_view(request):
+
+    return render(
+        request,
+        "calendar_app/calendar.html"
+    )
+
+@login_required
+def calendar_events(request):
+
+    events = []
+
+    appointments = Appointment.objects.filter(
+        agent=request.user
+    )
+
+    for appointment in appointments:
+
+        events.append({
+            "id": f"appointment-{appointment.id}",
+            "title": (
+                f"📅 "
+                f"{appointment.get_appointment_type_display()}"
+            ),
+            "start": (
+                f"{appointment.date}"
+                f"T"
+                f"{appointment.time}"
+            ),
+            "color": "#16a34a",
+        })
+
+    calls = Call.objects.filter(
+        agent=request.user
+    )
+
+    for call in calls:
+
+        events.append({
+            "id": f"call-{call.id}",
+            "title": (
+                f"📞 "
+                f"{call.contact.name}"
+            ),
+            "start": (
+                f"{call.date}"
+                f"T"
+                f"{call.time}"
+            ),
+            "color": "#2563eb",
+        })
+
+    return JsonResponse(
+        events,
+        safe=False
+    )
 
 @login_required
 def agenda(request):
