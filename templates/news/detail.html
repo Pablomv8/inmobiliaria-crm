@@ -131,14 +131,14 @@
 
 
                     <a
-                        href="{% url 'appointment_create' news.id 'call' %}"
+                        href="{% url 'create_call' news.id%}"
                         class="w-full py-3 rounded-xl bg-black text-white hover:bg-gray-800 transition text-center block"
                     >
                        📞 Programar llamada
                     </a>
 
                     <a
-                        href="{% url 'appointment_create' news.id 'acquisition' %}"
+                        href="{% url 'create_appointment' news.id %}"
                         class="w-full py-3 rounded-xl bg-black text-white hover:bg-gray-800 transition text-center block"
                     >
                         📅 Programar cita de adquisición
@@ -185,7 +185,7 @@
                             <p class="font-medium">
 
                                 {% if activity.activity_type == "Call" %}
-                                    Llamada
+                                    Llamada programada
 
                                 {% elif activity.activity_type == "Appointment" %}
                                     {{ activity.get_appointment_type_display }}
@@ -208,6 +208,8 @@
                                 {{ activity.notes }}
                             {% elif activity.text %}
                                 {{ activity.text }}
+                            {% elif activity %}
+                                {{ activity }}
                             {% else %}
                                 Sin detalles
                             {% endif %}

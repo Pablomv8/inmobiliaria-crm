@@ -125,5 +125,5 @@ class Call(models.Model):
 
     def __str__(self):
         return (
-            f"Llamada {self.date}"
+            f"Llamada {self.date} a las {self.time}"
         )

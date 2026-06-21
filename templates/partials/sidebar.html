@@ -84,6 +84,16 @@
 
         </a>
 
+        <a href="{% url 'agenda' %}" 
+            class="flex items-center gap-3 px-4 py-3 rounded-xl
+            {% if request.resolver_match.url_name == 'agenda' %}
+                    bg-gray-900 text-white
+            {% else %}
+                    text-gray-700 hover:bg-gray-100
+            {% endif %}">
+                Agenda
+        </a>
+
     </nav>
 
 </aside>

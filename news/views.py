@@ -61,12 +61,12 @@ def news_create(request, property_id):
 def get_activity_type(obj):
 
     if isinstance(obj, Call):
-        return "call"
+        return "Call"
 
     if isinstance(obj, Appointment):
-        return "appointment"
+        return "Appointment"
 
-    return "comment"
+    return "Comment"
 
 def news_detail(request, pk):
 
