@@ -9,7 +9,14 @@ from contacts.models import Contact
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
+from datetime import date, timedelta
 from itertools import chain
+
+from calendar_app.models import (
+    Appointment,
+    Call
+)
+
 
 @login_required
 def create_appointment(request, news_id):
@@ -118,16 +125,71 @@ def call_detail(request, pk):
 @login_required
 def calendar_view(request):
 
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+
+    today_calls = Call.objects.filter(
+        agent=request.user,
+        date=today
+    )
+
+    for item in today_calls:
+        item.event_type = "call"
+
+    today_appointments = Appointment.objects.filter(
+        agent=request.user,
+        date=today
+    )
+
+    for item in today_appointments:
+        item.event_type = "appointment"
+
+    today_events = sorted(
+        chain(
+            today_calls,
+            today_appointments
+        ),
+        key=lambda x: x.time
+    )
+
+    tomorrow_calls = Call.objects.filter(
+        agent=request.user,
+        date=tomorrow
+    )
+
+    for item in tomorrow_calls:
+        item.event_type = "call"
+
+    tomorrow_appointments = Appointment.objects.filter(
+        agent=request.user,
+        date=tomorrow
+    )
+
+    for item in tomorrow_appointments:
+        item.event_type = "appointment"
+
+    tomorrow_events = sorted(
+        chain(
+            tomorrow_calls,
+            tomorrow_appointments
+        ),
+        key=lambda x: x.time
+    )
+
     return render(
         request,
-        "calendar_app/calendar.html"
+        "calendar_app/calendar.html",
+        {
+            "today_events": today_events,
+            "tomorrow_events": tomorrow_events,
+        }
     )
 
 @login_required
 def calendar_events(request):
 
     events = []
-
+    
     appointments = Appointment.objects.filter(
         agent=request.user
     )
