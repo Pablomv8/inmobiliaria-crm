@@ -253,6 +253,21 @@ def calendar_events(request):
 
         appointments = appointments.filter(agent_id__in=agent_ids)
         calls = calls.filter(agent_id__in=agent_ids)
+        print("AGENTS:", agent_ids)
+
+        print(
+            "APPOINTMENTS:",
+            Appointment.objects.filter(
+                agent_id__in=agent_ids
+            ).count()
+        )
+
+        print(
+            "CALLS:",
+            Call.objects.filter(
+                agent_id__in=agent_ids
+            ).count()
+        )
 
 
     events = []
@@ -277,9 +292,6 @@ def calendar_events(request):
             )
         })
 
-    calls = Call.objects.filter(
-        agent=request.user
-    )
 
     for call in calls:
 
