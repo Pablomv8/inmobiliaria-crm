@@ -36,7 +36,10 @@ def create_appointment(request, news_id):
 
     if request.method == "POST":
 
-        form = AppointmentForm(request.POST)
+        form = AppointmentForm(
+            request.POST or None,
+            user=request.user
+        )
 
         if form.is_valid():
 
@@ -67,7 +70,10 @@ def create_call(request, news_id):
 
     if request.method == "POST":
 
-        form = CallForm(request.POST)
+        form = CallForm(
+            request.POST or None,
+            user=request.user
+        )
 
         if form.is_valid():
 
@@ -120,6 +126,44 @@ def call_detail(request, pk):
         {
             "call": call
         }
+    )
+
+@login_required
+def update_appointment_status(request, appointment_id, status):
+
+    appointment = get_object_or_404(
+        Appointment,
+        id=appointment_id,
+        agent=request.user
+    )
+
+    if status in ["completed", "cancelled", "scheduled"]:
+
+        appointment.status = status
+        appointment.save()
+
+    return redirect(
+        "appointment_detail",
+        appointment.id
+    )
+
+@login_required
+def update_call_status(request, call_id, status):
+
+    call = get_object_or_404(
+        Call,
+        id=call_id,
+        agent=request.user
+    )
+
+    if status in ["completed", "cancelled", "pending"]:
+
+        call.status = status
+        call.save()
+
+    return redirect(
+        "call_detail",
+        call.id
     )
 
 @login_required
@@ -288,3 +332,39 @@ def agenda(request):
             "events": events
         }
     )
+
+
+@login_required
+def available_slots(request):
+
+    selected_date = request.GET.get("date")
+
+    appointments = Appointment.objects.filter(
+        agent=request.user,
+        date=selected_date,
+        status="scheduled"
+    ).values_list(
+        "time",
+        flat=True
+    )
+
+    calls = Call.objects.filter(
+        agent=request.user,
+        date=selected_date,
+        status="pending"
+    ).values_list(
+        "time",
+        flat=True
+    )
+
+    occupied = [
+        t.strftime("%H:%M")
+        for t in chain(
+            appointments,
+            calls
+        )
+    ]
+
+    return JsonResponse({
+        "occupied": occupied
+    })

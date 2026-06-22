@@ -63,7 +63,8 @@ class Property(models.Model):
 
     price = models.DecimalField(
         max_digits=12,
-        decimal_places=2
+        decimal_places=2,
+        null=True
     )
 
     property_type = models.CharField(

@@ -30,6 +30,7 @@ urlpatterns = [
     path("sales/", include('sales.urls')),
     path("news/",include("news.urls")),
     path("calendar/", include("calendar_app.urls")),
+    path("listings/", include("listings.urls")),
 ]
 
 urlpatterns += static(

@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'heroicons',
     'news',
     'calendar_app',
+    'listings',
 ]
 
 TAILWIND_APP_NAME = 'theme'

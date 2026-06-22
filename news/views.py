@@ -11,6 +11,9 @@ from properties.models import Property
 from itertools import chain
 from operator import attrgetter
 
+from datetime import datetime
+from django.utils import timezone
+
 from calendar_app.models import Appointment, Call
 from .models import NewsComment
 
@@ -76,6 +79,49 @@ def news_detail(request, pk):
     )
     comments = news.comments.all().order_by("-created_at")
 
+    timeline = []
+    # Comentarios
+    for comment in news.comments.all():
+
+        timeline.append({
+            "type": "comment",
+            "date": comment.created_at,
+            "object": comment
+        })
+
+    # Llamadas
+    for call in news.calls.all():
+
+        timeline.append({
+            "type": "call",
+            "date": timezone.make_aware(
+                datetime.combine(
+                    call.date,
+                    call.time
+                )
+            ),
+            "object": call
+        })
+
+    # Citas
+    for appointment in news.appointments.all():
+
+        timeline.append({
+            "type": "appointment",
+            "date": timezone.make_aware(
+                datetime.combine(
+                    appointment.date,
+                    appointment.time
+                )
+            ),
+            "object": appointment
+        })
+
+    timeline.sort(
+        key=lambda x: x["date"],
+        reverse=True
+    )
+
     form = NewsCommentForm()
 
     appointments = Appointment.objects.filter(news=news)
@@ -104,6 +150,7 @@ def news_detail(request, pk):
             "calls": calls,
             "activities": activities,
             "has_comments": has_comments,
+            "timeline": timeline,
         }
     )
 
