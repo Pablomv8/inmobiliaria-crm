@@ -2,79 +2,276 @@
 
 {% block content %}
 
-<div class="max-w-7xl mx-auto">
+<div class="max-w-7xl mx-auto ml-2">
 
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex items-center justify-between mb-8">
 
-        <h1 class="text-3xl font-bold">
-            Encargos
-        </h1>
+        <div>
+
+            <h1 class="text-3xl font-bold text-gray-800">
+                Encargos
+            </h1>
+
+            <p class="text-gray-500 mt-2">
+                Gestiona todos los encargos.
+            </p>
+
+        </div>
+
+    </div>
+    <div class="grid md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl border p-4">
+            <p class="text-sm text-gray-500">
+                Activos
+            </p>
+
+            <p class="text-2xl font-bold">
+                {{ stats.active }}
+            </p>
+        </div>
+
+        <div class="bg-white rounded-xl border p-4">
+            <p class="text-sm text-gray-500">
+                Vendidos
+            </p>
+
+            <p class="text-2xl font-bold">
+                {{ stats.sold }}
+            </p>
+        </div>
+
+        <div class="bg-white rounded-xl border p-4">
+            <p class="text-sm text-gray-500">
+                Alquilados
+            </p>
+
+            <p class="text-2xl font-bold">
+                {{ stats.rented }}
+            </p>
+        </div>
+
+        <div class="bg-white rounded-xl border p-4">
+            <p class="text-sm text-gray-500">
+                Cancelados
+            </p>
+
+            <p class="text-2xl font-bold">
+                {{ stats.cancelled }}
+            </p>
+        </div>
 
     </div>
 
-    <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
+    <form method="get"
+        class="bg-white border border-gray-100 shadow-sm rounded-2xl p-4 mb-8">
+
+        <div class="flex flex-wrap items-center gap-3">
+
+            <div class="relative w-64">
+
+                <div class="absolute inset-y-0 left-3 flex items-center text-gray-400">
+                    🔍
+                </div>
+
+                <input
+                    type="text"
+                    name="search"
+                    value="{{ request.GET.search }}"
+                    placeholder="Buscar encargo..."
+                    class="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 text-sm">
+
+            </div>
+
+            <select
+                name="status"
+                onchange="this.form.submit()"
+                class="px-3 py-2 rounded-xl text-sm bg-blue-50 text-blue-700">
+
+                <option value="">
+                    Estado
+                </option>
+
+                {% for value,label in status_choices %}
+
+                    <option
+                        value="{{ value }}"
+                        {% if request.GET.status == value %}selected{% endif %}
+                    >
+                        {{ label }}
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+            <select
+                name="listing_type"
+                onchange="this.form.submit()"
+                class="px-3 py-2 rounded-xl text-sm bg-green-50 text-green-700">
+
+                <option value="">
+                    Tipo
+                </option>
+
+                {% for value,label in type_choices %}
+
+                    <option
+                        value="{{ value }}"
+                        {% if request.GET.listing_type == value %}selected{% endif %}
+                    >
+                        {{ label }}
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+            {% if request.user.role == "admin" or request.user.role == "manager" %}
+                <select
+                    name="agent"
+                    onchange="this.form.submit()"
+                    class="px-3 py-2 rounded-xl text-sm bg-orange-50 text-orange-700">
+
+                    <option value="">
+                        Todos los agentes
+                    </option>
+
+                    {% for user in agents %}
+
+                        <option value="{{ user.id }}"
+                            {% if request.GET.agent == user.id|stringformat:"s" %}selected{% endif %}>
+
+                            {{ user.get_full_name|default:user.username }}
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+            {% endif %}
+
+            <button
+                type="submit"
+                class="px-4 py-2 rounded-xl bg-gray-900 text-white">
+
+                Filtrar
+
+            </button>
+
+            <a
+                href="{% url 'listing_list' %}"
+                class="px-4 py-2 rounded-xl bg-gray-100">
+
+                Limpiar
+
+            </a>
+
+        </div>
+
+    </form>
+    <div class="flex justify-between items-center mb-4">
+
+        <p class="text-sm text-gray-500">
+
+            {{ listings|length }}
+            encargo{{ listings|length|pluralize }}
+
+        </p>
+
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
 
         <table class="w-full">
 
-            <thead class="bg-gray-50">
+            <thead class="bg-gray-50 border-b">
 
                 <tr>
 
-                    <th class="text-left p-4">
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
                         Inmueble
                     </th>
 
-                    <th class="text-left p-4">
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
                         Tipo
                     </th>
 
-                    <th class="text-left p-4">
-                        Estado
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
+                        Propietario
                     </th>
 
-                    <th class="text-left p-4">
-                        Precio propietario
-                    </th>
-
-                    <th class="text-left p-4">
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
                         Valoración
+                    </th>
+
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
+                        Diferencia
+                    </th>
+
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
+                        Estado
                     </th>
 
                 </tr>
 
             </thead>
 
-            <tbody>
+            <tbody class="divide-y divide-gray-100">
 
                 {% for listing in listings %}
 
-                <tr class="border-t hover:bg-gray-50">
+                <tr
+                    data-url="{% url 'listing_detail' listing.id %}"
+                    class="listing-row hover:bg-gray-50 cursor-pointer transition"
+                >
 
-                    <td class="p-4">
+                    <td class="px-6 py-4 font-medium text-gray-800">
+                        {{ listing.property }}
+                    </td>
 
-                        <a
-                            href="{% url 'listing_detail' listing.id %}"
-                            class="font-medium text-blue-600 hover:underline"
-                        >
-                            {{ listing.property }}
-                        </a>
+                    <td class="px-6 py-4">
+
+                        <span class="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
+
+                            {{ listing.get_listing_type_display }}
+
+                        </span>
 
                     </td>
 
-                    <td class="p-4">
-                        {{ listing.get_listing_type_display }}
-                    </td>
-
-                    <td class="p-4">
-                        {{ listing.get_status_display }}
-                    </td>
-
-                    <td class="p-4">
+                    <td class="px-6 py-4">
                         {{ listing.owner_price }} €
                     </td>
 
-                    <td class="p-4">
+                    <td class="px-6 py-4">
                         {{ listing.agency_price }} €
+                    </td>
+
+                    <td class="px-6 py-4 font-semibold">
+
+                        {{ listing.price_diference }} €
+
+                    </td>
+
+                    <td class="px-6 py-4">
+
+                        <span class="
+                            text-xs px-3 py-1 rounded-full font-medium
+
+                            {% if listing.status == 'active' %}
+                                bg-green-100 text-green-700
+                            {% elif listing.status == 'sold' %}
+                                bg-blue-100 text-blue-700
+                            {% elif listing.status == 'rented' %}
+                                bg-purple-100 text-purple-700
+                            {% else %}
+                                bg-red-100 text-red-700
+                            {% endif %}
+                        ">
+
+                            {{ listing.get_status_display }}
+
+                        </span>
+
                     </td>
 
                 </tr>
@@ -83,7 +280,8 @@
 
                 <tr>
 
-                    <td colspan="5" class="p-8 text-center text-gray-500">
+                    <td colspan="6"
+                        class="px-6 py-8 text-center text-gray-500">
 
                         No hay encargos.
 
@@ -98,7 +296,23 @@
         </table>
 
     </div>
-
 </div>
 
+{% endblock %}
+{% block extra_js %}
+<script>
+
+document.querySelectorAll(".listing-row")
+.forEach(row => {
+
+    row.addEventListener("click", () => {
+
+        window.location.href =
+            row.dataset.url;
+
+    });
+
+});
+
+</script>
 {% endblock %}

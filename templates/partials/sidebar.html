@@ -29,7 +29,7 @@
         {% else %}
                 text-gray-700 hover:bg-gray-100
         {% endif %}">
-            Dashboard
+                <i class="fa-regular fa-house"></i> Dashboard
         </a>
 
         <a href="{% url 'contact_list' %}"
@@ -39,7 +39,7 @@
         {% else %}
                 text-gray-700 hover:bg-gray-100
         {% endif %}">
-            Contactos
+           <i class="fa-regular fa-user"></i>Personas
         </a>
 
         <a href="{% url 'task_list' %}"
@@ -49,7 +49,7 @@
         {% else %}
                 text-gray-700 hover:bg-gray-100
         {% endif %}">
-            Tareas
+            <i class="fa-regular fa-clipboard"></i>Tareas
         </a>
 
         <a href="{% url 'properties' %}"
@@ -59,29 +59,29 @@
         {% else %}
                 text-gray-700 hover:bg-gray-100
         {% endif %}">
-            Inmuebles
+            <i class="fa-regular fa-building"></i>Inmuebles
         </a>
 
-        <a href="{% url 'sale_list' %}"
-        class="flex items-center gap-3 px-4 py-3 rounded-xl
-        {% if request.resolver_match.url_name == 'sale_list' %}
-                bg-gray-900 text-white
-        {% else %}
-                text-gray-700 hover:bg-gray-100
-        {% endif %}">
-            Ventas
-        </a>
         
-        <a href="{% url 'activity_list' %}"
+
+        <a href="{% url 'calendar' %}" 
             class="flex items-center gap-3 px-4 py-3 rounded-xl
-            {% if request.resolver_match.url_name == 'activity_list' %}
+            {% if request.resolver_match.url_name == 'calendar' %}
                     bg-gray-900 text-white
             {% else %}
                     text-gray-700 hover:bg-gray-100
             {% endif %}">
+                <i class="fa-regular fa-newspaper"></i> Noticias
+        </a>
 
-                Actividad
-
+        <a href="{% url 'listing_list' %}" 
+            class="flex items-center gap-3 px-4 py-3 rounded-xl
+            {% if request.resolver_match.url_name == 'listing_list' %}
+                    bg-gray-900 text-white
+            {% else %}
+                    text-gray-700 hover:bg-gray-100
+            {% endif %}">
+               <i class="fa-solid fa-list-check"></i>Encargos
         </a>
 
         <a href="{% url 'calendar' %}" 
@@ -91,18 +91,42 @@
             {% else %}
                     text-gray-700 hover:bg-gray-100
             {% endif %}">
-                Calendario
+                <i class="fa-solid fa-cart-shopping"></i> Pedidos
         </a>
 
-        <a href="{% url 'agenda' %}" 
+        <a href="{% url 'calendar' %}" 
             class="flex items-center gap-3 px-4 py-3 rounded-xl
-            {% if request.resolver_match.url_name == 'agenda' %}
+            {% if request.resolver_match.url_name == 'calendar' %}
                     bg-gray-900 text-white
             {% else %}
                     text-gray-700 hover:bg-gray-100
             {% endif %}">
-                Agenda
+               <i class="fa-regular fa-calendar"></i> Calendario
         </a>
+
+        <a href="{% url 'sale_list' %}"
+        class="flex items-center gap-3 px-4 py-3 rounded-xl
+        {% if request.resolver_match.url_name == 'sale_list' %}
+                bg-gray-900 text-white
+        {% else %}
+                text-gray-700 hover:bg-gray-100
+        {% endif %}">
+            <i class="fa-solid fa-euro-sign"></i> Ventas
+        </a>
+
+        <a href="{% url 'activity_list' %}"
+            class="flex items-center gap-3 px-4 py-3 rounded-xl
+            {% if request.resolver_match.url_name == 'activity_list' %}
+                    bg-gray-900 text-white
+            {% else %}
+                    text-gray-700 hover:bg-gray-100
+            {% endif %}">
+
+                <i class="fa-solid fa-chart-line"></i> Actividad
+
+        </a>
+
+
 
     </nav>
 

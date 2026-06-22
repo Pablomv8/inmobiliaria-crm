@@ -218,96 +218,124 @@
 
     </div>
 
-    <!-- GRID -->
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+    <!-- TABLA -->
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
 
-        {% for property in properties %}
+        <table class="w-full">
 
-        <a href="{% url 'property_detail' property.id %}"
-           class="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-lg transition">
+            <thead class="bg-gray-50 border-b">
 
-            <!-- IMAGE -->
-            <div class="h-56 bg-gray-200">
+                <tr>
 
-                {% if property.image %}
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
+                        Inmueble
+                    </th>
 
-                    <img src="{{ property.image.url }}"
-                         class="w-full h-full object-cover">
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
+                        Tipo
+                    </th>
 
-                {% else %}
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
+                        Dirección
+                    </th>
 
-                    <div class="w-full h-full flex items-center justify-center text-gray-400">
-                        Sin imagen
-                    </div>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
+                        Estado
+                    </th>
 
-                {% endif %}
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
+                        Precio
+                    </th>
 
-            </div>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
+                        Ciudad
+                    </th>
 
-            <!-- CONTENT -->
-            <div class="p-5">
+                </tr>
 
-                <!-- TITLE + TYPE -->
-                <div class="flex items-start justify-between mb-3">
+            </thead>
 
-                    <h2 class="text-xl font-semibold text-gray-800">
+            <tbody class="divide-y divide-gray-100">
+
+                {% for property in properties %}
+
+                <tr
+                    data-url="{% url 'property_detail' property.id %}"
+                    class="property-row hover:bg-gray-50 cursor-pointer transition"
+                >
+
+                    <td class="px-6 py-4 font-medium text-gray-800">
                         {{ property.title }}
-                    </h2>
+                    </td>
 
-                    <span class="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
-                        {{ property.get_property_type_display }}
-                    </span>
+                    <td class="px-6 py-4">
+                        <span class="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
+                            {{ property.get_property_type_display }}
+                        </span>
+                    </td>
 
-                </div>
-
-                <!-- ADDRESS (NUEVO) -->
-                <p class="text-gray-500 text-sm mb-3">
-
-                    {{ property.street }} {{ property.number }},
-                    {{ property.city }}
-
-                </p>
-
-                <!-- STATUS -->
-                <div class="mb-4">
-
-                    <span class="text-xs px-3 py-1 rounded-full font-medium
-
-                        {% if property.status == 'active' %}
-                            bg-green-100 text-green-700
-                        {% elif property.status == 'reserved' %}
-                            bg-yellow-100 text-yellow-700
-                        {% elif property.status == 'sold' %}
-                            bg-red-100 text-red-700
-                        {% endif %}
-
-                    ">
-                        {{ property.get_status_display }}
-                    </span>
-
-                </div>
-
-                <!-- PRICE + CITY -->
-                <div class="flex items-center justify-between">
-
-                    <p class="text-2xl font-bold text-gray-900">
-                        €{{ property.price }}
-                    </p>
-
-                    <span class="text-sm text-gray-400">
+                    <td class="px-6 py-4 text-gray-600">
+                        {{ property.street }} {{ property.number }},
                         {{ property.city }}
-                    </span>
+                    </td>
 
-                </div>
+                    <td class="px-6 py-4">
 
-            </div>
+                        <span class="text-xs px-3 py-1 rounded-full font-medium
 
-        </a>
+                            {% if property.status == 'active' %}
+                                bg-green-100 text-green-700
+                            {% elif property.status == 'reserved' %}
+                                bg-yellow-100 text-yellow-700
+                            {% elif property.status == 'sold' %}
+                                bg-red-100 text-red-700
+                            {% endif %}
 
-        {% endfor %}
+                        ">
+                            {{ property.get_status_display }}
+                        </span>
+
+                    </td>
+
+                    <td class="px-6 py-4 font-semibold text-gray-900">
+                        €{{ property.price }}
+                    </td>
+
+                    <td class="px-6 py-4 text-gray-500">
+                        {{ property.city }}
+                    </td>
+
+                </tr>
+
+                {% empty %}
+
+                <tr>
+
+                    <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                        No se encontraron inmuebles.
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
 
     </div>
 
+
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.property-row').forEach(row => {
+    row.addEventListener('click', () => {
+        window.location.href = row.dataset.url;
+    });
+});
+</script>
 {% endblock %}
