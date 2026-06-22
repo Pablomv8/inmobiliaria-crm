@@ -2,6 +2,20 @@
 
 {% block content %}
 
+<style>
+
+.agent-selected {
+
+    background-color: #111827;
+
+    color: white;
+
+    border-color: #111827;
+
+}
+
+</style>
+
 <div class="w-full px-6 lg:px-10">
 
     <div class="mb-8">
@@ -15,6 +29,35 @@
         </p>
 
     </div>
+    {% if request.user.role == "admin" or request.user.role == "manager" %}
+
+        <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">
+                Filtrar agentes
+            </h3>
+
+            <div class="flex flex-wrap gap-2">
+
+                {% for agent in agents %}
+
+                    <button
+                        type="button"
+                        class="agent-filter px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition"
+                        data-agent-id="{{ agent.id }}"
+                    >
+
+                        {{ agent.get_full_name|default:agent.username }}
+
+                    </button>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+        {% endif %}
 
     <div class="flex gap-6 w-full">
 
@@ -153,6 +196,9 @@
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 
 <script>
+    
+let selectedAgents = [];
+
 
 document.addEventListener(
     "DOMContentLoaded",
@@ -161,7 +207,9 @@ document.addEventListener(
         const calendarEl =
             document.getElementById("calendar");
 
-        const calendar =
+        let selectedAgents = [];
+
+        let calendar =
             new FullCalendar.Calendar(
                 calendarEl,
                 {
@@ -176,8 +224,11 @@ document.addEventListener(
 
                     slotMinTime: "06:00:00",
                     slotMaxTime: "19:00:00",
+
                     allDaySlot: false,
+
                     slotDuration: "00:30:00",
+
                     nowIndicator: true,
 
                     headerToolbar: {
@@ -191,21 +242,106 @@ document.addEventListener(
                         right:
                             "dayGridMonth,timeGridWeek,timeGridDay"
 
-                        
+                    },
+
+                    events: function(
+                        fetchInfo,
+                        successCallback,
+                        failureCallback
+                    ) {
+
+                        const params =
+                            new URLSearchParams();
+
+                        selectedAgents.forEach(
+                            id => params.append(
+                                "agents",
+                                id
+                            )
+                        );
+
+                        fetch(
+                            "{% url 'calendar_events' %}?"
+                            + params.toString()
+                        )
+                        .then(
+                            response => response.json()
+                        )
+                        .then(
+                            data => successCallback(data)
+                        )
+                        .catch(
+                            error => failureCallback(error)
+                        );
 
                     },
 
-                    events:
-                        "{% url 'calendar_events' %}",
+                    eventClick: function(info) {
+
+                        if (info.event.url) {
+
+                            info.jsEvent.preventDefault();
+
+                            window.location.href =
+                                info.event.url;
+
+                        }
+
+                    }
 
                 }
             );
 
         calendar.render();
 
+        // FILTRO DE AGENTES
+
+        document
+            .querySelectorAll(".agent-filter")
+            .forEach(button => {
+
+                button.addEventListener(
+                    "click",
+                    function() {
+
+                        const id =
+                            this.dataset.agentId;
+
+                        if (
+                            selectedAgents.includes(id)
+                        ) {
+
+                            selectedAgents =
+                                selectedAgents.filter(
+                                    agentId =>
+                                        agentId !== id
+                                );
+
+                            this.classList.remove(
+                                "agent-selected"
+                            );
+
+                        } else {
+
+                            selectedAgents.push(id);
+
+                            this.classList.add(
+                                "agent-selected"
+                            );
+
+                        }
+
+                        calendar.refetchEvents();
+
+                    }
+                );
+
+            });
+
     }
 );
 
 </script>
+
 
 {% endblock %}

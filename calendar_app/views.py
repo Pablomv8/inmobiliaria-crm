@@ -11,7 +11,7 @@ from django.contrib import messages
 
 from datetime import date, timedelta
 from itertools import chain
-
+from users.models import User
 from calendar_app.models import (
     Appointment,
     Call
@@ -219,6 +219,9 @@ def calendar_view(request):
         ),
         key=lambda x: x.time
     )
+    agents = User.objects.filter(
+        role="agent"
+    )
 
     return render(
         request,
@@ -226,18 +229,34 @@ def calendar_view(request):
         {
             "today_events": today_events,
             "tomorrow_events": tomorrow_events,
+            "agents" : agents,
         }
     )
 
 @login_required
 def calendar_events(request):
 
+    agent_ids = request.GET.getlist("agents")
+
+    # BASE QUERYSET
+    appointments = Appointment.objects.all()
+    calls = Call.objects.all()
+
+    # SI NO ES MANAGER → solo sus eventos
+    if request.user.role not in ["admin", "manager"]:
+
+        appointments = appointments.filter(agent=request.user)
+        calls = calls.filter(agent=request.user)
+
+    # SI ES MANAGER Y HAY FILTRO DE AGENTES
+    elif agent_ids:
+
+        appointments = appointments.filter(agent_id__in=agent_ids)
+        calls = calls.filter(agent_id__in=agent_ids)
+
+
     events = []
     
-    appointments = Appointment.objects.filter(
-        agent=request.user
-    )
-
     for appointment in appointments:
 
         events.append({
