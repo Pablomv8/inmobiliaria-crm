@@ -61,6 +61,18 @@ duration-200
 
 
 class ContactForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if self.instance and self.instance.pk and self.instance.phone:
+
+            phone = self.instance.phone.strip()
+
+            if phone.startswith("+34"):
+                phone = phone[3:]
+
+            self.initial["phone"] = phone
     
 
     class Meta:
@@ -104,11 +116,23 @@ class ContactForm(forms.ModelForm):
             }),
 
             'phone': forms.TextInput(attrs={
-                'class': INPUT_CLASS,
-                'placeholder': '+34 600 123 456',
+                'id': 'id_phone',
+                'placeholder': '612 345 678',
                 'autocomplete': 'tel',
+                'maxlength': '11',
+                'class': """
+                    w-full
+                    rounded-r-xl
+                    border
+                    border-gray-300
+                    px-4
+                    py-3
+                    focus:border-indigo-500
+                    focus:ring-4
+                    focus:ring-indigo-100
+                    focus:outline-none
+                """
             }),
-
             'email': forms.EmailInput(attrs={
                 'class': INPUT_CLASS,
                 'placeholder': 'juan@email.com',
@@ -129,11 +153,9 @@ class ContactForm(forms.ModelForm):
                 'placeholder': 'Añade observaciones sobre el contacto...',
             }),
 
-            'properties': Select2MultipleWidget(
-                attrs={
-                    'class': 'w-full'
-                }
-            ),
+            'properties': forms.SelectMultiple(attrs={
+                'class': 'tom-select',
+            }),
 
             'assigned_agent': forms.Select(attrs={
                 'class': SELECT_CLASS,
@@ -155,3 +177,13 @@ class ContactForm(forms.ModelForm):
             email = email.lower().strip()
 
         return email
+    
+    def clean_phone(self):
+        phone = self.cleaned_data.get("phone", "")
+
+        phone = "".join(filter(str.isdigit, phone))
+
+        if phone:
+            phone = f"+34{phone}"
+
+        return phone

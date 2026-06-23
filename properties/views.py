@@ -5,7 +5,8 @@ from django.shortcuts import (
 )
 
 from .models import Property, Zone
-from .forms import PropertyForm
+from contacts.models import Contact
+from .forms import PropertyForm, OwnerContactForm
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
@@ -124,9 +125,19 @@ def property_detail(request, pk):
 
     property = get_object_or_404(Property, pk=pk)
 
+    owners = property.contacts.filter(
+        contact_type="owner"
+    )
+
+    buyers = property.contacts.filter(
+        contact_type="buyer"
+    )
+
     return render(request, 'properties/detail.html', {
         'property': property
     })
+
+
 
 @login_required
 def property_create(request):
@@ -213,3 +224,73 @@ def property_update_status(request, pk):
     return JsonResponse({
         "success": True
     })
+
+
+@login_required
+def add_owner_to_property(request, property_id):
+
+    property_obj = get_object_or_404(Property, id=property_id)
+
+    if request.method == "POST":
+
+        contact = get_object_or_404(
+            Contact,
+            id=request.POST.get("contact_id")
+        )
+
+        # aseguramos tipo propietario
+        contact.contact_type = "owner"
+        contact.save()
+
+        contact.properties.add(property_obj)
+
+        return redirect("property_detail", property_obj.id)
+
+    contacts = Contact.objects.filter(
+        contact_type="owner"
+    )
+
+    return render(
+        request,
+        "properties/add_owner.html",
+        {
+            "property": property_obj,
+            "contacts": contacts
+        }
+    )
+
+@login_required
+def create_owner_for_property(request, property_id):
+
+    property_obj = get_object_or_404(Property, id=property_id)
+
+    if request.method == "POST":
+
+        form = OwnerContactForm(
+            request.POST,
+            property_obj=property_obj
+        )
+
+        if form.is_valid():
+
+            form.save()
+
+            return redirect(
+                "property_detail",
+                property_obj.id
+            )
+
+    else:
+
+        form = OwnerContactForm(
+            property_obj=property_obj
+        )
+
+    return render(
+        request,
+        "properties/owner_form.html",
+        {
+            "form": form,
+            "property": property_obj
+        }
+    )

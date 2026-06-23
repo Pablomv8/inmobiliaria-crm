@@ -1,5 +1,25 @@
 {% extends 'base.html' %}
 
+<style>
+
+.ts-wrapper .ts-control {
+    border-radius: 0.75rem;
+    min-height: 48px;
+    border: 1px solid rgb(209 213 219);
+    box-shadow: none;
+}
+
+.ts-wrapper.focus .ts-control {
+    border-color: rgb(99 102 241);
+    box-shadow: 0 0 0 4px rgb(224 231 255);
+}
+
+.ts-wrapper.multi .ts-control > div {
+    border-radius: 9999px;
+    padding: 4px 10px;
+}
+
+</style>
 {% block content %}
 
 <div class="max-w-5xl mx-auto px-6 py-8">
@@ -54,17 +74,30 @@
                     </div>
 
                     <div>
+
                         <label class="block mb-2 text-sm font-medium text-gray-700">
                             Teléfono
                         </label>
 
-                        {{ form.phone }}
+                        <div class="flex">
+
+                            <div
+                                class="flex items-center px-4 rounded-l-xl border border-r-0 border-gray-300 bg-gray-50 text-gray-600 font-medium">
+
+                                +34
+
+                            </div>
+
+                            {{ form.phone }}
+
+                        </div>
 
                         {% if form.phone.errors %}
                             <p class="mt-1 text-sm text-red-600">
                                 {{ form.phone.errors.0 }}
                             </p>
                         {% endif %}
+
                     </div>
 
                     <div class="md:col-span-2">
@@ -190,5 +223,69 @@
     </div>
 
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const propertySelect = document.querySelector('#id_properties');
+
+    if (propertySelect) {
+
+        new TomSelect(propertySelect, {
+            plugins: {
+                remove_button: {
+                    title: 'Eliminar'
+                }
+            },
+
+            create: false,
+
+            maxOptions: 100,
+
+            placeholder: 'Buscar inmueble por dirección...',
+
+            searchField: ['text'],
+        });
+
+    }
+
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+
+    const phoneInput = document.getElementById('id_phone');
+
+    if (!phoneInput) return;
+
+    phoneInput.addEventListener('input', function () {
+
+        let value = this.value.replace(/\D/g, '');
+
+        value = value.substring(0, 9);
+
+        if (value.length > 6) {
+            value = value.replace(
+                /(\d{3})(\d{3})(\d+)/,
+                '$1 $2 $3'
+            );
+        }
+        else if (value.length > 3) {
+            value = value.replace(
+                /(\d{3})(\d+)/,
+                '$1 $2'
+            );
+        }
+
+        this.value = value;
+
+    });
+
+});
+
+</script>
 
 {% endblock %}
