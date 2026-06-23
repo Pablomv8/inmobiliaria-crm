@@ -8,9 +8,11 @@ from news.models import News
 from contacts.models import Contact
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from collections import defaultdict
+
 
 from datetime import date, timedelta
-from itertools import chain
+from itertools import chain, groupby
 from users.models import User
 from calendar_app.models import (
     Appointment,
@@ -171,7 +173,8 @@ def calendar_view(request):
 
     today = date.today()
     tomorrow = today + timedelta(days=1)
-
+    calls = Call.objects.filter(agent=request.user)
+    appointments = Appointment.objects.filter(agent=request.user)
     today_calls = Call.objects.filter(
         agent=request.user,
         date=today
@@ -223,6 +226,41 @@ def calendar_view(request):
         role="agent"
     )
 
+    
+    events = []
+
+    for call in calls:
+        if not call.date:
+            continue
+
+        events.append({
+            "type": "call",
+            "date": call.date,
+            "time": call.time,
+            "object": call
+        })
+
+    for appt in appointments:
+        if not appt.date:
+            continue
+
+        events.append({
+            "type": "appointment",
+            "date": appt.date,
+            "time": appt.time,
+            "object": appt
+        })
+
+    # 🔥 ORDEN ÚNICO (IMPORTANTE)
+    events = sorted(events, key=lambda e: (e["date"], e["time"]))
+
+    # 🔥 GROUPBY CORRECTO
+    agenda_by_day = [
+        (day, list(group))
+        for day, group in groupby(events, key=lambda e: e["date"])
+    ]
+
+    
     return render(
         request,
         "calendar_app/calendar.html",
@@ -230,6 +268,7 @@ def calendar_view(request):
             "today_events": today_events,
             "tomorrow_events": tomorrow_events,
             "agents" : agents,
+            "agenda_by_day" : agenda_by_day,
         }
     )
 

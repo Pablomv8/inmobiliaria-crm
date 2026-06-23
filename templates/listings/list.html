@@ -2,66 +2,24 @@
 
 {% block content %}
 
-<div class="max-w-7xl mx-auto ml-2">
+<div class="p-4 sm:p-6 max-w-7xl mx-auto ml-2">
 
-    <div class="flex items-center justify-between mb-8">
+    <!-- HEADER -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
 
         <div>
-
-            <h1 class="text-3xl font-bold text-gray-800">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">
                 Encargos
             </h1>
 
-            <p class="text-gray-500 mt-2">
+            <p class="text-gray-500 mt-1">
                 Gestiona todos los encargos.
             </p>
-
-        </div>
-
-    </div>
-    <div class="grid md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white rounded-xl border p-4">
-            <p class="text-sm text-gray-500">
-                Activos
-            </p>
-
-            <p class="text-2xl font-bold">
-                {{ stats.active }}
-            </p>
-        </div>
-
-        <div class="bg-white rounded-xl border p-4">
-            <p class="text-sm text-gray-500">
-                Vendidos
-            </p>
-
-            <p class="text-2xl font-bold">
-                {{ stats.sold }}
-            </p>
-        </div>
-
-        <div class="bg-white rounded-xl border p-4">
-            <p class="text-sm text-gray-500">
-                Alquilados
-            </p>
-
-            <p class="text-2xl font-bold">
-                {{ stats.rented }}
-            </p>
-        </div>
-
-        <div class="bg-white rounded-xl border p-4">
-            <p class="text-sm text-gray-500">
-                Cancelados
-            </p>
-
-            <p class="text-2xl font-bold">
-                {{ stats.cancelled }}
-            </p>
         </div>
 
     </div>
 
+    <!-- FILTERS -->
     <form method="get"
         class="bg-white border border-gray-100 shadow-sm rounded-2xl p-4 mb-8">
 
@@ -169,94 +127,100 @@
         </div>
 
     </form>
+
+    <!-- COUNT -->
     <div class="flex justify-between items-center mb-4">
-
         <p class="text-sm text-gray-500">
-
-            {{ listings|length }}
-            encargo{{ listings|length|pluralize }}
-
+            {{ listings|length }} encargo{{ listings|length|pluralize }}
         </p>
+    </div>
+
+    <!-- ===================== -->
+    <!-- MOBILE CARDS -->
+    <!-- ===================== -->
+
+    <div class="sm:hidden space-y-3">
+
+        {% for listing in listings %}
+        <a href="{% url 'listing_detail' listing.id %}"
+           class="block bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+
+            <div class="flex justify-between items-start">
+                <h3 class="font-medium text-gray-800">
+                    {{ listing.property }}
+                </h3>
+
+                <span class="text-xs px-2 py-1 rounded-full bg-gray-100">
+                    {{ listing.get_status_display }}
+                </span>
+            </div>
+
+            <p class="text-sm text-gray-500 mt-2">
+                {{ listing.get_listing_type_display }}
+            </p>
+
+            <p class="text-sm text-gray-600 mt-1">
+                Prop: {{ listing.owner_price }} € · Agencia: {{ listing.agency_price }} €
+            </p>
+
+            <p class="text-xs text-gray-400 mt-1">
+                Dif: {{ listing.price_diference }} €
+            </p>
+
+        </a>
+        {% endfor %}
 
     </div>
-    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
 
-        <table class="w-full">
+    <!-- ===================== -->
+    <!-- DESKTOP TABLE -->
+    <!-- ===================== -->
+
+    <div class="hidden sm:block bg-white rounded-2xl shadow-sm overflow-x-auto">
+
+        <table class="w-full min-w-full">
 
             <thead class="bg-gray-50 border-b">
-
                 <tr>
-
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
-                        Inmueble
-                    </th>
-
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
-                        Tipo
-                    </th>
-
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
-                        Propietario
-                    </th>
-
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
-                        Valoración
-                    </th>
-
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
-                        Diferencia
-                    </th>
-
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
-                        Estado
-                    </th>
-
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Inmueble</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Tipo</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Propietario</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Valoración</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Diferencia</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Estado</th>
                 </tr>
-
             </thead>
 
             <tbody class="divide-y divide-gray-100">
 
                 {% for listing in listings %}
-
-                <tr
-                    data-url="{% url 'listing_detail' listing.id %}"
-                    class="listing-row hover:bg-gray-50 cursor-pointer transition"
-                >
+                <tr data-url="{% url 'listing_detail' listing.id %}"
+                    class="listing-row hover:bg-gray-50 cursor-pointer">
 
                     <td class="px-6 py-4 font-medium text-gray-800">
                         {{ listing.property }}
                     </td>
 
                     <td class="px-6 py-4">
-
                         <span class="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
-
                             {{ listing.get_listing_type_display }}
-
                         </span>
-
                     </td>
 
-                    <td class="px-6 py-4">
+                    <td class="px-6 py-4 text-gray-600">
                         {{ listing.owner_price }} €
                     </td>
 
-                    <td class="px-6 py-4">
+                    <td class="px-6 py-4 text-gray-600">
                         {{ listing.agency_price }} €
                     </td>
 
                     <td class="px-6 py-4 font-semibold">
-
                         {{ listing.price_diference }} €
-
                     </td>
 
                     <td class="px-6 py-4">
-
-                        <span class="
-                            text-xs px-3 py-1 rounded-full font-medium
-
+                        <span class="text-xs px-3 py-1 rounded-full font-medium
                             {% if listing.status == 'active' %}
                                 bg-green-100 text-green-700
                             {% elif listing.status == 'sold' %}
@@ -265,54 +229,29 @@
                                 bg-purple-100 text-purple-700
                             {% else %}
                                 bg-red-100 text-red-700
-                            {% endif %}
-                        ">
-
+                            {% endif %}">
                             {{ listing.get_status_display }}
-
                         </span>
-
                     </td>
 
                 </tr>
-
-                {% empty %}
-
-                <tr>
-
-                    <td colspan="6"
-                        class="px-6 py-8 text-center text-gray-500">
-
-                        No hay encargos.
-
-                    </td>
-
-                </tr>
-
                 {% endfor %}
 
             </tbody>
-
         </table>
 
     </div>
+
 </div>
 
 {% endblock %}
+
 {% block extra_js %}
 <script>
-
-document.querySelectorAll(".listing-row")
-.forEach(row => {
-
+document.querySelectorAll(".listing-row").forEach(row => {
     row.addEventListener("click", () => {
-
-        window.location.href =
-            row.dataset.url;
-
+        window.location.href = row.dataset.url;
     });
-
 });
-
 </script>
 {% endblock %}

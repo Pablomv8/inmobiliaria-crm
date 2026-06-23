@@ -3,186 +3,13 @@
 {% block content %}
 
 <style>
-
 .agent-selected {
-
     background-color: #111827;
-
     color: white;
-
     border-color: #111827;
-
 }
 
-</style>
-
-<div class="w-full px-6 lg:px-10">
-
-    <div class="mb-8">
-
-        <h1 class="text-3xl font-bold">
-            Agenda
-        </h1>
-
-        <p class="text-gray-500">
-            Calendario de llamadas y citas
-        </p>
-
-    </div>
-    {% if request.user.role == "admin" or request.user.role == "manager" %}
-
-        <div class="bg-white rounded-2xl shadow-sm p-4 mb-4">
-
-            <h3 class="text-sm font-semibold text-gray-700 mb-3">
-                Filtrar agentes
-            </h3>
-
-            <div class="flex flex-wrap gap-2">
-
-                <button
-                    type="button"
-                    class="agent-filter px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition"
-                    data-agent-id="{{ request.user.id }}"
-                >
-                    Mis eventos
-                </button>
-
-                {% for agent in agents %}
-
-                    <button
-                        type="button"
-                        class="agent-filter px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition"
-                        data-agent-id="{{ agent.id }}"
-                    >
-
-                        {{ agent.get_full_name|default:agent.username }}
-
-                    </button>
-
-                {% endfor %}
-
-            </div>
-
-        </div>
-
-        {% endif %}
-
-    <div class="flex gap-6 w-full">
-
-        <!-- CALENDARIO -->
-        <div class="flex-[3]">
-
-            <div class="bg-white rounded-2xl shadow-sm p-6">
-
-                <div id="calendar"></div>
-
-            </div>
-
-        </div>
-
-        <!-- SIDEBAR -->
-        <div class="w-80 space-y-6">
-
-            <!-- HOY -->
-            <div class="flex-1 bg-white rounded-2xl shadow-sm p-6">
-
-                <h3 class="font-bold text-lg mb-4">
-                    Hoy
-                </h3>
-
-                {% for event in today_events %}
-
-                    <div class="border-b py-3 last:border-0">
-
-                        <div class="font-semibold">
-                            {{ event.time|time:"H:i" }}
-                        </div>
-
-                        {% if event.event_type == "call" %}
-
-                            <div class="text-sm text-gray-600">
-                                📞 {{ event.contact.name }}
-                            </div>
-
-                        {% else %}
-
-                            <div class="text-sm text-gray-600">
-                                📅 {{ event.get_appointment_type_display }}
-                            </div>
-
-                            <div class="text-xs text-gray-500">
-                                {{ event.related_property.full_address }}
-                            </div>
-
-                        {% endif %}
-
-                    </div>
-
-                {% empty %}
-
-                    <p class="text-sm text-gray-500">
-                        No tienes eventos hoy.
-                    </p>
-
-                {% endfor %}
-
-            </div>
-
-            <!-- MAÑANA -->
-            <div class="bg-white rounded-2xl shadow-sm p-5">
-
-                <h3 class="font-bold text-lg mb-4">
-                    Mañana
-                </h3>
-
-                {% for event in tomorrow_events %}
-
-                    <div class="border-b py-3 last:border-0">
-
-                        <div class="font-semibold">
-                            {{ event.time|time:"H:i" }}
-                        </div>
-
-                        {% if event.event_type == "call" %}
-
-                            <div class="text-sm text-gray-600">
-                                📞 {{ event.contact.name }}
-                            </div>
-
-                        {% else %}
-
-                            <div class="text-sm text-gray-600">
-                                📅 {{ event.get_appointment_type_display }}
-                            </div>
-
-                            <div class="text-xs text-gray-500">
-                                {{ event.related_property.full_address }}
-                            </div>
-
-                        {% endif %}
-
-                    </div>
-
-                {% empty %}
-
-                    <p class="text-sm text-gray-500">
-                        No tienes eventos mañana.
-                    </p>
-
-                {% endfor %}
-
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-{% endblock %}
-
-<style>
-
+/* FullCalendar tweaks */
 .fc-timegrid-slot {
     height: 3.5rem !important;
 }
@@ -191,8 +18,204 @@
     min-height: 55px;
     padding: 4px;
 }
-
 </style>
+
+<div class="w-full px-4 sm:px-6 lg:px-10">
+
+    <!-- HEADER -->
+    <div class="mb-8">
+        <h1 class="text-2xl sm:text-3xl font-bold">Agenda</h1>
+        <p class="text-gray-500">Calendario de llamadas y citas</p>
+    </div>
+
+    <!-- FILTER AGENTS -->
+    {% if request.user.role == "admin" or request.user.role == "manager" %}
+    <div class="bg-white rounded-2xl shadow-sm p-4 mb-6">
+
+        <h3 class="text-sm font-semibold text-gray-700 mb-3">
+            Filtrar agentes
+        </h3>
+
+        <div class="flex flex-wrap gap-2">
+
+            <button type="button"
+                    class="agent-filter px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition"
+                    data-agent-id="{{ request.user.id }}">
+                Mis eventos
+            </button>
+
+            {% for agent in agents %}
+            <button type="button"
+                    class="agent-filter px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition"
+                    data-agent-id="{{ agent.id }}">
+                {{ agent.get_full_name|default:agent.username }}
+            </button>
+            {% endfor %}
+
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- MOBILE: AGENDA LIST -->
+    <div class="block lg:hidden space-y-6">
+
+        {% for day, events in agenda_by_day %}
+
+            <div class="bg-white rounded-2xl shadow-sm p-4">
+
+                <h3 class="text-sm font-bold text-gray-900 mb-3">
+                    {{ day }}
+                </h3>
+
+                <div class="space-y-3">
+
+                    {% for event in events %}
+
+                        <a
+                            href="{% if event.type == 'call' %}
+                                        {% url 'call_detail' event.object.id %}
+                                {% else %}
+                                        {% url 'appointment_detail' event.object.id %}
+                                {% endif %}"
+                            class="block border rounded-xl p-3 hover:bg-gray-50 transition"
+                        >
+
+                            <div class="flex justify-between items-center">
+
+                                <span class="font-semibold text-sm">
+                                    {{ event.time|time:"H:i" }}
+                                </span>
+
+                                <span class="text-xs px-2 py-1 rounded-full bg-gray-100">
+                                    {{ event.type }}
+                                </span>
+
+                            </div>
+
+                            <div class="text-sm text-gray-700 mt-1">
+
+                                {% if event.type == "call" %}
+                                    📞 {{ event.object.contact.name }}
+                                {% else %}
+                                    📅 {{ event.object.get_appointment_type_display }}
+                                {% endif %}
+
+                            </div>
+
+                            {% if event.object.related_property %}
+                            <div class="text-xs text-gray-500 mt-1">
+                                {{ event.object.related_property.full_address }}
+                            </div>
+                            {% endif %}
+
+                        </a>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        {% empty %}
+
+            <p class="text-gray-500 text-sm">
+                No hay eventos.
+            </p>
+
+        {% endfor %}
+
+    </div>
+
+    <!-- LAYOUT RESPONSIVE -->
+    <div class="flex flex-col lg:flex-row gap-6 w-full">
+
+        <!-- CALENDAR -->
+        <div class="flex-1">
+
+            <div class="hidden lg:block">
+
+                <div class="bg-white rounded-2xl shadow-sm p-6">
+
+                    <div id="calendar"></div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- SIDEBAR -->
+        <div class="w-full lg:w-80 space-y-6">
+
+            <!-- HOY -->
+            <div class="bg-white rounded-2xl shadow-sm p-5">
+
+                <h3 class="font-bold text-lg mb-4">Hoy</h3>
+
+                {% for event in today_events %}
+                <div class="border-b py-3 last:border-0">
+
+                    <div class="font-semibold">
+                        {{ event.time|time:"H:i" }}
+                    </div>
+
+                    {% if event.event_type == "call" %}
+                        <div class="text-sm text-gray-600">
+                            📞 {{ event.contact.name }}
+                        </div>
+                    {% else %}
+                        <div class="text-sm text-gray-600">
+                            📅 {{ event.get_appointment_type_display }}
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            {{ event.related_property.full_address }}
+                        </div>
+                    {% endif %}
+
+                </div>
+                {% empty %}
+                <p class="text-sm text-gray-500">No tienes eventos hoy.</p>
+                {% endfor %}
+
+            </div>
+
+            <!-- MAÑANA -->
+            <div class="bg-white rounded-2xl shadow-sm p-5">
+
+                <h3 class="font-bold text-lg mb-4">Mañana</h3>
+
+                {% for event in tomorrow_events %}
+                <div class="border-b py-3 last:border-0">
+
+                    <div class="font-semibold">
+                        {{ event.time|time:"H:i" }}
+                    </div>
+
+                    {% if event.event_type == "call" %}
+                        <div class="text-sm text-gray-600">
+                            📞 {{ event.contact.name }}
+                        </div>
+                    {% else %}
+                        <div class="text-sm text-gray-600">
+                            📅 {{ event.get_appointment_type_display }}
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            {{ event.related_property.full_address }}
+                        </div>
+                    {% endif %}
+
+                </div>
+                {% empty %}
+                <p class="text-sm text-gray-500">No tienes eventos mañana.</p>
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}
 
 {% block extra_js %}
 

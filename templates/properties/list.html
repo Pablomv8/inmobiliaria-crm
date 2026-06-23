@@ -5,23 +5,21 @@
 <div class="p-4 sm:p-6">
 
     <!-- HEADER -->
-    <div class="flex items-center justify-between mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
 
         <div>
-            <h1 class="text-3xl font-bold text-gray-800">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">
                 Inmuebles
             </h1>
 
-            <p class="text-gray-500 mt-2">
+            <p class="text-gray-500 mt-1">
                 Gestiona todos los inmuebles.
             </p>
         </div>
 
-        <a class="bg-gray-900 text-white px-5 py-3 rounded-xl hover:bg-gray-800 transition"
-           href="{% url 'property_create' %}">
-
+        <a class="bg-gray-900 text-white px-5 py-3 rounded-xl hover:bg-gray-800 transition text-center"
+        href="{% url 'property_create' %}">
             + Nuevo inmueble
-
         </a>
 
     </div>
@@ -218,86 +216,79 @@
 
     </div>
 
-    <!-- TABLA -->
-    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
 
-        <table class="w-full">
+    <div class="sm:hidden space-y-3">
+
+        {% for property in properties %}
+        <a href="{% url 'property_detail' property.id %}"
+        class="block bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+
+            <div class="flex justify-between items-start">
+                <h3 class="font-medium text-gray-800">
+                    {{ property.title }}
+                </h3>
+
+                <span class="text-xs px-2 py-1 rounded-full bg-gray-100">
+                    {{ property.get_status_display }}
+                </span>
+            </div>
+
+            <p class="text-sm text-gray-500 mt-2">
+                {{ property.city }} · €{{ property.price }}
+            </p>
+
+            <p class="text-xs text-gray-400 mt-1">
+                {{ property.get_property_type_display }}
+            </p>
+
+        </a>
+        {% endfor %}
+
+    </div>
+
+    <!-- TABLA -->
+    <div class="hidden sm:block bg-white rounded-2xl shadow-sm overflow-x-auto">
+
+        <table class="w-full min-w-full">
 
             <thead class="bg-gray-50 border-b">
-
                 <tr>
-
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
-                        Inmueble
-                    </th>
-
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
-                        Tipo
-                    </th>
-
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
-                        Dirección
-                    </th>
-
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
-                        Estado
-                    </th>
-
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
-                        Precio
-                    </th>
-
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">
-                        Ciudad
-                    </th>
-
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Inmueble</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Tipo</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Dirección</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Estado</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Precio</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Ciudad</th>
                 </tr>
-
             </thead>
 
             <tbody class="divide-y divide-gray-100">
 
                 {% for property in properties %}
-
-                <tr
-                    data-url="{% url 'property_detail' property.id %}"
-                    class="property-row hover:bg-gray-50 cursor-pointer transition"
-                >
+                <tr data-url="{% url 'property_detail' property.id %}"
+                    class="property-row hover:bg-gray-50 cursor-pointer">
 
                     <td class="px-6 py-4 font-medium text-gray-800">
                         {{ property.title }}
                     </td>
 
                     <td class="px-6 py-4">
-                        <span class="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
+                        <span class="text-xs bg-gray-100 px-3 py-1 rounded-full">
                             {{ property.get_property_type_display }}
                         </span>
                     </td>
 
                     <td class="px-6 py-4 text-gray-600">
-                        {{ property.street }} {{ property.number }},
-                        {{ property.city }}
+                        {{ property.street }} {{ property.number }}, {{ property.city }}
                     </td>
 
                     <td class="px-6 py-4">
-
-                        <span class="text-xs px-3 py-1 rounded-full font-medium
-
-                            {% if property.status == 'active' %}
-                                bg-green-100 text-green-700
-                            {% elif property.status == 'reserved' %}
-                                bg-yellow-100 text-yellow-700
-                            {% elif property.status == 'sold' %}
-                                bg-red-100 text-red-700
-                            {% endif %}
-
-                        ">
+                        <span class="text-xs px-3 py-1 rounded-full font-medium">
                             {{ property.get_status_display }}
                         </span>
-
                     </td>
 
-                    <td class="px-6 py-4 font-semibold text-gray-900">
+                    <td class="px-6 py-4 font-semibold">
                         €{{ property.price }}
                     </td>
 
@@ -306,21 +297,9 @@
                     </td>
 
                 </tr>
-
-                {% empty %}
-
-                <tr>
-
-                    <td colspan="6" class="px-6 py-8 text-center text-gray-500">
-                        No se encontraron inmuebles.
-                    </td>
-
-                </tr>
-
                 {% endfor %}
 
             </tbody>
-
         </table>
 
     </div>
