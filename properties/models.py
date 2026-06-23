@@ -133,8 +133,7 @@ class Property(models.Model):
         help_text="Superficie construida en m²",
     )
 
-    def __str__(self):
-        return self.title
+    
     
     @property
     def full_address(self):
@@ -144,4 +143,6 @@ class Property(models.Model):
             f"{self.city}"
         )
     
+    def __str__(self):
+        return self.full_address
 
