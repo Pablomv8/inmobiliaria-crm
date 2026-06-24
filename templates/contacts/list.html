@@ -1,0 +1,379 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="p-4 sm:p-6">
+
+    <div class="flex items-center justify-between mb-8">
+
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">
+            Contactos
+        </h1>
+
+        <a class="bg-gray-900 text-white px-5 py-3 rounded-xl hover:bg-gray-800 transition"
+            href="{% url 'contact_create' %}">
+            + Nuevo contacto
+        </a>
+    </div>
+
+    <form method="get"
+        class="bg-white border border-gray-100 shadow-sm rounded-2xl p-3 mb-6">
+
+        <div class="flex flex-wrap items-center gap-3">
+
+            <!-- BUSCADOR -->
+            <div class="relative w-48">
+
+                <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                    🔍
+                </div>
+
+                <input
+                    type="text"
+                    name="search"
+                    value="{{ request.GET.search }}"
+                    placeholder="Buscar contactos..."
+                    class="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 text-sm
+                        focus:ring-gray-500 focus:border-gray-500"
+                >
+
+            </div>
+
+            <!-- ESTADO -->
+            <select name="status"
+                    onchange="this.form.submit()"
+                    class="px-3 py-2 rounded-xl text-sm bg-blue-50 text-blue-700 font-medium">
+
+                <option value="">Estado</option>
+
+                {% for value, label in contacts.model.STATUS_CHOICES %}
+                    <option value="{{ value }}"
+                        {% if request.GET.status == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                {% endfor %}
+
+            </select>
+
+            <!-- AGENTE -->
+            <select name="agent"
+                    onchange="this.form.submit()"
+                    class="px-3 py-2 rounded-xl text-sm bg-gray-50 text-gray-700 font-medium">
+
+                <option value="">Agente</option>
+
+                {% for agent in agents %}
+                    <option value="{{ agent.id }}"
+                        {% if request.GET.agent == agent.id|stringformat:"s" %}selected{% endif %}>
+                        {{ agent.username }}
+                    </option>
+                {% endfor %}
+
+            </select>
+
+            <!-- ORDEN -->
+            <select name="ordering"
+                    onchange="this.form.submit()"
+                    class="px-3 py-2 rounded-xl text-sm bg-purple-50 text-purple-700 font-medium">
+
+                <option value="">Ordenar</option>
+
+                <option value="created_at"
+                    {% if request.GET.ordering == "created_at" %}selected{% endif %}>
+                    Fecha
+                </option>
+
+                <option value="name"
+                    {% if request.GET.ordering == "name" %}selected{% endif %}>
+                    Nombre
+                </option>
+
+                <option value="status"
+                    {% if request.GET.ordering == "status" %}selected{% endif %}>
+                    Estado
+                </option>
+
+            </select>
+
+            <!-- LIMPIAR -->
+            <a href="{% url 'contact_list' %}"
+            class="ml-auto px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm transition">
+
+                Limpiar
+
+            </a>
+
+        </div>
+
+    </form>
+    <!-- DESKTOP TABLE -->
+    <div class="hidden md:block overflow-x-auto bg-white shadow rounded-xl">
+
+        <table class="min-w-full divide-y divide-gray-200">
+
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Teléfono</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Inmueble</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Encargado</th>
+                </tr>
+            </thead>
+
+            <tbody class="bg-white divide-y divide-gray-100">
+
+                {% for contact in contacts %}
+                <tr class="hover:bg-gray-50 transition">
+
+                    <td class="px-6 py-4 font-medium text-gray-900">
+                       <a
+                            href="{% url 'contact_detail' contact.id %}"
+                            class="font-medium text-gray-900 hover:text-gray-600"
+                        >
+                            {{ contact.name }}
+                        </a>
+                    </td>
+
+                    <td class="px-6 py-4 text-gray-700">
+                        {{ contact.phone }}
+                    </td>
+
+                    <td class="px-6 py-4 text-gray-700">
+                        {{ contact.email|default:"—" }}
+                    </td>
+
+                    <td class="px-6 py-4 text-gray-700">
+                        {% for property in contact.properties.all %}
+                            <span class="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded mr-1 mb-1">
+                                <a
+                                    href="{% url 'property_detail' property.id %}"
+                                    class="inline-block bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded mr-1 mb-1 transition"
+                                >
+                                    {{ property.title }}
+                                </a>
+                            </span>
+                        {% empty %}
+                            —
+                        {% endfor %}
+                    </td>
+
+                    <td class="px-6 py-4">
+                        <div id="contact-status-{{ contact.id }}"
+                            class="inline-block px-3 py-1 text-xs rounded-full
+
+                            {% if contact.status == 'new' %}
+                                bg-blue-100 text-blue-700
+                            {% elif contact.status == 'interested' %}
+                                bg-green-100 text-green-700
+                            {% elif contact.status == 'visit' %}
+                                bg-yellow-100 text-yellow-700
+                            {% elif contact.status == 'negotiation' %}
+                                bg-orange-100 text-orange-700
+                            {% elif contact.status == 'closed' %}
+                                bg-gray-200 text-gray-700
+                            {% endif %}
+                        ">
+
+                            <select
+                                data-url="{% url 'contact_update_status' contact.id %}"
+                                onchange="updateContactStatus(this)"
+                                class="bg-transparent border-0 text-xs font-medium focus:ring-0 cursor-pointer">
+
+                                {% for value, label in contact.STATUS_CHOICES %}
+                                    <option value="{{ value }}"
+                                        {% if contact.status == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+
+                            </select>
+
+                        </div>
+
+                    </td>
+                    <td class="px-6 py-4">
+
+                        <div class="inline-block">
+
+                            <select
+                                data-url="{% url 'contact_assign_agent' contact.id %}"
+                                onchange="updateContactAgent(this)"
+                                class="text-sm font-medium text-gray-700 hover:text-gray-900 bg-gray-50 px-2 py-1 rounded-lg">
+
+                                <option value="">
+                                    —
+                                </option>
+
+                                {% for agent in agents %}
+                                    <option value="{{ agent.id }}"
+                                        {% if contact.assigned_agent_id == agent.id %}selected{% endif %}>
+                                        {{ agent.username }}
+                                    </option>
+                                {% endfor %}
+
+                            </select>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+                {% endfor %}
+
+            </tbody>
+        </table>
+    </div>
+
+    <!-- MOBILE CARDS -->
+    <div class="space-y-4 md:hidden">
+
+        {% for contact in contacts %}
+        <div class="bg-white shadow rounded-xl p-4 border border-gray-100">
+
+            <div class="flex justify-between items-start">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    {{ contact.name }}
+                </h2>
+
+                <span class="px-3 py-1 text-xs rounded-full
+                    {% if contact.status == 'new' %} bg-blue-100 text-blue-700
+                    {% elif contact.status == 'interested' %} bg-green-100 text-green-700
+                    {% elif contact.status == 'visit' %} bg-yellow-100 text-yellow-700
+                    {% elif contact.status == 'negotiation' %} bg-orange-100 text-orange-700
+                    {% elif contact.status == 'closed' %} bg-gray-200 text-gray-700
+                    {% endif %}">
+                    {{ contact.get_status_display }}
+                </span>
+            </div>
+
+            <div class="mt-3 text-sm text-gray-600 space-y-1">
+                <p><span class="font-medium">Tel:</span> {{ contact.phone }}</p>
+                <p><span class="font-medium">Email:</span> {{ contact.email|default:"—" }}</p>
+            </div>
+
+        </div>
+        {% endfor %}
+
+    </div>
+
+    
+
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+
+    function getCookie(name) {
+
+            let cookieValue = null;
+
+            if (document.cookie && document.cookie !== '') {
+
+                const cookies = document.cookie.split(';');
+
+                for (let i = 0; i < cookies.length; i++) {
+
+                    const cookie = cookies[i].trim();
+
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+
+                        cookieValue = decodeURIComponent(
+                            cookie.substring(name.length + 1)
+                        );
+
+                        break;
+                    }
+                }
+            }
+
+            return cookieValue;
+        }
+
+    function updateContactStatus(select) {
+        const badge = select.parentElement;
+
+        fetch(select.dataset.url, {
+
+            method: "POST",
+            headers: {
+                "X-CSRFToken": getCookie("csrftoken"),
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+
+            body: new URLSearchParams({
+                status: select.value
+            })
+
+        })
+        .then(res => res.json())
+        .then(() => {
+
+            badge.classList.remove(
+                "bg-blue-100", "text-blue-700",
+                "bg-green-100", "text-green-700",
+                "bg-yellow-100", "text-yellow-700",
+                "bg-orange-100", "text-orange-700",
+                "bg-gray-200", "text-gray-700"
+            );
+
+            switch(select.value) {
+
+                case "new":
+                    badge.classList.add("bg-blue-100", "text-blue-700");
+                    break;
+
+                case "interested":
+                    badge.classList.add("bg-green-100", "text-green-700");
+                    break;
+
+                case "visit":
+                    badge.classList.add("bg-yellow-100", "text-yellow-700");
+                    break;
+
+                case "negotiation":
+                    badge.classList.add("bg-orange-100", "text-orange-700");
+                    break;
+
+                case "closed":
+                    badge.classList.add("bg-gray-200", "text-gray-700");
+                    break;
+            }
+
+        });
+
+    }
+
+
+        function updateContactAgent(select) {
+
+            fetch(select.dataset.url, {
+
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken"),
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+
+                body: new URLSearchParams({
+                    agent_id: select.value
+                })
+
+            })
+            .then(res => res.json())
+            .then(data => {
+
+                // NO necesitas actualizar texto porque el select ya muestra el valor
+                // pero puedes forzar sincronización si quieres:
+
+                if (!data.success) {
+                    alert("Error asignando agente");
+                }
+
+            });
+
+        }
+
+</script>
+{% endblock %}

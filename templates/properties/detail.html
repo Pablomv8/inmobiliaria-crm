@@ -1,0 +1,465 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+
+
+
+<div class="max-w-6xl mx-auto p-6 ml-2">
+
+
+    <!-- Info -->
+    <div class="bg-white rounded-2xl p-8 shadow-sm flex flex-col gap-4">
+
+        <div class="flex items-start justify-between mb-6">
+
+            <div>
+
+                <h1 class="text-4xl font-bold text-gray-800">
+                    {{ property.title }}
+                </h1>
+
+                <p class="text-gray-500 mt-2">
+
+                    {{ property.street }} {{ property.number }},
+                    {{ property.postal_code }}
+                    {{ property.city }},
+                    {{ property.province }}
+
+                </p>
+
+            </div>
+
+            <p class="text-4xl font-bold text-gray-900">
+                €{{ property.price }}
+            </p>
+
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+
+            <!-- Zona -->
+            <div class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="bg-blue-100 p-2 rounded-lg text-blue-600">
+                        <!-- Icono ubicación -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </div>
+
+                    <p class="text-sm text-gray-500">Zona</p>
+                </div>
+
+                <p class="font-semibold text-gray-800">
+                    {{ property.zone|default:"Sin asignar" }}
+                </p>
+            </div>
+
+            <!-- Tipo -->
+            <div class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="bg-purple-100 p-2 rounded-lg text-purple-600">
+                        <!-- Icono casa -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 10l9-7 9 7v10a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1V10z"/>
+                        </svg>
+                    </div>
+
+                    <p class="text-sm text-gray-500">Tipo</p>
+                </div>
+
+                <p class="font-semibold text-gray-800">
+                    {{ property.get_property_type_display }}
+                </p>
+            </div>
+
+            <!-- Habitaciones -->
+            <div class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="bg-green-100 p-2 rounded-lg text-green-600">
+                        <!-- Icono cama -->
+                        🛏️
+                    </div>
+
+                    <p class="text-sm text-gray-500">Habitaciones</p>
+                </div>
+
+                <p class="font-semibold text-gray-800">
+                    {{ property.bedrooms|default:"-" }}
+                </p>
+            </div>
+
+            <!-- Baños -->
+            <div class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="bg-cyan-100 p-2 rounded-lg text-cyan-600">
+                        <!-- Icono baño -->
+                        🚿
+                    </div>
+
+                    <p class="text-sm text-gray-500">Baños</p>
+                </div>
+
+                <p class="font-semibold text-gray-800">
+                    {{ property.bathrooms|default:"-" }}
+                </p>
+            </div>
+
+            <!-- Superficie -->
+            <div class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="bg-orange-100 p-2 rounded-lg text-orange-600">
+                        📐
+                    </div>
+
+                    <p class="text-sm text-gray-500">Superficie</p>
+                </div>
+
+                <p class="font-semibold text-gray-800">
+                    {{ property.area|default:"-" }} m²
+                </p>
+            </div>
+
+            <!-- Superficie construida -->
+            <div class="bg-white border border-gray-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="bg-red-100 p-2 rounded-lg text-red-600">
+                        🏗️
+                    </div>
+
+                    <p class="text-sm text-gray-500">Construidos</p>
+                </div>
+
+                <p class="font-semibold text-gray-800">
+                    {{ property.built_area|default:"-" }} m²
+                </p>
+            </div>
+
+        </div>
+
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div>
+
+                <h3 class="text-xl font-semibold mb-4">
+                    Descripción
+                </h3>
+
+                <p class="text-gray-600 leading-relaxed">
+                    {{ property.description|default:"Sin descripción." }}
+                </p>
+
+            </div>
+
+            <div class="mt-4">
+                <div
+                    id="property-status-wrapper"
+                    class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium
+
+                    {% if property.status == 'active' %}
+                        bg-green-100 text-green-700
+                    {% elif property.status == 'reserved' %}
+                        bg-yellow-100 text-yellow-700
+                    {% elif property.status == 'sold' %}
+                        bg-red-100 text-red-700
+                    {% endif %}
+                ">
+
+                    <select
+                        data-url="{% url 'property_update_status' property.id %}"
+                        onchange="updatePropertyStatus(this)"
+                        class="bg-transparent border-0 focus:ring-0 cursor-pointer text-sm">
+
+                        {% for value,label in property.STATUS_CHOICES %}
+
+                            <option value="{{ value }}"
+                                {% if property.status == value %}selected{% endif %}>
+
+                                {{ label }}
+
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border p-6 mt-6">
+
+            <div class="flex items-center justify-between mb-4">
+
+                <h3 class="font-semibold text-lg">
+                    Propietarios
+                </h3>
+
+                <div class="flex gap-2">
+
+                    <!-- EXISTENTE -->
+                    <a href="{% url 'add_owner_to_property' property.id %}"
+                    class="px-3 py-2 text-sm rounded-xl bg-gray-100 hover:bg-gray-200 transition">
+
+                        👤 Añadir existente
+
+                    </a>
+
+                    <!-- NUEVO -->
+                    <a href="{% url 'create_owner_for_property' property.id %}"
+                    class="px-3 py-2 text-sm rounded-xl bg-black text-white hover:bg-gray-900 transition">
+
+                        ➕ Nuevo propietario
+
+                    </a>
+
+                </div>
+
+            </div>
+
+            <!-- LISTADO -->
+            <div class="space-y-2">
+
+                {% for contact in property.contacts.all %}
+
+                    {% if contact.contact_type == "owner" %}
+
+                        <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl">
+
+                            <div>
+
+                                <p class="font-medium">
+                                    {{ contact.name }}
+                                </p>
+
+                                <p class="text-sm text-gray-500">
+                                    {{ contact.phone }}
+                                </p>
+
+                            </div>
+
+                            <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+                                Propietario
+                            </span>
+
+                        </div>
+
+                    {% endif %}
+
+                {% empty %}
+
+                    <p class="text-sm text-gray-500">
+                        No hay propietarios asignados a este inmueble.
+                    </p>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+        <div class="bg-white rounded-2xl p-8 shadow-sm mt-6">
+
+            <div class="flex justify-between items-center mb-6">
+
+                <h2 class="text-xl font-semibold">
+
+                    Noticias
+
+                </h2>
+
+                <a
+                    href="{% url 'news_create' property.id %}"
+                    class="text-blue-600"
+                >
+                    + Nueva noticia
+                </a>
+
+            </div>
+
+            {% for news in property.news.all %}
+
+                <a
+                    href="{% url 'news_detail' news.id %}"
+                    class="block border border-gray-100 rounded-xl p-4 mb-3 hover:bg-gray-50"
+                >
+
+                    <div class="flex justify-between">
+
+                        <div>
+
+                            <p class="font-medium">
+
+                                {{ news.get_motivation_display }}
+
+                            </p>
+
+                            <p class="text-sm text-gray-500">
+
+                                {{ news.created_at|date:"d/m/Y" }}
+
+                            </p>
+
+                        </div>
+
+                        <div class="text-right">
+
+                            <p>
+
+                                Dif:
+                                {{ news.price_difference }} €
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </a>
+
+            {% empty %}
+
+                <p class="text-gray-400">
+
+                    No hay noticias registradas
+
+                </p>
+
+            {% endfor %}
+
+        </div>
+        
+
+        <div class="flex justify-end gap-3 mt-6">
+
+            <a
+                href="{% url 'news_create' property.id %}"
+                class="px-5 py-3 rounded-xl text-white transition"
+                style="background-color:#2563eb;"
+            >
+                + Crear noticia
+            </a>
+
+            <a
+                href="{% url 'property_update' property.id %}"
+                class="px-5 py-3 rounded-xl bg-gray-900 text-white hover:bg-gray-800 transition"
+            >
+                Editar
+            </a>
+
+            <a
+                href="{% url 'property_delete' property.id %}"
+                class="px-5 py-3 rounded-xl bg-red-600 text-white hover:bg-red-700 transition"
+            >
+                Eliminar
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+
+<script>
+
+    function getCookie(name) {
+
+        let cookieValue = null;
+
+        if (document.cookie && document.cookie !== '') {
+
+            const cookies = document.cookie.split(';');
+
+            for (let i = 0; i < cookies.length; i++) {
+
+                const cookie = cookies[i].trim();
+
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+
+                    cookieValue = decodeURIComponent(
+                        cookie.substring(name.length + 1)
+                    );
+
+                    break;
+                }
+            }
+        }
+
+        return cookieValue;
+    }
+
+    function updatePropertyStatus(select) {
+
+        const wrapper =
+            document.getElementById(
+                "property-status-wrapper"
+            );
+
+        fetch(select.dataset.url, {
+
+            method: "POST",
+
+            headers: {
+                "X-CSRFToken": getCookie("csrftoken"),
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+
+            body: new URLSearchParams({
+                status: select.value
+            })
+
+        })
+        .then(response => response.json())
+        .then(data => {
+
+            wrapper.classList.remove(
+                "bg-green-100",
+                "text-green-700",
+                "bg-yellow-100",
+                "text-yellow-700",
+                "bg-red-100",
+                "text-red-700"
+            );
+
+            const colors = {
+
+                active: [
+                    "bg-green-100",
+                    "text-green-700"
+                ],
+
+                reserved: [
+                    "bg-yellow-100",
+                    "text-yellow-700"
+                ],
+
+                sold: [
+                    "bg-red-100",
+                    "text-red-700"
+                ]
+
+            };
+
+            wrapper.classList.add(
+                ...colors[select.value]
+            );
+
+        });
+
+    }
+
+</script>
+
+{% endblock %}

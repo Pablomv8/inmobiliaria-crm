@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="max-w-5xl mx-auto">
+
+    <div class="mb-6">
+
+        <a href="{% url 'calendar' %}"
+           class="text-sm text-gray-500 hover:text-black">
+            ← Volver a la agenda
+        </a>
+
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border p-8">
+
+        <div class="flex justify-between items-start mb-8">
+
+            <div>
+
+                <span class="text-sm font-medium text-green-600">
+                    📅 {{ appointment.get_appointment_type_display }}
+                </span>
+
+                <h1 class="text-3xl font-bold mt-2">
+                    Cita programada
+                </h1>
+
+            </div>
+
+            <span class="
+                px-3 py-1 rounded-full text-sm
+                {% if appointment.status == 'scheduled' %}
+                    bg-blue-100 text-blue-700
+                {% elif appointment.status == 'completed' %}
+                    bg-green-100 text-green-700
+                {% else %}
+                    bg-red-100 text-red-700
+                {% endif %}
+            ">
+                {{ appointment.get_status_display }}
+            </span>
+
+        </div>
+    
+        <div class="grid md:grid-cols-2 gap-6">
+
+            <div class="bg-gray-50 rounded-xl p-4">
+                <p class="text-gray-500 text-sm">Fecha</p>
+                <p class="font-semibold">
+                    {{ appointment.date }}
+                </p>
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-4">
+                <p class="text-gray-500 text-sm">Hora</p>
+                <p class="font-semibold">
+                    {{ appointment.time }}
+                </p>
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-4">
+                <p class="text-gray-500 text-sm">Contacto</p>
+                <p class="font-semibold">
+                    {{ appointment.contact }}
+                </p>
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-4">
+                <p class="text-gray-500 text-sm">Agente</p>
+                <p class="font-semibold">
+                    {{ appointment.agent }}
+                </p>
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-4 md:col-span-2">
+                <p class="text-gray-500 text-sm">Inmueble</p>
+
+                <a href="{% url 'property_detail' appointment.related_property.id %}"
+                   class="font-semibold text-blue-600 hover:underline">
+
+                    {{ appointment.related_property }}
+
+                </a>
+
+            </div>
+
+        </div>
+
+        <div class="mt-10 border-t pt-6">
+
+            <h3 class="text-sm font-semibold text-gray-500 mb-4">
+                Acciones
+            </h3>
+
+            <div class="flex flex-wrap gap-3 ">
+
+                {% if appointment.status == "scheduled" %}
+
+                    <a href="{% url 'appointment_update_status' appointment.id 'completed' %}"
+                    class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition">
+
+                        ✔ Marcar como completada
+
+                    </a>
+
+                    <a href="{% url 'appointment_update_status' appointment.id 'cancelled' %}"
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition">
+
+                        ✖ Cancelar cita
+
+                    </a>
+
+                {% endif %}
+
+                {% if appointment.status == "completed" %}
+
+                    <div class="text-sm text-green-700 font-medium bg-green-50 px-4 py-2 rounded-lg">
+                        ✔ Cita completada con éxito
+                    </div>
+
+                    <a href="{% url 'create_listing' appointment.id %}"
+                    class="px-4 py-2 bg-black text-white rounded-lg text-sm hover:bg-gray-800 transition">
+
+                        🏠 Crear encargo
+
+                    </a>
+
+                {% endif %}
+
+                {% if appointment.status == "cancelled" %}
+
+                    <div class="text-sm text-red-700 font-medium bg-red-50 px-4 py-2 rounded-lg">
+                        ✖ Cita cancelada
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+            <div class="mt-6">
+
+                    <a
+                        href="{% url 'news_detail' appointment.news.id %}"
+                        class="inline-flex items-center text-sm text-blue-600 hover:underline"
+                    >
+                        📰 Ver historial completo de la noticia
+                    </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% if appointment.notes %}
+    <div class="bg-white rounded-2xl shadow-sm border p-8 mt-6">
+
+        <h3 class="font-semibold text-lg mb-4">
+            Notas
+        </h3>
+
+        <p class="text-gray-700 whitespace-pre-line">
+            {{ appointment.notes }}
+        </p>
+
+    </div>
+    {% endif %}
+    
+
+{% endblock %}

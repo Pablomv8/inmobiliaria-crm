@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+
+<body class="min-h-screen bg-gray-100">
+
+    <div class="min-h-screen grid lg:grid-cols-2">
+
+        <!-- LEFT SIDE -->
+        <div class="hidden lg:flex relative bg-gray-900 overflow-hidden">
+
+            <!-- Background -->
+            <div class="absolute inset-0 opacity-10">
+
+                <div class="absolute w-96 h-96 bg-white rounded-full -top-20 -left-20"></div>
+
+                <div class="absolute w-72 h-72 bg-white rounded-full bottom-0 right-0"></div>
+
+            </div>
+
+            <!-- Content -->
+            <div class="relative z-10 flex flex-col justify-center px-20 text-white">
+
+                <div class="mb-10">
+
+                    <div class="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur flex items-center justify-center mb-6">
+
+                        <span class="text-3xl font-bold">
+                            I
+                        </span>
+
+                    </div>
+
+                    <h1 class="text-5xl font-bold leading-tight">
+
+                        Gestiona tu inmobiliaria de forma inteligente.
+
+                    </h1>
+
+                    <p class="mt-6 text-lg text-gray-300 leading-relaxed">
+
+                        Administra contactos, inmuebles, tareas y agentes desde un único panel moderno y eficiente.
+
+                    </p>
+
+                </div>
+
+                <!-- Features -->
+                <div class="space-y-4">
+
+                    <div class="flex items-center gap-3">
+
+                        <div class="w-2 h-2 rounded-full bg-white"></div>
+
+                        <p>Gestión completa de clientes</p>
+
+                    </div>
+
+                    <div class="flex items-center gap-3">
+
+                        <div class="w-2 h-2 rounded-full bg-white"></div>
+
+                        <p>Control de tareas y visitas</p>
+
+                    </div>
+
+                    <div class="flex items-center gap-3">
+
+                        <div class="w-2 h-2 rounded-full bg-white"></div>
+
+                        <p>Seguimiento comercial en tiempo real</p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- RIGHT SIDE -->
+        <div class="flex items-center justify-center p-6">
+
+            <div class="w-full max-w-md">
+
+                <!-- Mobile Logo -->
+                <div class="lg:hidden text-center mb-10">
+
+                    <h1 class="text-4xl font-bold text-gray-900">
+                        InmoCRM
+                    </h1>
+
+                </div>
+
+                <!-- Card -->
+                <div class="bg-white border border-gray-200 rounded-3xl shadow-sm p-8">
+
+                    <!-- Header -->
+                    <div class="mb-8">
+
+                        <h2 class="text-3xl font-bold text-gray-900">
+                            Bienvenido
+                        </h2>
+
+                        <p class="text-gray-500 mt-2">
+                            Inicia sesión para continuar
+                        </p>
+
+                    </div>
+
+                    <!-- Error -->
+                    {% if error %}
+
+                        <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+
+                            {{ error }}
+
+                        </div>
+
+                    {% endif %}
+
+                    <!-- Form -->
+                    <form method="POST" class="space-y-6">
+
+                        {% csrf_token %}
+
+                        <!-- Username -->
+                        <div>
+
+                            <label class="block mb-2 text-sm font-semibold text-gray-700">
+                                Usuario
+                            </label>
+
+                            <input
+                                type="text"
+                                name="username"
+                                placeholder="Introduce tu usuario"
+                                class="w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-200 focus:outline-none transition"
+                            >
+
+                        </div>
+
+                        <!-- Password -->
+                        <div>
+
+                            <label class="block mb-2 text-sm font-semibold text-gray-700">
+                                Contraseña
+                            </label>
+
+                            <input
+                                type="password"
+                                name="password"
+                                placeholder="Introduce tu contraseña"
+                                class="w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-200 focus:outline-none transition"
+                            >
+
+                        </div>
+
+                        <!-- Button -->
+                        <button
+                            type="submit"
+                            class="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 rounded-xl font-medium transition"
+                        >
+                            Iniciar sesión
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+
+{% endblock %}

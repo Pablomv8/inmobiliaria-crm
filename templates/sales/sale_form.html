@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="max-w-5xl mx-auto p-6">
+
+    <div class="bg-white rounded-2xl shadow-sm p-8">
+
+        <!-- HEADER -->
+        <div class="mb-8">
+
+            <h1 class="text-2xl font-bold text-gray-800">
+                Nueva venta
+            </h1>
+
+            <p class="text-gray-500 mt-1">
+                Registra una operación inmobiliaria
+            </p>
+
+        </div>
+
+        <form method="post">
+
+            {% csrf_token %}
+
+            <!-- GRID -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <!-- INMUEBLE -->
+                <div>
+                    <label class="text-sm font-medium text-gray-700">
+                        Inmueble
+                    </label>
+                    <div class="mt-2">
+                        {{ form.related_property }}
+                    </div>
+                </div>
+
+                <!-- COMPRADOR -->
+                <div>
+                    <label class="text-sm font-medium text-gray-700">
+                        Comprador
+                    </label>
+                    <div class="mt-2">
+                        {{ form.buyer }}
+                    </div>
+                </div>
+
+                <!-- AGENTE -->
+                <div>
+                    <label class="text-sm font-medium text-gray-700">
+                        Agente
+                    </label>
+                    <div class="mt-2">
+                        {{ form.agent }}
+                    </div>
+                </div>
+
+                <!-- PRECIO -->
+                <div>
+                    <label class="text-sm font-medium text-gray-700">
+                        Precio de venta
+                    </label>
+                    <div class="mt-2">
+                        {{ form.sale_price }}
+                    </div>
+                </div>
+
+                <!-- COMISIÓN -->
+                <div>
+                    <label class="text-sm font-medium text-gray-700">
+                        Comisión (%)
+                    </label>
+                    <div class="mt-2">
+                        {{ form.commission_percent }}
+                    </div>
+                </div>
+
+                <!-- FECHA -->
+                <div>
+                    <label class="text-sm font-medium text-gray-700">
+                        Fecha de venta
+                    </label>
+                    <div class="mt-2">
+                        {{ form.sale_date }}
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- NOTAS -->
+            <div class="mt-6">
+
+                <label class="text-sm font-medium text-gray-700">
+                    Observaciones
+                </label>
+
+                <div class="mt-2">
+                    {{ form.notes }}
+                </div>
+
+            </div>
+
+            <!-- BOTONES -->
+            <div class="flex justify-end gap-3 mt-8">
+
+                <a href="{% url 'sale_list' %}"
+                   class="px-5 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 transition">
+
+                    Cancelar
+
+                </a>
+
+                <button type="submit"
+                        class="px-5 py-3 rounded-xl bg-gray-900 text-white hover:bg-gray-800 transition">
+
+                    Guardar venta
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}

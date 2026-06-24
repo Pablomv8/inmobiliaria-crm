@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="max-w-5xl mx-auto ml-2">
+
+    <div class="mb-6">
+
+        <a href="{% url 'calendar' %}"
+           class="text-sm text-gray-500 hover:text-black">
+            ← Volver a la agenda
+        </a>
+
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border p-8">
+
+        <div class="flex justify-between items-start mb-8">
+
+            <div>
+
+                <span class="text-sm font-medium text-blue-600">
+                    📞 Llamada
+                </span>
+
+                <h1 class="text-3xl font-bold mt-2">
+                    Seguimiento telefónico
+                </h1>
+
+            </div>
+
+            <span class="
+                px-3 py-1 rounded-full text-sm
+                {% if call.status == 'pending' %}
+                    bg-yellow-100 text-yellow-700
+                {% elif call.status == 'completed' %}
+                    bg-green-100 text-green-700
+                {% else %}
+                    bg-red-100 text-red-700
+                {% endif %}
+            ">
+                {{ call.get_status_display }}
+            </span>
+
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+
+            <div class="bg-gray-50 rounded-xl p-4">
+                <p class="text-gray-500 text-sm">Fecha</p>
+                <p class="font-semibold">
+                    {{ call.date }}
+                </p>
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-4">
+                <p class="text-gray-500 text-sm">Hora</p>
+                <p class="font-semibold">
+                    {{ call.time }}
+                </p>
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-4">
+                <p class="text-gray-500 text-sm">Contacto</p>
+                <a href="{% url 'contact_detail' call.contact.id %}"
+                   class="font-semibold hover:underline">
+                    {{ call.contact }}
+                </a>
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-4">
+                <p class="text-gray-500 text-sm">Agente</p>
+                <a href="{% url 'contact_detail' call.agent.id %}"
+                   class="font-semibold hover:underline">
+                    {{ call.agent }}
+                </a>
+            </div>
+
+            {% if call.news %}
+            <div class="bg-gray-50 rounded-xl p-4 md:col-span-2">
+
+                <p class="text-gray-500 text-sm">
+                    Noticia relacionada
+                </p>
+
+                <a href="{% url 'news_detail' call.news.id %}"
+                   class="font-semibold hover:underline">
+
+                    Ver noticia
+
+                </a>
+
+            </div>
+            {% endif %}
+
+        </div>
+
+    </div>
+
+    {% if call.notes %}
+    <div class="bg-white rounded-2xl shadow-sm border p-8 mt-6">
+
+        <h3 class="font-semibold text-lg mb-4">
+            Notas
+        </h3>
+
+        <p class="text-gray-700 whitespace-pre-line">
+            {{ call.notes }}
+        </p>
+
+    </div>
+    {% endif %}
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="p-6">
+
+    <!-- HEADER -->
+    <div class="flex items-center justify-between mb-6">
+
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">
+                Ventas
+            </h1>
+
+            <p class="text-gray-500 text-sm mt-1">
+                Historial de operaciones
+            </p>
+        </div>
+
+        <a href="{% url 'sale_create' %}"
+           class="bg-gray-900 text-white px-5 py-3 rounded-xl hover:bg-gray-800 transition">
+
+            + Nueva venta
+
+        </a>
+
+    </div>
+
+
+    <form method="get"
+      class="bg-white border border-gray-100 shadow-sm rounded-2xl p-4 mb-6">
+
+        <div class="flex flex-wrap items-center gap-3">
+
+            <!-- BUSCADOR -->
+            <div class="relative w-56">
+
+                <div class="absolute inset-y-0 left-3 flex items-center text-gray-400">
+                    🔍
+                </div>
+
+                <input
+                    type="text"
+                    name="search"
+                    value="{{ request.GET.search }}"
+                    placeholder="Buscar..."
+                    class="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 text-sm">
+
+            </div>
+
+            <!-- ESTADO -->
+            <select
+                name="status"
+                class="px-3 py-2 rounded-xl text-sm
+                    bg-blue-50 text-blue-700">
+
+                <option value="">
+                    Estado
+                </option>
+
+                {% for value,label in sales.model.STATUS_CHOICES %}
+
+                    <option value="{{ value }}"
+                        {% if request.GET.status == value %}selected{% endif %}>
+
+                        {{ label }}
+
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+            <!-- AGENTE -->
+            <select
+                name="agent"
+                class="px-3 py-2 rounded-xl text-sm
+                    bg-green-50 text-green-700">
+
+                <option value="">
+                    Agente
+                </option>
+
+                {% for agent in agents %}
+
+                    <option value="{{ agent.id }}"
+                        {% if request.GET.agent == agent.id|stringformat:"s" %}
+                            selected
+                        {% endif %}
+                    >
+
+                        {{ agent.username }}
+
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+            <!-- ORDEN -->
+            <select
+                name="ordering"
+                class="px-3 py-2 rounded-xl text-sm
+                    bg-purple-50 text-purple-700">
+
+                <option value="">
+                    Ordenar
+                </option>
+
+                <option value="date_desc"
+                    {% if request.GET.ordering == "date_desc" %}selected{% endif %}>
+                    Más recientes
+                </option>
+
+                <option value="date_asc"
+                    {% if request.GET.ordering == "date_asc" %}selected{% endif %}>
+                    Más antiguas
+                </option>
+
+                <option value="price_desc"
+                    {% if request.GET.ordering == "price_desc" %}selected{% endif %}>
+                    Mayor importe
+                </option>
+
+                <option value="price_asc"
+                    {% if request.GET.ordering == "price_asc" %}selected{% endif %}>
+                    Menor importe
+                </option>
+
+            </select>
+
+            <!-- FILTRAR -->
+            <button
+                type="submit"
+                class="px-4 py-2 rounded-xl
+                    bg-gray-900 text-white">
+
+                Filtrar
+
+            </button>
+
+            <!-- LIMPIAR -->
+            <a href="{% url 'sale_list' %}"
+            class="ml-2 px-4 py-2 rounded-xl
+                    bg-gray-100 hover:bg-gray-200">
+
+                Limpiar
+
+            </a>
+
+        </div>
+
+    </form>
+
+    <!-- CARDS / TABLE WRAPPER -->
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+
+        <!-- HEADER TABLE -->
+        <div class="grid grid-cols-6 bg-gray-50 text-xs font-semibold text-gray-500 uppercase px-6 py-4">
+
+            <div>Fecha</div>
+            <div>Inmueble</div>
+            <div>Comprador</div>
+            <div>Agente encargado</div>
+            <div>Estado</div>
+            <div>Importe</div>
+
+        </div>
+
+        <!-- ROWS -->
+        <div class="divide-y divide-gray-100">
+
+            {% for sale in sales %}
+
+                <div class="grid grid-cols-6 px-6 py-4 items-center hover:bg-gray-50 transition">
+                    <!-- FECHA -->
+                    <div class="text-sm text-gray-600">
+
+                        {{ sale.sale_date }}
+
+                    </div>
+
+                    <!-- INMUEBLE -->
+                    <div class="font-medium text-gray-900">
+
+                        {{ sale.related_property.title }}
+
+                    </div>
+
+                    <!-- COMPRADOR -->
+                    <div class="text-sm text-gray-700">
+
+                        {{ sale.buyer.name }}
+
+                    </div>
+
+                    <!-- AGENTE -->
+                    <div class="text-sm text-gray-700">
+
+                        {{ sale.agent.username }}
+
+                    </div>
+
+                    <!-- ESTADO -->
+                    <div class="text-sm text-gray-700">
+
+                        <div
+                            id="sale-status-wrapper-{{ sale.id }}"
+                            class="inline-block rounded-full px-3 py-1 text-xs font-medium
+
+                            {% if sale.status == 'draft' %}
+                                bg-yellow-100 text-yellow-700
+                            {% elif sale.status == 'signed' %}
+                                bg-green-100 text-green-700
+                            {% elif sale.status == 'cancelled' %}
+                                bg-red-100 text-red-700
+                            {% endif %}
+                        ">
+
+                            <select
+                                data-sale-id="{{ sale.id }}"
+                                data-url="{% url 'sale_update_status' sale.id %}"
+                                onchange="updateSaleStatus(this)"
+                                class="bg-transparent border-0 text-xs font-medium focus:ring-0 cursor-pointer">
+
+                                {% for value, label in sale.STATUS_CHOICES %}
+
+                                    <option value="{{ value }}"
+                                        {% if sale.status == value %}selected{% endif %}>
+
+                                        {{ label }}
+
+                                    </option>
+
+                                {% endfor %}
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <!-- PRECIO -->
+                    <div>
+
+                        <span class="inline-flex items-center px-3 py-1 rounded-full
+                                     bg-green-100 text-green-700 text-sm font-semibold">
+
+                            {{ sale.sale_price }} €
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+            {% empty %}
+
+                <div class="p-10 text-center text-gray-400">
+
+                    No hay ventas registradas
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+
+<script>
+    function getCookie(name) {
+
+        let cookieValue = null;
+
+        if (document.cookie && document.cookie !== '') {
+
+            const cookies = document.cookie.split(';');
+
+            for (let i = 0; i < cookies.length; i++) {
+
+                const cookie = cookies[i].trim();
+
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+
+                    cookieValue = decodeURIComponent(
+                        cookie.substring(name.length + 1)
+                    );
+
+                    break;
+                }
+            }
+        }
+
+        return cookieValue;
+    }
+function getSaleStatusClasses(status) {
+
+    const classes = {
+        draft: "bg-yellow-100 text-yellow-700",
+        signed: "bg-green-100 text-green-700",
+        cancelled: "bg-red-100 text-red-700"
+    };
+
+    return classes[status] || "";
+}
+
+async function updateSaleStatus(select) {
+
+    const url = select.dataset.url;
+
+    const response = await fetch(url, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({
+            status: select.value
+        })
+    });
+
+    if (!response.ok) {
+        return;
+    }
+
+    const wrapper =
+        document.getElementById(
+            `sale-status-wrapper-${select.dataset.saleId}`
+        );
+
+    wrapper.className =
+        "inline-block rounded-full px-3 py-1 text-xs font-medium " +
+        getSaleStatusClasses(select.value);
+}
+
+</script>
+{% endblock %}

@@ -27,7 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-AUTH_USER_MODELS = 'users.User'
+AUTH_USER_MODEL = 'users.User'
 # Application definition
 
 INSTALLED_APPS = [
@@ -39,8 +39,18 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'tailwind',
     'theme',
-    'webpack_boilerplate', 
-
+    'webpack_boilerplate',
+    'contacts',
+    'properties',
+    'users',
+    'tasks',
+    'activities',
+    'sales',
+    'heroicons',
+    'news',
+    'calendar_app',
+    'listings',
+    'django_select2',
 ]
 
 TAILWIND_APP_NAME = 'theme'
@@ -128,3 +138,9 @@ STATICFILES_DIRS = [
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'logout'
+

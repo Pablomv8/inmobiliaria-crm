@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="max-w-xl mx-auto p-6">
+
+    <div class="bg-white border rounded-2xl p-6 space-y-4">
+
+        <h1 class="text-xl font-semibold">
+            Nuevo propietario
+        </h1>
+
+        <p class="text-sm text-gray-500">
+            {{ property.title }} · {{ property.full_address }}
+        </p>
+
+        <p class="text-sm text-blue-600 bg-blue-50 p-3 rounded-xl">
+            Este contacto se creará como <b>propietario</b> de este inmueble
+        </p>
+
+        <form method="post" class="space-y-4">
+
+            {% csrf_token %}
+
+            {{ form.as_p }}
+
+            <button class="w-full bg-black text-white py-3 rounded-xl">
+                Guardar propietario
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+{% endblock %}
