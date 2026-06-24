@@ -1,118 +1,169 @@
 {% extends 'base.html' %}
 
+<style>
+.label {
+    @apply block mb-2 text-sm font-medium text-gray-700;
+}
+</style>
 {% block content %}
 
-<div class="max-w-4xl mx-auto p-6">
+<div class="max-w-5xl mx-auto px-6 py-10">
 
-    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-8">
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm">
 
-        <h1 class="text-3xl font-bold text-gray-800 mb-8">
-            {{ title }}
-        </h1>
+        <!-- HEADER -->
+        <div class="px-8 py-6 border-b border-gray-200">
+            <h1 class="text-3xl font-bold text-gray-900">
+                {{ title }}
+            </h1>
 
-        <form
-            method="POST"
-            enctype="multipart/form-data"
-            class="space-y-6"
-        >
+            <p class="text-gray-500 mt-1">
+                Información completa del inmueble
+            </p>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="p-8 space-y-10">
 
             {% csrf_token %}
 
-            <!-- Title -->
+            <!-- TITULO -->
             <div>
-
-                <label class="block mb-2 text-sm font-semibold text-gray-700">
+                <label class="block mb-2 text-sm font-medium text-gray-700">
                     Título
                 </label>
-
                 {{ form.title }}
-
             </div>
 
-            <!-- Address -->
-            <div>
-
-                <label class="block mb-2 text-sm font-semibold text-gray-700">
+            <!-- DIRECCIÓN -->
+            <section>
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">
                     Dirección
-                </label>
+                </h2>
 
-                {{ form.address }}
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
 
-            </div>
+                    <div class="md:col-span-3">
+                        <label class="label">Calle</label>
+                        {{ form.street }}
+                    </div>
 
-            <!-- Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label class="label">Número</label>
+                        {{ form.number }}
+                    </div>
 
-                <div>
+                    <div>
+                        <label class="label">Tipo</label>
+                        {{ form.property_type }}
+                    </div>
 
-                    <label class="block mb-2 text-sm font-semibold text-gray-700">
-                        Ciudad
-                    </label>
+                    <div>
+                        <label class="label">Código Postal</label>
+                        {{ form.postal_code }}
+                    </div>
 
-                    {{ form.city }}
+                    <div>
+                        <label class="label">Ciudad</label>
+                        {{ form.city }}
+                    </div>
 
-                </div>
-
-                <div>
-
-                    <label class="block mb-2 text-sm font-semibold text-gray-700">
-                        Precio
-                    </label>
-
-                    {{ form.price }}
-
-                </div>
-
-                <div>
-
-                    <label class="block mb-2 text-sm font-semibold text-gray-700">
-                        Tipo
-                    </label>
-
-                    {{ form.property_type }}
+                    <div>
+                        <label class="label">Provincia</label>
+                        {{ form.province }}
+                    </div>
 
                 </div>
+            </section>
 
-            </div>
+            <!-- PRECIO + INFO -->
+            <section>
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">
+                    Información económica
+                </h2>
 
-            <!-- Image -->
-            <div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-                <label class="block mb-2 text-sm font-semibold text-gray-700">
-                    Imagen
-                </label>
+                    <div>
+                        <label class="label">Precio</label>
+                        {{ form.price }}
+                    </div>
 
-                {{ form.image }}
 
-            </div>
+                    <div>
+                        <label class="label">Estado</label>
+                        {{ form.status }}
+                    </div>
 
-            <!-- Description -->
-            <div>
+                </div>
+            </section>
 
-                <label class="block mb-2 text-sm font-semibold text-gray-700">
+            <!-- CARACTERÍSTICAS -->
+            <section>
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">
+                    Características
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+
+                    <div>
+                        <label class="label">Habitaciones</label>
+                        {{ form.bedrooms }}
+                    </div>
+
+                    <div>
+                        <label class="label">Baños</label>
+                        {{ form.bathrooms }}
+                    </div>
+
+                    <div>
+                        <label class="label">Superficie</label>
+                        {{ form.area }}
+                    </div>
+
+                    <div>
+                        <label class="label">Construida</label>
+                        {{ form.built_area }}
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- MEDIA -->
+            <section>
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">
+                    Multimedia
+                </h2>
+
+                <div>
+                    <label class="label">Imagen principal</label>
+                    {{ form.image }}
+                </div>
+            </section>
+
+            <!-- DESCRIPCIÓN -->
+            <section>
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">
                     Descripción
-                </label>
+                </h2>
 
                 {{ form.description }}
+            </section>
 
-            </div>
+            <!-- BOTONES -->
+            <div class="flex justify-end gap-3 pt-6 border-t border-gray-200">
 
-            <!-- Actions -->
-            <div class="flex items-center gap-4 pt-4">
+                <a href="{% url 'properties' %}"
+                   class="px-5 py-3 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50">
+
+                    Cancelar
+                </a>
 
                 <button
                     type="submit"
-                    class="bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-xl transition"
-                >
-                    Guardar
-                </button>
+                    class="px-6 py-3 rounded-xl bg-gray-900 text-white hover:bg-black transition">
 
-                <a
-                    href="{% url 'properties' %}"
-                    class="text-gray-600 hover:text-gray-900"
-                >
-                    Cancelar
-                </a>
+                    Guardar inmueble
+                </button>
 
             </div>
 

@@ -45,6 +45,12 @@ INSTALLED_APPS = [
     'users',
     'tasks',
     'activities',
+    'sales',
+    'heroicons',
+    'news',
+    'calendar_app',
+    'listings',
+    'django_select2',
 ]
 
 TAILWIND_APP_NAME = 'theme'

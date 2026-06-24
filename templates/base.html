@@ -2,6 +2,7 @@
 
 <!DOCTYPE html>
 <html lang="es">
+     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.css" rel="stylesheet">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,13 +11,28 @@
 
     <link rel="stylesheet" href="{% static 'css/main.min.css' %}">
 
+    <script src="https://kit.fontawesome.com/c30b7a5850.js" crossorigin="anonymous"></script>
+
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 
     <!-- Alpine -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/js/tom-select.complete.min.js"></script>
+
+    {{ form.media }}
+
+    
+
+
 </head>
+
+
 <body class="bg-gray-100">
 
 <div x-data="{ sidebarOpen: false }" class="flex min-h-screen">
@@ -49,6 +65,39 @@
 
         <!-- Page Content -->
         <main class="p-8">
+
+            {% if messages %}
+
+                <div class="space-y-3 mb-6">
+
+                    {% for message in messages %}
+
+                        <div class="
+                            p-4 rounded-xl border
+
+                            {% if message.tags == 'success' %}
+                                bg-green-50 text-green-700 border-green-200
+
+                            {% elif message.tags == 'warning' %}
+                                bg-yellow-50 text-yellow-700 border-yellow-200
+
+                            {% elif message.tags == 'error' %}
+                                bg-red-50 text-red-700 border-red-200
+
+                            {% else %}
+                                bg-blue-50 text-blue-700 border-blue-200
+                            {% endif %}
+                        ">
+
+                            {{ message }}
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% endif %}
             {% block content %}{% endblock %}
         </main>
 

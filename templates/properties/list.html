@@ -4,92 +4,317 @@
 
 <div class="p-4 sm:p-6">
 
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-8">
+    <!-- HEADER -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
 
         <div>
-            <h1 class="text-3xl font-bold text-gray-800">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">
                 Inmuebles
             </h1>
 
-            <p class="text-gray-500 mt-2">
+            <p class="text-gray-500 mt-1">
                 Gestiona todos los inmuebles.
             </p>
         </div>
 
-        <a class="bg-gray-900 text-white px-5 py-3 rounded-xl hover:bg-gray-800 transition" href="{% url 'property_create' %}">
+        <a class="bg-gray-900 text-white px-5 py-3 rounded-xl hover:bg-gray-800 transition text-center"
+        href="{% url 'property_create' %}">
             + Nuevo inmueble
         </a>
 
     </div>
 
-    <!-- Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+    <!-- FILTER BAR -->
+    <form method="get"
+        class="bg-white border border-gray-100 shadow-sm rounded-2xl p-4 mb-8">
 
-        {% for property in properties %}
+        <div class="flex flex-wrap items-center gap-3">
 
-        <a href="{% url 'property_detail' property.id %}"
-           class="bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-lg transition">
+            <!-- BUSCADOR -->
+            <div class="relative w-52">
 
-            <!-- Image -->
-            <div class="h-56 bg-gray-200">
+                <div class="absolute inset-y-0 left-3 flex items-center text-gray-400">
+                    🔍
+                </div>
 
-                {% if property.image %}
+                <input
+                    type="text"
+                    name="search"
+                    value="{{ request.GET.search }}"
+                    placeholder="Buscar inmueble..."
+                    class="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 text-sm">
 
-                    <img
-                        src="{{ property.image.url }}"
-                        class="w-full h-full object-cover"
+            </div>
+
+            <!-- ESTADO -->
+            <select
+                name="status"
+                onchange="this.form.submit()"
+                class="px-3 py-2 rounded-xl text-sm bg-blue-50 text-blue-700">
+
+                <option value="">
+                    Estado
+                </option>
+
+                {% for value,label in properties.model.STATUS_CHOICES %}
+
+                    <option value="{{ value }}"
+                        {% if request.GET.status == value %}selected{% endif %}>
+
+                        {{ label }}
+
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+            <!-- TIPO -->
+            <select
+                name="type"
+                onchange="this.form.submit()"
+                class="px-3 py-2 rounded-xl text-sm bg-green-50 text-green-700">
+
+                <option value="">
+                    Tipo
+                </option>
+
+                {% for value,label in properties.model.PROPERTY_TYPE_CHOICES %}
+
+                    <option value="{{ value }}"
+                        {% if request.GET.type == value %}selected{% endif %}>
+
+                        {{ label }}
+
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+            <select
+                name="zone"
+                onchange="this.form.submit()"
+                class="px-3 py-2 rounded-xl text-sm bg-gray-50 text-black-700"
+            >
+
+                <option value="">
+                    Todas las zonas
+                </option>
+
+                {% for zone in zones %}
+
+                    <option
+                        value="{{ zone.id }}"
+                        {% if request.GET.zone == zone.id|stringformat:"s" %}
+                            selected
+                        {% endif %}
                     >
 
-                {% else %}
+                        {{ zone.name }}
 
-                    <div class="w-full h-full flex items-center justify-center text-gray-400">
-                        Sin imagen
-                    </div>
+                    </option>
 
-                {% endif %}
+                {% endfor %}
 
+            </select>
+
+            <!-- CIUDAD -->
+            <input
+                type="text"
+                name="city"
+                value="{{ request.GET.city }}"
+                placeholder="Ciudad"
+                class="px-4 py-2 rounded-xl border border-gray-200 text-sm w-40">
+
+            <!-- PRECIO MÍNIMO -->
+            <input
+                type="number"
+                name="min_price"
+                value="{{ request.GET.min_price }}"
+                placeholder="Precio mín."
+                class="px-4 py-2 rounded-xl border border-gray-200 text-sm w-32">
+
+            <!-- PRECIO MÁXIMO -->
+            <input
+                type="number"
+                name="max_price"
+                value="{{ request.GET.max_price }}"
+                placeholder="Precio máx."
+                class="px-4 py-2 rounded-xl border border-gray-200 text-sm w-32">
+
+            <input type="number"
+                name="bathrooms"
+                min="1"
+                value="{{ request.GET.bathrooms }}"
+                placeholder="Nº Baños mín."
+                class="px-4 py-2 rounded-xl border border-gray-200 text-sm w-32">
+            
+
+            <!-- ORDEN -->
+            <select
+                name="ordering"
+                class="px-3 py-2 rounded-xl text-sm bg-purple-50 text-purple-700">
+
+                <option value="">
+                    Ordenar
+                </option>
+
+                <option value="recent"
+                    {% if request.GET.ordering == "recent" %}selected{% endif %}>
+                    Más recientes
+                </option>
+
+                <option value="oldest"
+                    {% if request.GET.ordering == "oldest" %}selected{% endif %}>
+                    Más antiguos
+                </option>
+
+                <option value="price_asc"
+                    {% if request.GET.ordering == "price_asc" %}selected{% endif %}>
+                    Precio ↑
+                </option>
+
+                <option value="price_desc"
+                    {% if request.GET.ordering == "price_desc" %}selected{% endif %}>
+                    Precio ↓
+                </option>
+
+                <option value="title"
+                    {% if request.GET.ordering == "title" %}selected{% endif %}>
+                    Nombre A-Z
+                </option>
+
+            </select>
+
+            <!-- FILTRAR -->
+            <button
+                type="submit"
+                class="px-4 py-2 rounded-xl bg-gray-900 text-white hover:bg-gray-800">
+
+                Filtrar
+
+            </button>
+
+            <!-- LIMPIAR -->
+            <a href="{% url 'properties' %}"
+            class="ml-2 px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200">
+
+                Limpiar
+
+            </a>
+
+        </div>
+
+    </form>
+
+    <div class="flex justify-between items-center mb-4">
+
+        <p class="text-sm text-gray-500">
+            {{ properties|length }} inmueble{{ properties|length|pluralize }} encontrado{{ properties|length|pluralize }}
+        </p>
+
+    </div>
+
+
+    <div class="sm:hidden space-y-3">
+
+        {% for property in properties %}
+        <a href="{% url 'property_detail' property.id %}"
+        class="block bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+
+            <div class="flex justify-between items-start">
+                <h3 class="font-medium text-gray-800">
+                    {{ property.title }}
+                </h3>
+
+                <span class="text-xs px-2 py-1 rounded-full bg-gray-100">
+                    {{ property.get_status_display }}
+                </span>
             </div>
 
-            <!-- Content -->
-            <div class="p-5">
+            <p class="text-sm text-gray-500 mt-2">
+                {{ property.city }} · €{{ property.price }}
+            </p>
 
-                <div class="flex items-center justify-between mb-3">
-
-                    <h2 class="text-xl font-semibold text-gray-800">
-                        {{ property.title }}
-                    </h2>
-
-                    <span class="text-sm bg-gray-100 px-3 py-1 rounded-full">
-                        {{ property.get_property_type_display }}
-                    </span>
-
-                </div>
-
-                <p class="text-gray-500 text-sm mb-4">
-                    {{ property.address }}
-                </p>
-
-                <div class="flex items-center justify-between">
-
-                    <p class="text-2xl font-bold text-gray-900">
-                        €{{ property.price }}
-                    </p>
-
-                    <span class="text-sm text-gray-400">
-                        {{ property.city }}
-                    </span>
-
-                </div>
-
-            </div>
+            <p class="text-xs text-gray-400 mt-1">
+                {{ property.get_property_type_display }}
+            </p>
 
         </a>
-
         {% endfor %}
 
     </div>
 
+    <!-- TABLA -->
+    <div class="hidden sm:block bg-white rounded-2xl shadow-sm overflow-x-auto">
+
+        <table class="w-full min-w-full">
+
+            <thead class="bg-gray-50 border-b">
+                <tr>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Inmueble</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Tipo</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Dirección</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Estado</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Precio</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Ciudad</th>
+                </tr>
+            </thead>
+
+            <tbody class="divide-y divide-gray-100">
+
+                {% for property in properties %}
+                <tr data-url="{% url 'property_detail' property.id %}"
+                    class="property-row hover:bg-gray-50 cursor-pointer">
+
+                    <td class="px-6 py-4 font-medium text-gray-800">
+                        {{ property.title }}
+                    </td>
+
+                    <td class="px-6 py-4">
+                        <span class="text-xs bg-gray-100 px-3 py-1 rounded-full">
+                            {{ property.get_property_type_display }}
+                        </span>
+                    </td>
+
+                    <td class="px-6 py-4 text-gray-600">
+                        {{ property.street }} {{ property.number }}, {{ property.city }}
+                    </td>
+
+                    <td class="px-6 py-4">
+                        <span class="text-xs px-3 py-1 rounded-full font-medium">
+                            {{ property.get_status_display }}
+                        </span>
+                    </td>
+
+                    <td class="px-6 py-4 font-semibold">
+                        €{{ property.price }}
+                    </td>
+
+                    <td class="px-6 py-4 text-gray-500">
+                        {{ property.city }}
+                    </td>
+
+                </tr>
+                {% endfor %}
+
+            </tbody>
+        </table>
+
+    </div>
+
+
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.property-row').forEach(row => {
+    row.addEventListener('click', () => {
+        window.location.href = row.dataset.url;
+    });
+});
+</script>
 {% endblock %}

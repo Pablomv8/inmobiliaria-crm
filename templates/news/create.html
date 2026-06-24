@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="max-w-4xl mx-auto px-6 py-10">
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200">
+
+        <!-- Header -->
+        <div class="px-8 py-6 border-b border-gray-200">
+
+            <h1 class="text-3xl font-bold text-gray-900">
+                Nueva noticia
+            </h1>
+
+            <p class="mt-1 text-gray-500">
+                {{ property.title }}
+            </p>
+
+        </div>
+
+        <form method="post" class="p-8 space-y-8">
+
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <!-- Motivación -->
+            <div>
+                <label class="block mb-2 text-sm font-medium text-gray-700">
+                    {{ form.motivation.label }}
+                </label>
+
+                {{ form.motivation }}
+
+                {% if form.motivation.errors %}
+                    <p class="text-sm text-red-600 mt-1">
+                        {{ form.motivation.errors.0 }}
+                    </p>
+                {% endif %}
+            </div>
+
+            <!-- Precios -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-gray-700">
+                        {{ form.client_price.label }}
+                    </label>
+
+                    {{ form.client_price }}
+
+                    {% if form.client_price.errors %}
+                        <p class="text-sm text-red-600 mt-1">
+                            {{ form.client_price.errors.0 }}
+                        </p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-gray-700">
+                        {{ form.estimated_price.label }}
+                    </label>
+
+                    {{ form.estimated_price }}
+
+                    {% if form.estimated_price.errors %}
+                        <p class="text-sm text-red-600 mt-1">
+                            {{ form.estimated_price.errors.0 }}
+                        </p>
+                    {% endif %}
+                </div>
+
+            </div>
+
+            <!-- Botón -->
+            <div class="flex justify-end pt-6 border-t border-gray-200">
+
+                <button
+                    type="submit"
+                    class="px-6 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm">
+
+                    Guardar noticia
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    const client = document.getElementById('id_client_price');
+    const estimated = document.getElementById('id_estimated_price');
+
+    if (!client || !estimated) return;
+
+    const info = document.createElement('div');
+    info.className = "text-sm text-gray-500 mt-2";
+
+    estimated.parentNode.appendChild(info);
+
+    function update() {
+
+        const c = parseFloat(client.value || 0);
+        const e = parseFloat(estimated.value || 0);
+
+        if (!c || !e) {
+            info.textContent = "";
+            return;
+        }
+
+        const diff = e - c;
+
+        info.textContent =
+            diff >= 0
+                ? `Margen estimado: +${diff.toLocaleString()} €`
+                : `Ajuste necesario: ${diff.toLocaleString()} €`;
+    }
+
+    client.addEventListener('input', update);
+    estimated.addEventListener('input', update);
+
+});
+</script>
+
+{% endblock %}

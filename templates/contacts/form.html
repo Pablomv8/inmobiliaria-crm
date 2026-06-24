@@ -1,122 +1,220 @@
 {% extends 'base.html' %}
 
+<style>
+
+.ts-wrapper .ts-control {
+    border-radius: 0.75rem;
+    min-height: 48px;
+    border: 1px solid rgb(209 213 219);
+    box-shadow: none;
+}
+
+.ts-wrapper.focus .ts-control {
+    border-color: rgb(99 102 241);
+    box-shadow: 0 0 0 4px rgb(224 231 255);
+}
+
+.ts-wrapper.multi .ts-control > div {
+    border-radius: 9999px;
+    padding: 4px 10px;
+}
+
+</style>
 {% block content %}
 
-<div class="max-w-3xl mx-auto p-6">
+<div class="max-w-5xl mx-auto px-6 py-8">
 
-    <div class="bg-white rounded-2xl shadow-sm p-8">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200">
 
-        <h1 class="text-3xl font-bold text-gray-800 mb-8">
-            {{ title }}
-        </h1>
+        <!-- Header -->
+        <div class="px-8 py-6 border-b border-gray-200">
 
-        <form method="POST" class="space-y-6">
+            <h1 class="text-3xl font-bold text-gray-900">
+                {{ title }}
+            </h1>
+
+            <p class="mt-2 text-gray-500">
+                Completa la información del contacto.
+            </p>
+
+        </div>
+
+        <form method="POST" class="p-8 space-y-8">
 
             {% csrf_token %}
+            {{ form.media }}
 
-            <!-- Name -->
-            <div>
+            {% if form.non_field_errors %}
+                <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
 
-                <label class="block mb-2 font-medium text-gray-700">
-                    Nombre
-                </label>
+            <!-- Información personal -->
+            <section>
 
-                {{ form.name }}
+                <h2 class="text-lg font-semibold text-gray-900 mb-5">
+                    Información personal
+                </h2>
 
-            </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-            <!-- Phone -->
-            <div>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            Nombre
+                        </label>
 
-                <label class="block mb-2 font-medium text-gray-700">
-                    Teléfono
-                </label>
+                        {{ form.name }}
 
-                {{ form.phone }}
+                        {% if form.name.errors %}
+                            <p class="mt-1 text-sm text-red-600">
+                                {{ form.name.errors.0 }}
+                            </p>
+                        {% endif %}
+                    </div>
 
-            </div>
+                    <div>
 
-            <!-- Email -->
-            <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            Teléfono
+                        </label>
 
-                <label class="block mb-2 font-medium text-gray-700">
-                    Email
-                </label>
+                        <div class="flex">
 
-                {{ form.email }}
+                            <div
+                                class="flex items-center px-4 rounded-l-xl border border-r-0 border-gray-300 bg-gray-50 text-gray-600 font-medium">
 
-            </div>
+                                +34
 
-            <!-- Status -->
-            <div>
+                            </div>
 
-                <label class="block mb-2 font-medium text-gray-700">
-                    Estado
-                </label>
+                            {{ form.phone }}
 
-                {{ form.status }}
+                        </div>
 
-            </div>
+                        {% if form.phone.errors %}
+                            <p class="mt-1 text-sm text-red-600">
+                                {{ form.phone.errors.0 }}
+                            </p>
+                        {% endif %}
 
-            <!-- Properties -->
-            <div>
+                    </div>
 
-                <label class="block mb-2 font-medium text-gray-700">
-                    Inmuebles
-                </label>
+                    <div class="md:col-span-2">
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            Email
+                        </label>
 
-                {{ form.properties }}
+                        {{ form.email }}
 
-            </div>
-            
+                        {% if form.email.errors %}
+                            <p class="mt-1 text-sm text-red-600">
+                                {{ form.email.errors.0 }}
+                            </p>
+                        {% endif %}
+                    </div>
 
-            <!-- Notes -->
-            <div>
+                </div>
 
-                <label class="block mb-2 font-medium text-gray-700">
-                    Notas
-                </label>
+            </section>
 
-                {{ form.notes }}
+            <!-- Gestión comercial -->
+            <section class="border-t border-gray-200 pt-8">
 
-            </div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-5">
+                    Gestión comercial
+                </h2>
 
-            <div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-                <label class="block mb-2 font-medium text-gray-700">
-                    Estado
-                </label>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            Tipo de contacto
+                        </label>
 
-                {{ form.status }}
+                        {{ form.contact_type }}
+                    </div>
 
-            </div>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            Estado
+                        </label>
 
-            <div>
+                        {{ form.status }}
+                    </div>
 
-                <label class="block mb-2 font-medium text-gray-700">
-                    Encargado
-                </label>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            Encargado
+                        </label>
 
-                {{ form.assigned_agent }}
+                        {{ form.assigned_agent }}
+                    </div>
 
-            </div>
+                </div>
 
-            <!-- Actions -->
-            <div class="flex items-center gap-4 pt-4">
+            </section>
 
-                <button
-                    type="submit"
-                    class="bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-xl transition">
+            <!-- Inmuebles -->
+            <section class="border-t border-gray-200 pt-8 mt-3">
 
-                    Guardar
-                </button>
+                <h2 class="text-lg font-semibold text-gray-900 mb-5">
+                    Inmuebles asociados
+                </h2>
+
+                <div>
+
+                    <label class="block mb-2 text-sm font-medium text-gray-700">
+                        Inmuebles
+                    </label>
+
+                    {{ form.properties }}
+
+                    <p class="mt-2 text-sm text-gray-500">
+                        Selecciona uno o varios inmuebles relacionados con este contacto.
+                    </p>
+
+                </div>
+
+            </section>
+
+            <!-- Notas -->
+            <section class="border-t border-gray-200 pt-8 mt-2">
+
+                <h2 class="text-lg font-semibold text-gray-900 mb-5">
+                    Notas internas
+                </h2>
+
+                <div>
+
+                    <label class="block mb-2 text-sm font-medium text-gray-700">
+                        Notas
+                    </label>
+
+                    {{ form.notes }}
+
+                </div>
+
+            </section>
+
+            <!-- Footer -->
+            <div class="flex justify-end gap-3 pt-8 border-t border-gray-200">
 
                 <a
                     href="{% url 'contact_list' %}"
-                    class="text-gray-600 hover:text-gray-900">
+                    class="px-5 py-3 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
 
                     Cancelar
+
                 </a>
+
+                <button
+                    type="submit"
+                    class="px-6 py-3 rounded-xl bg-gray-900 text-white hover:bg-black transition shadow-sm">
+
+                    Guardar contacto
+
+                </button>
 
             </div>
 
@@ -125,5 +223,69 @@
     </div>
 
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const propertySelect = document.querySelector('#id_properties');
+
+    if (propertySelect) {
+
+        new TomSelect(propertySelect, {
+            plugins: {
+                remove_button: {
+                    title: 'Eliminar'
+                }
+            },
+
+            create: false,
+
+            maxOptions: 100,
+
+            placeholder: 'Buscar inmueble por dirección...',
+
+            searchField: ['text'],
+        });
+
+    }
+
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+
+    const phoneInput = document.getElementById('id_phone');
+
+    if (!phoneInput) return;
+
+    phoneInput.addEventListener('input', function () {
+
+        let value = this.value.replace(/\D/g, '');
+
+        value = value.substring(0, 9);
+
+        if (value.length > 6) {
+            value = value.replace(
+                /(\d{3})(\d{3})(\d+)/,
+                '$1 $2 $3'
+            );
+        }
+        else if (value.length > 3) {
+            value = value.replace(
+                /(\d{3})(\d+)/,
+                '$1 $2'
+            );
+        }
+
+        this.value = value;
+
+    });
+
+});
+
+</script>
 
 {% endblock %}

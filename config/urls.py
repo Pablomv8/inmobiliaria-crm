@@ -27,6 +27,11 @@ urlpatterns = [
     path('', include('users.urls')),
     path("tasks/", include("tasks.urls")),
     path("activities/", include("activities.urls")),
+    path("sales/", include('sales.urls')),
+    path("news/",include("news.urls")),
+    path("calendar/", include("calendar_app.urls")),
+    path("listings/", include("listings.urls")),
+    path("select2/", include("django_select2.urls")),
 ]
 
 urlpatterns += static(
