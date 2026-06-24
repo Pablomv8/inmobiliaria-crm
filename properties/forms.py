@@ -2,7 +2,6 @@ from django import forms
 from .models import Property
 
 
-
 INPUT_CLASS = """
 w-full
 rounded-xl
@@ -22,50 +21,14 @@ transition-all
 duration-200
 """
 
-TEXTAREA_CLASS = """
-w-full
-rounded-xl
-border
-border-gray-300
-bg-white
-px-4
-py-3
-text-gray-900
-shadow-sm
-placeholder:text-gray-400
-focus:border-indigo-500
-focus:ring-4
-focus:ring-indigo-100
-focus:outline-none
-transition-all
-duration-200
-resize-y
-"""
+TEXTAREA_CLASS = INPUT_CLASS + " resize-y"
 
-SELECT_CLASS = """
-w-full
-rounded-xl
-border
-border-gray-300
-bg-white
-px-4
-py-3
-text-gray-900
-shadow-sm
-focus:border-indigo-500
-focus:ring-4
-focus:ring-indigo-100
-focus:outline-none
-transition-all
-duration-200
-"""
-
+SELECT_CLASS = INPUT_CLASS
 
 
 class PropertyForm(forms.ModelForm):
 
     class Meta:
-
         model = Property
 
         fields = [
@@ -89,87 +52,93 @@ class PropertyForm(forms.ModelForm):
 
         widgets = {
 
-            # TITLE
+            # BASIC INFO
             'title': forms.TextInput(attrs={
-                'class': INPUT_CLASS
+                'class': INPUT_CLASS,
+                'placeholder': 'Ej: Piso luminoso en Salamanca'
             }),
 
-            # STREET
             'street': forms.TextInput(attrs={
-                'class': INPUT_CLASS
+                'class': INPUT_CLASS,
+                'placeholder': 'Calle Alcalá'
             }),
 
-            # NUMBER
             'number': forms.TextInput(attrs={
-                'class': INPUT_CLASS
+                'class': INPUT_CLASS,
+                'placeholder': '45'
             }),
 
-            # POSTAL CODE
             'postal_code': forms.TextInput(attrs={
-                'class': INPUT_CLASS
+                'class': INPUT_CLASS,
+                'placeholder': '28014'
             }),
 
-            # CITY
             'city': forms.TextInput(attrs={
-                'class': INPUT_CLASS
+                'class': INPUT_CLASS,
+                'placeholder': 'Madrid'
             }),
 
-            # PROVINCE
             'province': forms.TextInput(attrs={
-                'class': INPUT_CLASS
+                'class': INPUT_CLASS,
+                'placeholder': 'Madrid'
             }),
 
-            "zone": forms.Select(attrs={
-                "class": INPUT_CLASS,
+            'zone': forms.Select(attrs={
+                'class': SELECT_CLASS,
             }),
 
-            "bedrooms": forms.NumberInput(attrs={
-                "class": INPUT_CLASS,
-                "min": 0,
+            # FEATURES
+            'bedrooms': forms.NumberInput(attrs={
+                'class': INPUT_CLASS,
+                'min': 0,
+                'placeholder': '3'
             }),
 
-            "bathrooms": forms.NumberInput(attrs={
-                "class": INPUT_CLASS,
-                "min": 0,
+            'bathrooms': forms.NumberInput(attrs={
+                'class': INPUT_CLASS,
+                'min': 0,
+                'placeholder': '2'
             }),
 
-            "area": forms.NumberInput(attrs={
-                "class": INPUT_CLASS,
-                "min": 0,
+            'area': forms.NumberInput(attrs={
+                'class': INPUT_CLASS,
+                'min': 0,
+                'placeholder': '85'
             }),
 
-            "built_area": forms.NumberInput(attrs={
-                "class": INPUT_CLASS,
-                "min": 0,
+            'built_area': forms.NumberInput(attrs={
+                'class': INPUT_CLASS,
+                'min': 0,
+                'placeholder': '95'
             }),
 
             # PRICE
             'price': forms.NumberInput(attrs={
-                'class': INPUT_CLASS
+                'class': INPUT_CLASS,
+                'placeholder': '250000'
             }),
 
-            # TYPE
+            # TYPE / STATUS
             'property_type': forms.Select(attrs={
-                'class': INPUT_CLASS
+                'class': SELECT_CLASS,
             }),
 
-            # STATUS (IMPORTANTE PARA CRM)
             'status': forms.Select(attrs={
-                'class': INPUT_CLASS
+                'class': SELECT_CLASS,
             }),
 
             # IMAGE
             'image': forms.ClearableFileInput(attrs={
-                'class': INPUT_CLASS
+                'class': 'w-full text-sm'
             }),
 
             # DESCRIPTION
             'description': forms.Textarea(attrs={
-                'class': INPUT_CLASS,
-                'rows': 5
+                'class': TEXTAREA_CLASS,
+                'rows': 5,
+                'placeholder': 'Describe el inmueble...'
             }),
         }
-
 from contacts.models import Contact
 
 class OwnerContactForm(forms.ModelForm):
