@@ -27,6 +27,9 @@ class Property(models.Model):
         ('house', 'Casa'),
         ('villa', 'Villa'),
         ('office', 'Oficina'),
+        ('local', 'Local'),
+        ('solar', 'Solar'),
+        ('terreno', 'Terreno'),
     )
 
     STATUS_CHOICES = [
@@ -36,8 +39,6 @@ class Property(models.Model):
         ("rented", "Alquilado"),
         ("prospect", "Borrador")
     ]
-
-    title = models.CharField(max_length=255)
 
     street = models.CharField(
         max_length=255
@@ -59,12 +60,6 @@ class Property(models.Model):
     province = models.CharField(
         max_length=100,
         blank=True
-    )
-
-    price = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        null=True
     )
 
     property_type = models.CharField(

@@ -59,7 +59,7 @@ class Sale(models.Model):
     )
 
     def __str__(self):
-        return f"Venta de {self.related_property.title}"
+        return f"Venta de {self.related_property.full_address}"
 
     @property
     def commission_amount(self):

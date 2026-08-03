@@ -25,33 +25,37 @@ TEXTAREA_CLASS = INPUT_CLASS + " resize-none"
 
 class NewsForm(forms.ModelForm):
 
-    MOTIVATION_CHOICES = [
-        ("sale", "Venta"),
-        ("rent", "Alquiler"),
-    ]
+    def __init__(self, *args, property_obj=None, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    motivation = forms.ChoiceField(
-        choices=MOTIVATION_CHOICES,
-        widget=forms.Select(attrs={
-            "class": INPUT_CLASS
-        })
-    )
+        if property_obj is not None:
+            self.fields.pop("related_property")
 
     class Meta:
         model = News
         fields = [
+            "related_property",
             "motivation",
             "client_price",
             "estimated_price",
+            "status",
         ]
 
         labels = {
+            "related_property": "Inmueble",
             "motivation": "Motivación",
             "client_price": "Precio cliente",
             "estimated_price": "Precio estimado",
+            "status": "Estado",
         }
 
         widgets = {
+            "related_property": forms.Select(attrs={
+                "class": INPUT_CLASS,
+            }),
+            "motivation": forms.Select(attrs={
+                "class": INPUT_CLASS,
+            }),
             "client_price": forms.NumberInput(attrs={
                 "class": INPUT_CLASS,
                 "placeholder": "Ej: 250000"
@@ -59,6 +63,9 @@ class NewsForm(forms.ModelForm):
             "estimated_price": forms.NumberInput(attrs={
                 "class": INPUT_CLASS,
                 "placeholder": "Ej: 240000"
+            }),
+            "status": forms.Select(attrs={
+                "class": INPUT_CLASS,
             }),
         }
 
@@ -72,6 +79,7 @@ class NewsCommentForm(forms.ModelForm):
             "text": forms.Textarea(attrs={
                 "class": INPUT_CLASS,
                 "rows": 3,
+                "maxlength": 500,
                 "placeholder": "Escribe un comentario..."
             })
         }

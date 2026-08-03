@@ -26,9 +26,6 @@ def property_list(request):
     property_type = request.GET.get("type")
     city = request.GET.get("city")
 
-    min_price = request.GET.get("min_price")
-    max_price = request.GET.get("max_price")
-
     bedrooms = request.GET.get("bedrooms")
     bathrooms = request.GET.get("bathrooms")
 
@@ -48,8 +45,8 @@ def property_list(request):
     # BUSCADOR
     if search:
         properties = properties.filter(
-            Q(title__icontains=search) |
             Q(street__icontains=search) |
+            Q(number__icontains=search) |
             Q(city__icontains=search)
         )
 
@@ -69,18 +66,6 @@ def property_list(request):
             city__icontains=city
         )
 
-    # PRECIO MÍNIMO
-    if min_price:
-        properties = properties.filter(
-            price__gte=min_price
-        )
-
-    # PRECIO MÁXIMO
-    if max_price:
-        properties = properties.filter(
-            price__lte=max_price
-        )
-
     if bedrooms:
         properties = properties.filter(
             bedrooms__gte=bedrooms
@@ -96,9 +81,7 @@ def property_list(request):
     ordering_options = {
         "recent": "-created_at",
         "oldest": "created_at",
-        "price_asc": "price",
-        "price_desc": "-price",
-        "title": "title",
+        "address": "street",
     }
 
     if ordering in ordering_options:

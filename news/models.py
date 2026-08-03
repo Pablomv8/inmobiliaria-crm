@@ -25,6 +25,14 @@ class News(models.Model):
         related_name="news"
     )
 
+    agent = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="news",
+    )
+
     motivation = models.CharField(
         max_length=20,
         choices=MOTIVATION_CHOICES
@@ -57,6 +65,9 @@ class News(models.Model):
             self.client_price -
             self.estimated_price
         )
+
+    def __str__(self):
+        return f"{self.get_motivation_display()} · {self.related_property}"
     
 
 class NewsComment(models.Model):
@@ -65,6 +76,14 @@ class NewsComment(models.Model):
         News,
         on_delete=models.CASCADE,
         related_name="comments"
+    )
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="news_comments",
     )
 
     text = models.TextField()

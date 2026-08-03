@@ -156,15 +156,15 @@
             </div>
 
             <p class="text-sm text-gray-500 mt-2">
-                {{ listing.get_listing_type_display }}
+                {{ listing.get_listing_type_display }} · {{ listing.owner|default:"Sin propietario" }}
             </p>
 
             <p class="text-sm text-gray-600 mt-1">
-                Prop: {{ listing.owner_price }} € · Agencia: {{ listing.agency_price }} €
+                {{ listing.start_date|date:"d/m/Y" }} → {{ listing.end_date|date:"d/m/Y"|default:"Sin conclusión" }}
             </p>
 
             <p class="text-xs text-gray-400 mt-1">
-                Dif: {{ listing.price_diference }} €
+                Comisión: {{ listing.commission_percent|default_if_none:"—" }}% · Agente: {{ listing.agent|default:"Sin asignar" }}
             </p>
 
         </a>
@@ -185,8 +185,9 @@
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Inmueble</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Tipo</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Propietario</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Valoración</th>
-                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Diferencia</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Agente</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Vigencia</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Comisión</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Estado</th>
                 </tr>
             </thead>
@@ -208,15 +209,20 @@
                     </td>
 
                     <td class="px-6 py-4 text-gray-600">
-                        {{ listing.owner_price }} €
+                        {{ listing.owner|default:"Sin propietario" }}
                     </td>
 
                     <td class="px-6 py-4 text-gray-600">
-                        {{ listing.agency_price }} €
+                        {{ listing.agent|default:"Sin asignar" }}
                     </td>
 
-                    <td class="px-6 py-4 font-semibold">
-                        {{ listing.price_diference }} €
+                    <td class="px-6 py-4 text-sm text-gray-600">
+                        {{ listing.start_date|date:"d/m/Y" }}<br>
+                        <span class="text-xs text-gray-400">hasta {{ listing.end_date|date:"d/m/Y"|default:"—" }}</span>
+                    </td>
+
+                    <td class="px-6 py-4 font-semibold text-gray-900">
+                        {{ listing.commission_percent|default_if_none:"—" }}%
                     </td>
 
                     <td class="px-6 py-4">

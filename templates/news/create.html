@@ -10,11 +10,15 @@
         <div class="px-8 py-6 border-b border-gray-200">
 
             <h1 class="text-3xl font-bold text-gray-900">
-                Nueva noticia
+                {{ page_title }}
             </h1>
 
             <p class="mt-1 text-gray-500">
-                {{ property.title }}
+                {% if property %}
+                    {{ property.full_address }}
+                {% else %}
+                    Registra una oportunidad asociada a un inmueble.
+                {% endif %}
             </p>
 
         </div>
@@ -26,6 +30,20 @@
             {% if form.non_field_errors %}
                 <div class="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200">
                     {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            {% if form.related_property %}
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-gray-700">
+                        {{ form.related_property.label }}
+                    </label>
+                    {{ form.related_property }}
+                    {% if form.related_property.errors %}
+                        <p class="text-sm text-red-600 mt-1">
+                            {{ form.related_property.errors.0 }}
+                        </p>
+                    {% endif %}
                 </div>
             {% endif %}
 
@@ -77,14 +95,32 @@
 
             </div>
 
+            <div>
+                <label class="block mb-2 text-sm font-medium text-gray-700">
+                    {{ form.status.label }}
+                </label>
+                {{ form.status }}
+                {% if form.status.errors %}
+                    <p class="text-sm text-red-600 mt-1">
+                        {{ form.status.errors.0 }}
+                    </p>
+                {% endif %}
+            </div>
+
             <!-- Botón -->
-            <div class="flex justify-end pt-6 border-t border-gray-200">
+            <div class="flex justify-end gap-3 pt-6 border-t border-gray-200">
+
+                <a
+                    href="{% if news %}{% url 'news_detail' news.id %}{% else %}{% url 'news_list' %}{% endif %}"
+                    class="px-6 py-3 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
+                    Cancelar
+                </a>
 
                 <button
                     type="submit"
                     class="px-6 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm">
 
-                    Guardar noticia
+                    {{ submit_label }}
 
                 </button>
 

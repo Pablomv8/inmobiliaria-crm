@@ -89,6 +89,66 @@
 
             </div>
 
+            <div class="bg-gray-50 rounded-xl p-4">
+
+                <p class="text-sm text-gray-500">
+                    Propietario
+                </p>
+
+                <p class="font-semibold">
+                    {{ listing.owner|default:"Sin propietario asignado" }}
+                </p>
+
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-4">
+
+                <p class="text-sm text-gray-500">
+                    Comisión acordada
+                </p>
+
+                <p class="font-semibold">
+                    {{ listing.commission_percent|default_if_none:"—" }}%
+                </p>
+
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-4">
+
+                <p class="text-sm text-gray-500">
+                    Fecha de inicio
+                </p>
+
+                <p class="font-semibold">
+                    {{ listing.start_date|date:"d/m/Y" }}
+                </p>
+
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-4">
+
+                <p class="text-sm text-gray-500">
+                    Fecha de conclusión
+                </p>
+
+                <p class="font-semibold">
+                    {{ listing.end_date|date:"d/m/Y"|default:"Sin definir" }}
+                </p>
+
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-4 md:col-span-2">
+
+                <p class="text-sm text-gray-500">
+                    Exclusividad
+                </p>
+
+                <p class="font-semibold">
+                    {% if listing.is_exclusive %}Sí, encargo en exclusiva{% else %}No exclusivo{% endif %}
+                </p>
+
+            </div>
+
             <div class="bg-gray-50 rounded-xl p-4 md:col-span-2">
 
                 <p class="text-sm text-gray-500">
@@ -125,7 +185,7 @@
 
                 {% endif %}
 
-                {% if listing.source_appointment.news %}
+                {% if listing.source_appointment and listing.source_appointment.news %}
 
                     <a
                         href="{% url 'news_detail' listing.source_appointment.news.id %}"

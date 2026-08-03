@@ -27,35 +27,31 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('Creating properties...'))
 
         p1 = Property.objects.create(
-            title="Piso en Madrid Centro",
-            address="Gran Vía 123",
+            street="Gran Vía",
+            number="123",
             city="Madrid",
-            price=350000,
-            property_type="flat"
+            property_type="local"
         )
 
         p2 = Property.objects.create(
-            title="Ático en Valencia",
-            address="Calle Colón 45",
+            street="Calle Colón",
+            number="45",
             city="Valencia",
-            price=420000,
-            property_type="flat"
+            property_type="solar"
         )
 
         p3 = Property.objects.create(
-            title="Chalet en Sevilla",
-            address="Avenida Sur 77",
+            street="Avenida Sur",
+            number="77",
             city="Sevilla",
-            price=780000,
-            property_type="villa"
+            property_type="terreno"
         )
 
         p4 = Property.objects.create(
-            title="Oficina en Barcelona",
-            address="Diagonal 100",
+            street="Diagonal",
+            number="100",
             city="Barcelona",
-            price=610000,
-            property_type="office"
+            property_type="local"
         )
 
         self.stdout.write(self.style.SUCCESS('Creating contacts...'))

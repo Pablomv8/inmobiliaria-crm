@@ -1,6 +1,31 @@
 from django import forms
 from .models import Appointment, Call
 
+
+class AppointmentResultForm(forms.ModelForm):
+
+    class Meta:
+        model = Appointment
+        fields = ["result_comment"]
+        widgets = {
+            "result_comment": forms.Textarea(attrs={
+                "class": "w-full border border-gray-300 rounded-xl p-3 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 focus:outline-none",
+                "rows": 4,
+                "maxlength": 1000,
+                "placeholder": "Resume el resultado de la cita...",
+            }),
+        }
+
+    def clean_result_comment(self):
+        comment = self.cleaned_data["result_comment"].strip()
+
+        if not comment:
+            raise forms.ValidationError(
+                "Añade un comentario antes de completar la cita."
+            )
+
+        return comment
+
 class AppointmentForm(forms.ModelForm):
 
     class Meta:

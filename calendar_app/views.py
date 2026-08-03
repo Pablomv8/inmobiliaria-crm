@@ -3,11 +3,12 @@ from django.http import JsonResponse
 from django.urls import reverse
 
 from .models import Appointment, Call
-from .forms import AppointmentForm, CallForm
+from .forms import AppointmentForm, AppointmentResultForm, CallForm
 from news.models import News
 from contacts.models import Contact
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.views.decorators.http import require_POST
 from collections import defaultdict
 
 
@@ -102,17 +103,89 @@ def create_call(request, news_id):
 def appointment_detail(request, pk):
 
     appointment = get_object_or_404(
-        Appointment,
+        Appointment.objects.select_related(
+            "news",
+            "related_property",
+            "contact",
+            "agent",
+        ),
         pk=pk
     )
+
+    listing = appointment.generated_listing.first()
 
     return render(
         request,
         "calendar_app/appointment_detail.html",
         {
-            "appointment": appointment
+            "appointment": appointment,
+            "result_form": AppointmentResultForm(instance=appointment),
+            "listing": listing,
         }
     )
+
+
+@login_required
+@require_POST
+def add_appointment_result(request, pk):
+    appointment = get_object_or_404(
+        Appointment,
+        pk=pk,
+        agent=request.user,
+    )
+    form = AppointmentResultForm(request.POST, instance=appointment)
+
+    if form.is_valid():
+        appointment = form.save(commit=False)
+        appointment.status = "completed"
+        appointment.save(update_fields=["result_comment", "status"])
+        messages.success(
+            request,
+            "Comentario guardado. Indica ahora si la cita tuvo éxito.",
+        )
+    else:
+        listing = appointment.generated_listing.first()
+        return render(
+            request,
+            "calendar_app/appointment_detail.html",
+            {
+                "appointment": appointment,
+                "result_form": form,
+                "listing": listing,
+            },
+            status=400,
+        )
+
+    return redirect("appointment_detail", pk=appointment.pk)
+
+
+@login_required
+@require_POST
+def schedule_call_from_appointment(request, pk):
+    appointment = get_object_or_404(
+        Appointment,
+        pk=pk,
+        agent=request.user,
+    )
+
+    if (
+        appointment.status != "completed"
+        or not appointment.result_comment.strip()
+    ):
+        messages.warning(
+            request,
+            "Añade el comentario de resultado antes de programar la llamada.",
+        )
+        return redirect("appointment_detail", pk=appointment.pk)
+
+    if appointment.news is None:
+        messages.error(request, "La cita no tiene una noticia asociada.")
+        return redirect("appointment_detail", pk=appointment.pk)
+
+    appointment.result_success = False
+    appointment.save(update_fields=["result_success"])
+
+    return redirect("create_call", news_id=appointment.news_id)
 
 @login_required
 def call_detail(request, pk):

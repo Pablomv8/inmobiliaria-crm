@@ -6,12 +6,12 @@
     <div class="grid lg:grid-cols-3 gap-6">
         <!-- HEADER -->
         <div class="lg:col-span-2 space-y-6">
-            <div class="flex items-start justify-between">
+            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
 
                 <div>
 
                     <h1 class="text-3xl font-bold text-gray-900">
-                        {{ news.property.title }}
+                        {{ news.related_property.full_address }}
                     </h1>
 
                     <p class="text-gray-500 mt-1">
@@ -20,9 +20,23 @@
 
                 </div>
 
-                <span class="px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
-                    {{ news.get_status_display }}
-                </span>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
+                        {{ news.get_status_display }}
+                    </span>
+                    <a href="{% url 'news_update' news.id %}"
+                       class="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm hover:bg-black transition">
+                        Editar
+                    </a>
+                    <a href="{% url 'news_delete' news.id %}"
+                       class="px-4 py-2 rounded-xl bg-red-50 text-red-700 text-sm hover:bg-red-100 transition">
+                        Eliminar
+                    </a>
+                    <a href="{% url 'news_list' %}"
+                       class="px-4 py-2 rounded-xl border border-gray-200 text-gray-700 text-sm hover:bg-gray-50 transition">
+                        Volver
+                    </a>
+                </div>
 
             </div>
             
@@ -41,11 +55,11 @@
                         <div class="p-4 rounded-xl bg-gray-50 border border-gray-100" href="{% url 'property_detail' news.related_property.id %}">
 
                             <a class="font-semibold text-gray-900"  href="{% url 'property_detail' news.related_property.id %}">
-                                {{ news.related_property.title }}
+                                {{ news.related_property.full_address }}
                             </a>
 
                             <p class="text-sm text-gray-500 mt-1">
-                                {{ news.related_property.full_address }}
+                                {{ news.related_property.get_property_type_display }}
                             </p>
 
 
@@ -176,7 +190,7 @@
                             <div class="flex justify-between mb-2">
 
                                 <span class="font-medium text-gray-800">
-                                    {{ comment.user }}
+                                    {{ comment.user|default:"Usuario eliminado" }}
                                 </span>
 
                                 <span class="text-xs text-gray-400">
@@ -266,7 +280,7 @@
                                     </p>
 
                                     <p class="text-sm text-gray-500 mt-1">
-                                        {{ item.object.content|truncatechars:80 }}
+                                        {{ item.object.text|truncatechars:80 }}
                                     </p>
 
                                 {% elif item.type == "call" %}

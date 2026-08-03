@@ -32,7 +32,6 @@ class PropertyForm(forms.ModelForm):
         model = Property
 
         fields = [
-            'title',
             'street',
             'number',
             'postal_code',
@@ -43,7 +42,6 @@ class PropertyForm(forms.ModelForm):
             "bathrooms",
             "area",
             "built_area",
-            'price',
             'property_type',
             'image',
             'description',
@@ -53,11 +51,6 @@ class PropertyForm(forms.ModelForm):
         widgets = {
 
             # BASIC INFO
-            'title': forms.TextInput(attrs={
-                'class': INPUT_CLASS,
-                'placeholder': 'Ej: Piso luminoso en Salamanca'
-            }),
-
             'street': forms.TextInput(attrs={
                 'class': INPUT_CLASS,
                 'placeholder': 'Calle Alcalá'
@@ -110,12 +103,6 @@ class PropertyForm(forms.ModelForm):
                 'class': INPUT_CLASS,
                 'min': 0,
                 'placeholder': '95'
-            }),
-
-            # PRICE
-            'price': forms.NumberInput(attrs={
-                'class': INPUT_CLASS,
-                'placeholder': '250000'
             }),
 
             # TYPE / STATUS

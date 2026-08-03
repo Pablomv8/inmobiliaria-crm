@@ -26,14 +26,6 @@
 
             {% csrf_token %}
 
-            <!-- TITULO -->
-            <div>
-                <label class="block mb-2 text-sm font-medium text-gray-700">
-                    Título
-                </label>
-                {{ form.title }}
-            </div>
-
             <!-- DIRECCIÓN -->
             <section>
                 <h2 class="text-lg font-semibold text-gray-900 mb-4">
@@ -75,20 +67,13 @@
                 </div>
             </section>
 
-            <!-- PRECIO + INFO -->
+            <!-- ESTADO -->
             <section>
                 <h2 class="text-lg font-semibold text-gray-900 mb-4">
-                    Información económica
+                    Estado
                 </h2>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-                    <div>
-                        <label class="label">Precio</label>
-                        {{ form.price }}
-                    </div>
-
-
                     <div>
                         <label class="label">Estado</label>
                         {{ form.status }}

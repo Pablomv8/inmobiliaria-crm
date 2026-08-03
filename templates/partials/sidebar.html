@@ -64,9 +64,9 @@
 
         
 
-        <a href="{% url 'calendar' %}" 
+        <a href="{% url 'news_list' %}"
             class="flex items-center gap-3 px-4 py-3 rounded-xl
-            {% if request.resolver_match.url_name == '' %}
+            {% if request.resolver_match.url_name == 'news_list' or request.resolver_match.url_name == 'news_create_general' or request.resolver_match.url_name == 'news_create' or request.resolver_match.url_name == 'news_detail' or request.resolver_match.url_name == 'news_update' or request.resolver_match.url_name == 'news_delete' %}
                     bg-gray-900 text-white
             {% else %}
                     text-gray-700 hover:bg-gray-100

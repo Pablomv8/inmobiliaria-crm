@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 class Listing(models.Model):
 
@@ -42,11 +43,6 @@ class Listing(models.Model):
         decimal_places=2
     )
 
-    owner_price = models.DecimalField(
-        max_digits=12,
-        decimal_places=2
-    )
-
     price_diference = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -64,6 +60,26 @@ class Listing(models.Model):
     end_date = models.DateField(
         null=True,
         blank=True
+    )
+
+    commission_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[
+            MinValueValidator(0),
+            MaxValueValidator(100),
+        ],
+        verbose_name="Comisión acordada (%)",
+    )
+
+    owner = models.ForeignKey(
+        "contacts.Contact",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="listings",
     )
 
     source_appointment = models.ForeignKey(

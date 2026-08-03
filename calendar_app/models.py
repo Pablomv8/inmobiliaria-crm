@@ -55,6 +55,17 @@ class Appointment(models.Model):
         blank=True
     )
 
+    result_comment = models.TextField(
+        blank=True,
+        verbose_name="Comentario de resultado",
+    )
+
+    result_success = models.BooleanField(
+        null=True,
+        blank=True,
+        verbose_name="Cita con éxito",
+    )
+
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
