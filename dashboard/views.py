@@ -129,11 +129,6 @@ def dashboard(request):
         due_date__lt=timezone.now()
     ).count()
 
-    contacts_by_status = contacts.values(
-        "status"
-    ).annotate(
-        total=Count("id")
-    )
 
     latest_contacts = contacts.order_by(
         "-created_at"
@@ -327,7 +322,6 @@ def dashboard(request):
         "total_properties": total_properties,
         "pending_tasks": pending_tasks,
         "overdue_tasks": overdue_tasks,
-        "contacts_by_status": contacts_by_status,
         "latest_contacts": latest_contacts,
         "latest_tasks": latest_tasks,
         "upcoming_tasks": upcoming_tasks,

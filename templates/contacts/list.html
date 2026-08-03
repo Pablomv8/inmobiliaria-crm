@@ -39,22 +39,6 @@
 
             </div>
 
-            <!-- ESTADO -->
-            <select name="status"
-                    onchange="this.form.submit()"
-                    class="px-3 py-2 rounded-xl text-sm bg-blue-50 text-blue-700 font-medium">
-
-                <option value="">Estado</option>
-
-                {% for value, label in contacts.model.STATUS_CHOICES %}
-                    <option value="{{ value }}"
-                        {% if request.GET.status == value %}selected{% endif %}>
-                        {{ label }}
-                    </option>
-                {% endfor %}
-
-            </select>
-
             <!-- AGENTE -->
             <select name="agent"
                     onchange="this.form.submit()"
@@ -115,10 +99,11 @@
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Teléfono</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">DNI</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ciudad</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Inmueble</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Encargado</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
                 </tr>
             </thead>
 
@@ -132,7 +117,17 @@
                             href="{% url 'contact_detail' contact.id %}"
                             class="font-medium text-gray-900 hover:text-gray-600"
                         >
-                            {{ contact.name }}
+                            <div>
+                                <p class="font-semibold text-gray-900">
+                                    {{ contact.name }} {{ contact.last_name }}
+                                </p>
+
+                                {% if contact.email %}
+                                    <p class="text-sm text-gray-500">
+                                        {{ contact.email }}
+                                    </p>
+                                {% endif %}
+                            </div>
                         </a>
                     </td>
 
@@ -141,7 +136,11 @@
                     </td>
 
                     <td class="px-6 py-4 text-gray-700">
-                        {{ contact.email|default:"—" }}
+                        {{ contact.identificacion_numer|default:"—" }}
+                    </td>
+
+                    <td class="px-6 py-4 text-gray-700">
+                        {{ contact.city|default:"—" }}
                     </td>
 
                     <td class="px-6 py-4 text-gray-700">
@@ -159,40 +158,6 @@
                         {% endfor %}
                     </td>
 
-                    <td class="px-6 py-4">
-                        <div id="contact-status-{{ contact.id }}"
-                            class="inline-block px-3 py-1 text-xs rounded-full
-
-                            {% if contact.status == 'new' %}
-                                bg-blue-100 text-blue-700
-                            {% elif contact.status == 'interested' %}
-                                bg-green-100 text-green-700
-                            {% elif contact.status == 'visit' %}
-                                bg-yellow-100 text-yellow-700
-                            {% elif contact.status == 'negotiation' %}
-                                bg-orange-100 text-orange-700
-                            {% elif contact.status == 'closed' %}
-                                bg-gray-200 text-gray-700
-                            {% endif %}
-                        ">
-
-                            <select
-                                data-url="{% url 'contact_update_status' contact.id %}"
-                                onchange="updateContactStatus(this)"
-                                class="bg-transparent border-0 text-xs font-medium focus:ring-0 cursor-pointer">
-
-                                {% for value, label in contact.STATUS_CHOICES %}
-                                    <option value="{{ value }}"
-                                        {% if contact.status == value %}selected{% endif %}>
-                                        {{ label }}
-                                    </option>
-                                {% endfor %}
-
-                            </select>
-
-                        </div>
-
-                    </td>
                     <td class="px-6 py-4">
 
                         <div class="inline-block">
@@ -219,6 +184,31 @@
 
                     </td>
 
+                    <td class="px-6 py-4">
+
+                        <div class="flex justify-left items-center gap-2">
+
+
+                            <a href="{% url 'contact_update' contact.id %}"
+                            class="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition"
+                            title="Editar">
+
+                                ✏️
+
+                            </a>
+
+                            <a href="{% url 'contact_delete' contact.id %}"
+                            class="p-2 rounded-lg hover:bg-red-50 text-red-600 transition"
+                            title="Eliminar">
+
+                                🗑️
+
+                            </a>
+
+                        </div>
+
+                    </td>
+
                 </tr>
                 {% endfor %}
 
@@ -227,36 +217,178 @@
     </div>
 
     <!-- MOBILE CARDS -->
+    <!-- MOBILE CARDS -->
     <div class="space-y-4 md:hidden">
 
         {% for contact in contacts %}
-        <div class="bg-white shadow rounded-xl p-4 border border-gray-100">
 
-            <div class="flex justify-between items-start">
-                <h2 class="text-lg font-semibold text-gray-900">
-                    {{ contact.name }}
-                </h2>
+            <div
+                data-url="{% url 'contact_detail' contact.id %}"
+                class="contact-card bg-white shadow-sm rounded-2xl p-5 border border-gray-100 cursor-pointer hover:shadow-md transition"
+            >
 
-                <span class="px-3 py-1 text-xs rounded-full
-                    {% if contact.status == 'new' %} bg-blue-100 text-blue-700
-                    {% elif contact.status == 'interested' %} bg-green-100 text-green-700
-                    {% elif contact.status == 'visit' %} bg-yellow-100 text-yellow-700
-                    {% elif contact.status == 'negotiation' %} bg-orange-100 text-orange-700
-                    {% elif contact.status == 'closed' %} bg-gray-200 text-gray-700
-                    {% endif %}">
-                    {{ contact.get_status_display }}
-                </span>
+                <!-- CABECERA -->
+                <div class="flex justify-between items-start gap-4">
+
+                    <div class="min-w-0">
+
+                        <h2 class="text-lg font-semibold text-gray-900 truncate">
+                            {{ contact.name }} {{ contact.last_name }}
+                        </h2>
+
+                        {% if contact.email %}
+                            <p class="text-sm text-gray-500 mt-1 truncate">
+                                {{ contact.email }}
+                            </p>
+                        {% endif %}
+
+                    </div>
+
+                    <span class="shrink-0 px-3 py-1 text-xs font-medium rounded-full
+
+                        {% if contact.contact_type == 'owner' %}
+                            bg-blue-100 text-blue-700
+                        {% elif contact.contact_type == 'buyer' %}
+                            bg-green-100 text-green-700
+                        {% else %}
+                            bg-gray-100 text-gray-700
+                        {% endif %}
+                    ">
+                        {{ contact.get_contact_type_display }}
+                    </span>
+
+                </div>
+
+                <!-- INFORMACIÓN -->
+                <div class="mt-5 grid grid-cols-2 gap-4 text-sm">
+
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase font-medium">
+                            Teléfono
+                        </p>
+
+                        <p class="mt-1 text-gray-700 font-medium">
+                            {{ contact.phone|default:"—" }}
+                        </p>
+                    </div>
+
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase font-medium">
+                            Documento
+                        </p>
+
+                        <p class="mt-1 text-gray-700 font-medium">
+                            {{ contact.identification_number|default:"—" }}
+                        </p>
+                    </div>
+
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase font-medium">
+                            Ciudad
+                        </p>
+
+                        <p class="mt-1 text-gray-700 font-medium">
+                            {{ contact.city|default:"—" }}
+                        </p>
+                    </div>
+
+                    <div>
+                        <p class="text-xs text-gray-400 uppercase font-medium">
+                            Responsable
+                        </p>
+
+                        <p class="mt-1 text-gray-700 font-medium">
+                            {% if contact.assigned_agent %}
+                                {{ contact.assigned_agent.get_full_name|default:contact.assigned_agent.username }}
+                            {% else %}
+                                Sin asignar
+                            {% endif %}
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- DIRECCIÓN -->
+                {% if contact.street or contact.number or contact.floor %}
+
+                    <div class="mt-4 rounded-xl bg-gray-50 px-4 py-3">
+
+                        <p class="text-xs text-gray-400 uppercase font-medium">
+                            Dirección
+                        </p>
+
+                        <p class="text-sm text-gray-700 mt-1">
+                            {{ contact.street|default:"" }}
+                            {{ contact.number|default:"" }}
+
+                            {% if contact.floor %}
+                                · {{ contact.floor }}
+                            {% endif %}
+                        </p>
+
+                    </div>
+
+                {% endif %}
+
+                <!-- ACCIONES -->
+                <div class="flex justify-end items-center gap-2 mt-5 pt-4 border-t border-gray-100">
+
+                    <a
+                        href="{% url 'contact_update' contact.id %}"
+                        class="contact-action inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition"
+                    >
+                        <svg
+                            class="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M16.862 3.487a2.25 2.25 0 013.182 3.182L7.5 19.213 3 21l1.787-4.5L16.862 3.487z"
+                            />
+                        </svg>
+
+                        Editar
+                    </a>
+
+                    <a
+                        href="{% url 'contact_delete' contact.id %}"
+                        class="contact-action inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100 transition"
+                    >
+                        <svg
+                            class="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M6 7h12m-10 0l1 12h6l1-12M9 7V4h6v3"
+                            />
+                        </svg>
+
+                        Eliminar
+                    </a>
+
+                </div>
+
             </div>
 
-            <div class="mt-3 text-sm text-gray-600 space-y-1">
-                <p><span class="font-medium">Tel:</span> {{ contact.phone }}</p>
-                <p><span class="font-medium">Email:</span> {{ contact.email|default:"—" }}</p>
+        {% empty %}
+
+            <div class="bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-500">
+                No se encontraron contactos.
             </div>
 
-        </div>
         {% endfor %}
 
     </div>
+       
 
     
 
@@ -264,6 +396,18 @@
 {% endblock %}
 {% block extra_js %}
 <script>
+
+    document.querySelectorAll(".contact-card").forEach(card => {
+        card.addEventListener("click", () => {
+            window.location.href = card.dataset.url;
+        });
+    });
+
+    document.querySelectorAll(".contact-action").forEach(action => {
+        action.addEventListener("click", event => {
+            event.stopPropagation();
+        });
+    });
 
     function getCookie(name) {
 

@@ -148,11 +148,9 @@ class OwnerContactForm(forms.ModelForm):
 
         self.property_obj = property_obj
 
-        # 👇 forzamos tipo propietario
         self.fields["contact_type"].initial = "owner"
         self.fields["contact_type"].disabled = True
 
-        # 👇 preseleccionamos inmueble
         if property_obj:
             self.fields["properties"].initial = [property_obj]
             self.fields["properties"].disabled = True
@@ -163,10 +161,23 @@ class OwnerContactForm(forms.ModelForm):
 
         fields = [
             "name",
+            "last_name",
+            "identification_number",
+            "marital_status",
+            "birth_date",
+            "occupation",
+
+            "street",
+            "number",
+            "floor",
+            "postal_code",
+            "city",
+            "province",
+
             "phone",
             "email",
+
             "contact_type",
-            "status",
             "notes",
             "properties",
             "assigned_agent",
@@ -176,7 +187,61 @@ class OwnerContactForm(forms.ModelForm):
 
             "name": forms.TextInput(attrs={
                 "class": INPUT_CLASS,
-                "placeholder": "Nombre del propietario",
+                "placeholder": "Nombre",
+            }),
+
+            "last_name": forms.TextInput(attrs={
+                "class": INPUT_CLASS,
+                "placeholder": "Apellidos",
+            }),
+
+            "identification_number": forms.TextInput(attrs={
+                "class": INPUT_CLASS,
+                "placeholder": "12345678A",
+            }),
+
+            "marital_status": forms.Select(attrs={
+                "class": SELECT_CLASS,
+            }),
+
+            "birth_date": forms.DateInput(attrs={
+                "type": "date",
+                "class": INPUT_CLASS,
+            }),
+
+            "occupation": forms.TextInput(attrs={
+                "class": INPUT_CLASS,
+                "placeholder": "Profesión",
+            }),
+
+            "street": forms.TextInput(attrs={
+                "class": INPUT_CLASS,
+                "placeholder": "Calle",
+            }),
+
+            "number": forms.TextInput(attrs={
+                "class": INPUT_CLASS,
+                "placeholder": "Número",
+            }),
+
+            "floor": forms.TextInput(attrs={
+                "class": INPUT_CLASS,
+                "placeholder": "Piso / Puerta",
+            }),
+
+            "postal_code": forms.TextInput(attrs={
+                "class": INPUT_CLASS,
+                "placeholder": "41001",
+            }),
+
+            "city": forms.TextInput(attrs={
+                "class": INPUT_CLASS,
+                "placeholder": "Ciudad",
+            }),
+
+            "province": forms.TextInput(attrs={
+                "class": INPUT_CLASS,
+                "placeholder": "Provincia",
             }),
 
             "phone": forms.TextInput(attrs={
@@ -190,10 +255,6 @@ class OwnerContactForm(forms.ModelForm):
             }),
 
             "contact_type": forms.Select(attrs={
-                "class": SELECT_CLASS,
-            }),
-
-            "status": forms.Select(attrs={
                 "class": SELECT_CLASS,
             }),
 

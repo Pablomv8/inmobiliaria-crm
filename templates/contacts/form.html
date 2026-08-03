@@ -63,15 +63,55 @@
                         <label class="block mb-2 text-sm font-medium text-gray-700">
                             Nombre
                         </label>
-
                         {{ form.name }}
-
-                        {% if form.name.errors %}
-                            <p class="mt-1 text-sm text-red-600">
-                                {{ form.name.errors.0 }}
-                            </p>
-                        {% endif %}
                     </div>
+
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            Apellidos
+                        </label>
+                        {{ form.last_name }}
+                    </div>
+
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            Documento de identidad
+                        </label>
+                        {{ form.identification_number }}
+                    </div>
+
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            Estado civil
+                        </label>
+                        {{ form.marital_status }}
+                    </div>
+
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            Fecha de nacimiento
+                        </label>
+                        {{ form.birth_date }}
+                    </div>
+
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            Profesión
+                        </label>
+                        {{ form.occupation }}
+                    </div>
+
+                </div>
+
+            </section>
+
+            <section class="border-t border-gray-200 pt-8">
+
+                <h2 class="text-lg font-semibold text-gray-900 mb-5">
+                    Información de contacto
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                     <div>
 
@@ -81,8 +121,7 @@
 
                         <div class="flex">
 
-                            <div
-                                class="flex items-center px-4 rounded-l-xl border border-r-0 border-gray-300 bg-gray-50 text-gray-600 font-medium">
+                            <div class="flex items-center px-4 rounded-l-xl border border-r-0 border-gray-300 bg-gray-50 text-gray-600 font-medium">
 
                                 +34
 
@@ -92,26 +131,76 @@
 
                         </div>
 
-                        {% if form.phone.errors %}
-                            <p class="mt-1 text-sm text-red-600">
-                                {{ form.phone.errors.0 }}
-                            </p>
-                        {% endif %}
-
                     </div>
 
-                    <div class="md:col-span-2">
+                    <div>
+
                         <label class="block mb-2 text-sm font-medium text-gray-700">
-                            Email
+                            Correo electrónico
                         </label>
 
                         {{ form.email }}
 
-                        {% if form.email.errors %}
-                            <p class="mt-1 text-sm text-red-600">
-                                {{ form.email.errors.0 }}
-                            </p>
-                        {% endif %}
+                    </div>
+
+                    <div>
+
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            Calle
+                        </label>
+
+                        {{ form.street }}
+
+                    </div>
+
+                    <div>
+
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            Número
+                        </label>
+
+                        {{ form.number }}
+
+                    </div>
+
+                    <div>
+
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            Piso / Puerta
+                        </label>
+
+                        {{ form.floor }}
+
+                    </div>
+
+                    <div>
+
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            Código postal
+                        </label>
+
+                        {{ form.postal_code }}
+
+                    </div>
+
+                    <div>
+
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            Ciudad
+                        </label>
+
+                        {{ form.city }}
+
+                    </div>
+
+                    <div>
+
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            Provincia
+                        </label>
+
+                        {{ form.province }}
+
                     </div>
 
                 </div>
@@ -125,7 +214,7 @@
                     Gestión comercial
                 </h2>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                     <div>
                         <label class="block mb-2 text-sm font-medium text-gray-700">
@@ -135,14 +224,7 @@
                         {{ form.contact_type }}
                     </div>
 
-                    <div>
-                        <label class="block mb-2 text-sm font-medium text-gray-700">
-                            Estado
-                        </label>
-
-                        {{ form.status }}
-                    </div>
-
+                
                     <div>
                         <label class="block mb-2 text-sm font-medium text-gray-700">
                             Encargado
