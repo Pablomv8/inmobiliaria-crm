@@ -1,0 +1,5 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-xl mx-auto px-4 py-12"><div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-8"><h1 class="text-2xl font-bold">Eliminar pedido</h1><p class="text-gray-600 mt-4">¿Seguro que quieres eliminar el pedido de <strong>{{ order.buyer }}</strong>?</p><form method="post" class="flex justify-end gap-3 mt-8">{% csrf_token %}<a href="{% url 'order_detail' order.id %}" class="px-5 py-3 rounded-xl border border-gray-300">Cancelar</a><button class="px-5 py-3 rounded-xl bg-red-600 text-white">Eliminar</button></form></div></div>
+{% endblock %}

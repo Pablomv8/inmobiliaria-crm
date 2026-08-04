@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+    <a href="{% url 'appointment_detail' proposal.source_sale_appointment.id %}" class="text-sm text-gray-500 hover:text-gray-900">← Volver a la cita de propuesta</a>
+
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8 mt-5">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div>
+                <p class="text-sm font-medium text-green-700">Propuesta de compra</p>
+                <h1 class="text-3xl font-bold text-gray-900 mt-2">Propuesta de {{ proposal.buyer }}</h1>
+                <p class="text-gray-500 mt-2">{{ proposal.listing.property.full_address }}</p>
+            </div>
+            <span class="rounded-full bg-green-100 text-green-800 px-3 py-1 text-sm">Propuesta registrada</span>
+        </div>
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+            <div class="rounded-xl bg-gray-50 p-4"><p class="text-sm text-gray-500">Precio del encargo</p><p class="font-semibold mt-1">{{ proposal.listing_price }} €</p></div>
+            <div class="rounded-xl bg-green-50 p-4"><p class="text-sm text-green-700">Precio ofertado</p><p class="font-semibold text-green-900 mt-1">{{ proposal.offered_price }} €</p></div>
+            <div class="rounded-xl bg-gray-50 p-4"><p class="text-sm text-gray-500">Señal entregada</p><p class="font-semibold mt-1">{{ proposal.deposit_amount }} €</p></div>
+            <div class="rounded-xl bg-gray-50 p-4"><p class="text-sm text-gray-500">Fecha de creación</p><p class="font-semibold mt-1">{{ proposal.proposal_date|date:"d/m/Y" }}</p></div>
+            <div class="rounded-xl bg-gray-50 p-4"><p class="text-sm text-gray-500">Fecha final</p><p class="font-semibold mt-1">{{ proposal.end_date|date:"d/m/Y" }}</p></div>
+            <div class="rounded-xl bg-gray-50 p-4"><p class="text-sm text-gray-500">Agente</p><p class="font-semibold mt-1">{{ proposal.agent|default:"Sin asignar" }}</p></div>
+        </div>
+
+        <div class="flex flex-wrap gap-3 mt-8 pt-6 border-t border-gray-200">
+            <a href="{% url 'order_detail' proposal.order.id %}" class="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm">Ver pedido</a>
+            <a href="{% url 'listing_detail' proposal.listing.id %}" class="px-4 py-2 rounded-xl bg-blue-50 text-blue-700 text-sm">Ver encargo</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

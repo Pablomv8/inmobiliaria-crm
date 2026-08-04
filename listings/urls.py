@@ -20,5 +20,10 @@ urlpatterns = [
         views.create_listing_from_appointment,
         name="create_listing"
     ),
+    path(
+        "<int:listing_id>/comment/",
+        views.listing_add_comment,
+        name="listing_add_comment"
+    ),
 
 ]

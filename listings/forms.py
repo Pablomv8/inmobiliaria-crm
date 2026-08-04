@@ -2,7 +2,7 @@ from django import forms
 
 from contacts.models import Contact
 
-from .models import Listing
+from .models import Listing, ListingComment
 
 
 INPUT_CLASS = (
@@ -82,3 +82,17 @@ class ListingForm(forms.ModelForm):
             )
 
         return cleaned_data
+
+
+class ListingCommentForm(forms.ModelForm):
+    class Meta:
+        model = ListingComment
+        fields = ["text"]
+        widgets = {
+            "text": forms.Textarea(attrs={
+                "class": INPUT_CLASS,
+                "rows": 3,
+                "maxlength": 500,
+                "placeholder": "Añade una actualización del encargo...",
+            }),
+        }

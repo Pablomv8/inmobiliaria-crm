@@ -7,11 +7,11 @@
     <div class="bg-white border rounded-2xl p-6 space-y-6">
 
         <h1 class="text-xl font-semibold">
-            Nueva llamada
+            {{ page_title|default:"Nueva llamada" }}
         </h1>
 
         <p class="text-gray-500 text-sm">
-            {{ news.related_property.full_address }}
+            {% if listing %}{{ listing.property.full_address }}{% else %}{{ news.related_property.full_address }}{% endif %}
         </p>
 
         <form method="post">
@@ -125,7 +125,7 @@ async function loadSlots() {
         return;
 
     const response = await fetch(
-        `/calendar/available-slots/?date=${dateInput.value}`
+        `/calendar/available-slots/?date=${dateInput.value}&agent_id={{ schedule_agent.id }}`
     );
 
     const data = await response.json();

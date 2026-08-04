@@ -464,6 +464,37 @@
 
             </div>
 
+            {% if contact.contact_type == "buyer" %}
+                <!-- PEDIDOS -->
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
+                    <div class="flex items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-900">Pedidos de búsqueda</h2>
+                            <p class="text-sm text-gray-500 mt-1">Necesidades inmobiliarias de esta persona compradora.</p>
+                        </div>
+                        <a href="{% url 'order_create_for_buyer' contact.id %}"
+                           class="shrink-0 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm hover:bg-black">
+                            + Nuevo pedido
+                        </a>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-4">
+                        {% for order in contact.orders.all %}
+                            <a href="{% url 'order_detail' order.id %}"
+                               class="rounded-xl border border-gray-200 p-4 hover:bg-gray-50 transition">
+                                <div class="flex justify-between gap-3">
+                                    <p class="font-semibold text-gray-900">{{ order.get_property_type_display }}</p>
+                                    <p class="font-semibold text-gray-900">{{ order.max_price }} €</p>
+                                </div>
+                                <p class="text-sm text-gray-500 mt-2">{{ order.zone|default:"Cualquier zona" }} · {{ order.get_payment_type_display }}</p>
+                            </a>
+                        {% empty %}
+                            <div class="md:col-span-2 rounded-xl border border-dashed border-gray-300 p-8 text-center text-gray-500">No hay pedidos registrados.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
             <!-- NOTAS -->
             <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
 

@@ -1,4 +1,5 @@
 from django.db import models
+from django.db import transaction
 from django.utils import timezone
 from django.core.validators import MaxValueValidator, MinValueValidator
 
@@ -102,3 +103,42 @@ class Listing(models.Model):
 
     def __str__(self):
         return f"{self.property} - {self.get_listing_type_display()}"
+
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+
+        if not is_new:
+            return super().save(*args, **kwargs)
+
+        with transaction.atomic():
+            result = super().save(*args, **kwargs)
+            changed = self.property.__class__.objects.filter(
+                pk=self.property_id,
+                status="prospect",
+            ).update(status="active")
+            if changed:
+                self.property.status = "active"
+            return result
+
+
+class ListingComment(models.Model):
+    listing = models.ForeignKey(
+        Listing,
+        on_delete=models.CASCADE,
+        related_name="comments",
+    )
+    user = models.ForeignKey(
+        "users.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="listing_comments",
+    )
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Comentario del encargo {self.listing_id}"

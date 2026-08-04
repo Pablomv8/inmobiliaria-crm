@@ -2,8 +2,14 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.http import JsonResponse
 from django.urls import reverse
 
-from .models import Appointment, Call
-from .forms import AppointmentForm, AppointmentResultForm, CallForm
+from .models import Appointment, Call, ProposalAppointment
+from .forms import (
+    AppointmentForm,
+    AppointmentResultForm,
+    CallForm,
+    ProposalAppointmentForm,
+    SaleAppointmentForm,
+)
 from news.models import News
 from contacts.models import Contact
 from django.contrib.auth.decorators import login_required
@@ -15,10 +21,36 @@ from collections import defaultdict
 from datetime import date, timedelta
 from itertools import chain, groupby
 from users.models import User
+from orders.models import Order
 from calendar_app.models import (
     Appointment,
     Call
 )
+
+
+def get_user_appointments(user):
+    appointments = Appointment.objects.all()
+
+    if not (
+        user.is_superuser
+        or user.role in ["admin", "manager"]
+    ):
+        appointments = appointments.filter(agent=user)
+
+    return appointments
+
+
+def user_can_manage_all(user):
+    return user.is_superuser or user.role in ["admin", "manager"]
+
+
+def get_user_order_or_404(user, order_id):
+    orders = Order.objects.select_related(
+        "buyer",
+        "buyer__assigned_agent",
+        "zone",
+    )
+    return get_object_or_404(orders, pk=order_id)
 
 
 @login_required
@@ -59,11 +91,12 @@ def create_appointment(request, news_id):
 
     else:
 
-        form = AppointmentForm()
+        form = AppointmentForm(user=request.user)
 
     return render(request, "appointments/form.html", {
         "form": form,
-        "news": news
+        "news": news,
+        "schedule_agent": request.user,
     })
 
 @login_required
@@ -92,22 +125,149 @@ def create_call(request, news_id):
 
     else:
 
-        form = CallForm()
+        form = CallForm(user=request.user)
 
     return render(request, "calls/form.html", {
         "form": form,
-        "news": news
+        "news": news,
+        "schedule_agent": request.user,
     })
+
+
+def get_user_listing_or_404(user, listing_id):
+    from listings.models import Listing
+
+    listings = Listing.objects.select_related(
+        "property",
+        "owner",
+        "agent",
+    )
+    if not (
+        user.is_superuser
+        or user.role in ["admin", "manager"]
+    ):
+        listings = listings.filter(agent=user)
+
+    return get_object_or_404(listings, pk=listing_id)
+
+
+@login_required
+def create_listing_appointment(request, listing_id):
+    listing = get_user_listing_or_404(request.user, listing_id)
+
+    if listing.owner is None:
+        messages.error(
+            request,
+            "El encargo necesita un propietario antes de programar la cita.",
+        )
+        return redirect("listing_detail", listing_id=listing.pk)
+
+    assigned_agent = listing.agent or request.user
+    form = AppointmentForm(
+        request.POST or None,
+        user=assigned_agent,
+        appointment_type="follow_up",
+    )
+
+    if request.method == "POST" and form.is_valid():
+        appointment = form.save(commit=False)
+        appointment.appointment_type = "follow_up"
+        appointment.listing = listing
+        appointment.contact = listing.owner
+        appointment.related_property = listing.property
+        appointment.agent = assigned_agent
+        appointment.save()
+        return redirect("listing_detail", listing_id=listing.pk)
+
+    return render(
+        request,
+        "appointments/form.html",
+        {
+            "form": form,
+            "listing": listing,
+            "page_title": "Nueva cita de seguimiento",
+            "schedule_agent": assigned_agent,
+        },
+    )
+
+
+@login_required
+def create_listing_call(request, listing_id):
+    listing = get_user_listing_or_404(request.user, listing_id)
+
+    if listing.owner is None:
+        messages.error(
+            request,
+            "El encargo necesita un propietario antes de programar la llamada.",
+        )
+        return redirect("listing_detail", listing_id=listing.pk)
+
+    assigned_agent = listing.agent or request.user
+    form = CallForm(request.POST or None, user=assigned_agent)
+
+    if request.method == "POST" and form.is_valid():
+        call = form.save(commit=False)
+        call.listing = listing
+        call.contact = listing.owner
+        call.agent = assigned_agent
+        call.save()
+        return redirect("listing_detail", listing_id=listing.pk)
+
+    return render(
+        request,
+        "calls/form.html",
+        {
+            "form": form,
+            "listing": listing,
+            "page_title": "Nueva llamada de seguimiento",
+            "schedule_agent": assigned_agent,
+        },
+    )
+
+
+@login_required
+def create_order_sale_appointment(request, order_id):
+    order = get_user_order_or_404(request.user, order_id)
+    assigned_agent = order.buyer.assigned_agent or request.user
+    form = SaleAppointmentForm(
+        request.POST or None,
+        user=assigned_agent,
+        order=order,
+    )
+
+    if request.method == "POST" and form.is_valid():
+        appointment = form.save(commit=False)
+        appointment.appointment_type = "sale"
+        appointment.order = order
+        appointment.contact = order.buyer
+        appointment.related_property = appointment.listing.property
+        appointment.agent = assigned_agent
+        appointment.save()
+        messages.success(request, "Cita de venta programada correctamente.")
+        return redirect("order_detail", pk=order.pk)
+
+    return render(
+        request,
+        "appointments/form.html",
+        {
+            "form": form,
+            "order": order,
+            "page_title": "Nueva cita de venta",
+            "schedule_agent": assigned_agent,
+        },
+    )
 
 @login_required
 def appointment_detail(request, pk):
 
     appointment = get_object_or_404(
-        Appointment.objects.select_related(
+        get_user_appointments(request.user).select_related(
             "news",
             "related_property",
             "contact",
             "agent",
+            "listing",
+            "order",
         ),
         pk=pk
     )
@@ -121,6 +281,12 @@ def appointment_detail(request, pk):
             "appointment": appointment,
             "result_form": AppointmentResultForm(instance=appointment),
             "listing": listing,
+            "proposal": getattr(appointment, "proposal", None),
+            "proposal_appointment": getattr(
+                appointment,
+                "proposal_appointment",
+                None,
+            ),
         }
     )
 
@@ -129,9 +295,8 @@ def appointment_detail(request, pk):
 @require_POST
 def add_appointment_result(request, pk):
     appointment = get_object_or_404(
-        Appointment,
+        get_user_appointments(request.user),
         pk=pk,
-        agent=request.user,
     )
     form = AppointmentResultForm(request.POST, instance=appointment)
 
@@ -139,10 +304,22 @@ def add_appointment_result(request, pk):
         appointment = form.save(commit=False)
         appointment.status = "completed"
         appointment.save(update_fields=["result_comment", "status"])
-        messages.success(
-            request,
-            "Comentario guardado. Indica ahora si la cita tuvo éxito.",
-        )
+        if appointment.appointment_type == "acquisition":
+            success_message = (
+                "Comentario guardado. Indica ahora si la cita tuvo éxito."
+            )
+        elif appointment.appointment_type == "sale":
+            success_message = (
+                "Comentario guardado. Indica si el comprador quiere hacer "
+                "una propuesta."
+            )
+        elif appointment.appointment_type == "proposal":
+            success_message = (
+                "Comentario guardado. Ya puedes registrar la propuesta de compra."
+            )
+        else:
+            success_message = "Comentario guardado y cita completada."
+        messages.success(request, success_message)
     else:
         listing = appointment.generated_listing.first()
         return render(
@@ -152,6 +329,12 @@ def add_appointment_result(request, pk):
                 "appointment": appointment,
                 "result_form": form,
                 "listing": listing,
+                "proposal": getattr(appointment, "proposal", None),
+                "proposal_appointment": getattr(
+                    appointment,
+                    "proposal_appointment",
+                    None,
+                ),
             },
             status=400,
         )
@@ -160,12 +343,180 @@ def add_appointment_result(request, pk):
 
 
 @login_required
+def create_proposal_appointment(request, pk):
+    sale_appointment = get_object_or_404(
+        get_user_appointments(request.user).select_related(
+            "order__buyer",
+            "listing__property",
+            "agent",
+        ),
+        pk=pk,
+        appointment_type="sale",
+    )
+
+    if (
+        sale_appointment.status != "completed"
+        or not sale_appointment.result_comment.strip()
+    ):
+        messages.warning(
+            request,
+            "Añade el comentario de la cita de venta antes de programar la cita de propuesta.",
+        )
+        return redirect("appointment_detail", pk=sale_appointment.pk)
+
+    if sale_appointment.order is None or sale_appointment.listing is None:
+        messages.error(
+            request,
+            "La cita de venta no tiene un pedido y un encargo relacionados.",
+        )
+        return redirect("appointment_detail", pk=sale_appointment.pk)
+
+    existing_appointment = getattr(
+        sale_appointment,
+        "proposal_appointment",
+        None,
+    )
+    if existing_appointment is not None:
+        return redirect("appointment_detail", pk=existing_appointment.pk)
+
+    assigned_agent = sale_appointment.agent or request.user
+    form = AppointmentForm(
+        request.POST or None,
+        user=assigned_agent,
+        appointment_type="proposal",
+    )
+    if request.method == "POST" and form.is_valid():
+        proposal_appointment = form.save(commit=False)
+        proposal_appointment.appointment_type = "proposal"
+        proposal_appointment.source_sale_appointment = sale_appointment
+        proposal_appointment.order = sale_appointment.order
+        proposal_appointment.listing = sale_appointment.listing
+        proposal_appointment.contact = sale_appointment.contact
+        proposal_appointment.related_property = sale_appointment.related_property
+        proposal_appointment.agent = assigned_agent
+        proposal_appointment.save()
+
+        sale_appointment.result_success = True
+        sale_appointment.save(update_fields=["result_success"])
+        messages.success(request, "Cita de propuesta programada correctamente.")
+        return redirect("appointment_detail", pk=proposal_appointment.pk)
+
+    return render(
+        request,
+        "appointments/form.html",
+        {
+            "form": form,
+            "order": sale_appointment.order,
+            "listing": sale_appointment.listing,
+            "page_title": "Nueva cita de propuesta",
+            "schedule_agent": assigned_agent,
+        },
+    )
+
+
+@login_required
+def create_purchase_proposal(request, pk):
+    appointment = get_object_or_404(
+        get_user_appointments(request.user).select_related(
+            "order__buyer",
+            "listing__property",
+            "agent",
+        ),
+        pk=pk,
+        appointment_type="proposal",
+    )
+
+    if appointment.status != "completed" or not appointment.result_comment.strip():
+        messages.warning(
+            request,
+            "Añade el comentario de la cita de propuesta antes de registrar la oferta.",
+        )
+        return redirect("appointment_detail", pk=appointment.pk)
+
+    if appointment.order is None or appointment.listing is None:
+        messages.error(
+            request,
+            "La cita de propuesta no tiene un pedido y un encargo relacionados.",
+        )
+        return redirect("appointment_detail", pk=appointment.pk)
+
+    existing_proposal = getattr(appointment, "proposal", None)
+    if existing_proposal is not None:
+        return redirect("proposal_appointment_detail", pk=existing_proposal.pk)
+
+    form = ProposalAppointmentForm(
+        request.POST or None,
+        initial={"proposal_date": date.today()},
+    )
+    if request.method == "POST" and form.is_valid():
+        proposal = form.save(commit=False)
+        proposal.source_sale_appointment = appointment
+        proposal.order = appointment.order
+        proposal.listing = appointment.listing
+        proposal.buyer = appointment.contact
+        proposal.agent = appointment.agent
+        proposal.listing_price = appointment.listing.agency_price
+        proposal.save()
+        messages.success(request, "Propuesta de compra registrada correctamente.")
+        return redirect("proposal_appointment_detail", pk=proposal.pk)
+
+    return render(
+        request,
+        "calendar_app/proposal_form.html",
+        {
+            "form": form,
+            "appointment": appointment,
+            "listing_price": appointment.listing.agency_price,
+        },
+    )
+
+
+@login_required
+@require_POST
+def decline_sale_proposal(request, pk):
+    appointment = get_object_or_404(
+        get_user_appointments(request.user),
+        pk=pk,
+        appointment_type="sale",
+    )
+    if appointment.status != "completed" or not appointment.result_comment.strip():
+        messages.warning(
+            request,
+            "Añade el comentario antes de registrar la decisión del comprador.",
+        )
+        return redirect("appointment_detail", pk=appointment.pk)
+
+    appointment.result_success = False
+    appointment.save(update_fields=["result_success"])
+    messages.success(request, "Se ha registrado que no realizará una propuesta.")
+    return redirect("appointment_detail", pk=appointment.pk)
+
+
+@login_required
+def proposal_appointment_detail(request, pk):
+    proposals = ProposalAppointment.objects.select_related(
+        "source_sale_appointment",
+        "order",
+        "listing__property",
+        "buyer",
+        "agent",
+    )
+    if not user_can_manage_all(request.user):
+        proposals = proposals.filter(agent=request.user)
+    proposal = get_object_or_404(proposals, pk=pk)
+    return render(
+        request,
+        "calendar_app/proposal_detail.html",
+        {"proposal": proposal},
+    )
+
+
+@login_required
 @require_POST
 def schedule_call_from_appointment(request, pk):
     appointment = get_object_or_404(
-        Appointment,
+        get_user_appointments(request.user),
         pk=pk,
-        agent=request.user,
     )
 
     if (
@@ -207,12 +558,25 @@ def call_detail(request, pk):
 def update_appointment_status(request, appointment_id, status):
 
     appointment = get_object_or_404(
-        Appointment,
+        get_user_appointments(request.user),
         id=appointment_id,
-        agent=request.user
     )
 
-    if status in ["completed", "cancelled", "scheduled"]:
+    if (
+        status == "completed"
+        and appointment.appointment_type in [
+            "acquisition",
+            "follow_up",
+            "sale",
+            "proposal",
+        ]
+        and not appointment.result_comment.strip()
+    ):
+        messages.warning(
+            request,
+            "Añade un comentario para marcar la cita como completada.",
+        )
+    elif status in ["completed", "cancelled", "scheduled"]:
 
         appointment.status = status
         appointment.save()
@@ -481,9 +845,14 @@ def agenda(request):
 def available_slots(request):
 
     selected_date = request.GET.get("date")
+    selected_agent = request.user
+    requested_agent_id = request.GET.get("agent_id")
+
+    if requested_agent_id and user_can_manage_all(request.user):
+        selected_agent = get_object_or_404(User, pk=requested_agent_id)
 
     appointments = Appointment.objects.filter(
-        agent=request.user,
+        agent=selected_agent,
         date=selected_date,
         status="scheduled"
     ).values_list(
@@ -492,7 +861,7 @@ def available_slots(request):
     )
 
     calls = Call.objects.filter(
-        agent=request.user,
+        agent=selected_agent,
         date=selected_date,
         status="pending"
     ).values_list(

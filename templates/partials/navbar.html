@@ -30,7 +30,7 @@
             </p>
 
             <p class="text-sm text-gray-500">
-                {{request.user.rol}}
+                {{ request.user.get_role_display }}
             </p>
             <a
                 href="{% url 'logout' %}"

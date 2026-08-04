@@ -5,6 +5,21 @@ from listings.views import create_listing_from_appointment
 urlpatterns = [
     path("appointment/<int:news_id>/create/", views.create_appointment, name="create_appointment"),
     path("call/<int:news_id>/create/", views.create_call, name="create_call"),
+    path(
+        "listing/<int:listing_id>/appointment/create/",
+        views.create_listing_appointment,
+        name="create_listing_appointment",
+    ),
+    path(
+        "listing/<int:listing_id>/call/create/",
+        views.create_listing_call,
+        name="create_listing_call",
+    ),
+    path(
+        "order/<int:order_id>/sale-appointment/create/",
+        views.create_order_sale_appointment,
+        name="create_order_sale_appointment",
+    ),
     path("agenda/",views.agenda,name="agenda"),
     path(
         "",
@@ -38,6 +53,26 @@ urlpatterns = [
         "appointments/<int:pk>/schedule-call/",
         views.schedule_call_from_appointment,
         name="appointment_schedule_call"
+    ),
+    path(
+        "appointments/<int:pk>/proposal/create/",
+        views.create_proposal_appointment,
+        name="create_proposal_appointment",
+    ),
+    path(
+        "appointments/<int:pk>/purchase-proposal/create/",
+        views.create_purchase_proposal,
+        name="create_purchase_proposal",
+    ),
+    path(
+        "appointments/<int:pk>/proposal/decline/",
+        views.decline_sale_proposal,
+        name="decline_sale_proposal",
+    ),
+    path(
+        "proposals/<int:pk>/",
+        views.proposal_appointment_detail,
+        name="proposal_appointment_detail",
     ),
     path(
         "available-slots/",

@@ -76,7 +76,7 @@
 
         <a href="{% url 'listing_list' %}" 
             class="flex items-center gap-3 px-4 py-3 rounded-xl
-            {% if request.resolver_match.url_name == 'listing_list' %}
+            {% if request.resolver_match.url_name == 'listing_list' or request.resolver_match.url_name == 'listing_detail' or request.resolver_match.url_name == 'create_listing' or request.resolver_match.url_name == 'create_listing_call' or request.resolver_match.url_name == 'create_listing_appointment' %}
                     bg-gray-900 text-white
             {% else %}
                     text-gray-700 hover:bg-gray-100
@@ -84,9 +84,9 @@
                <i class="fa-solid fa-list-check"></i>Encargos
         </a>
 
-        <a href="{% url 'calendar' %}" 
+        <a href="{% url 'order_list' %}"
             class="flex items-center gap-3 px-4 py-3 rounded-xl
-            {% if request.resolver_match.url_name == '' %}
+            {% if request.resolver_match.url_name == 'order_list' or request.resolver_match.url_name == 'order_create' or request.resolver_match.url_name == 'order_create_for_buyer' or request.resolver_match.url_name == 'order_detail' or request.resolver_match.url_name == 'order_update' or request.resolver_match.url_name == 'order_delete' %}
                     bg-gray-900 text-white
             {% else %}
                     text-gray-700 hover:bg-gray-100

@@ -1,11 +1,15 @@
+from datetime import datetime
+
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from django.views.decorators.http import require_POST
 from .models import Listing
 from calendar_app.models import Appointment
 from users.models import User
 from django.db.models import Q
 from django.contrib import messages
-from .forms import ListingForm
+from .forms import ListingCommentForm, ListingForm
 
 def get_user_listings(user):
 
@@ -126,21 +130,88 @@ def listing_detail(request, listing_id):
         id=listing_id
     )
 
+    comments = listing.comments.select_related("user")
+    proposals = listing.proposals.select_related(
+        "buyer",
+        "agent",
+        "order",
+        "source_sale_appointment",
+    )
+    timeline = [
+        {
+            "type": "comment",
+            "date": comment.created_at,
+            "object": comment,
+        }
+        for comment in comments
+    ]
+
+    for call in listing.calls.all():
+        timeline.append({
+            "type": "call",
+            "date": timezone.make_aware(datetime.combine(call.date, call.time)),
+            "object": call,
+        })
+
+    for appointment in listing.follow_up_appointments.all():
+        timeline.append({
+            "type": "appointment",
+            "date": timezone.make_aware(
+                datetime.combine(appointment.date, appointment.time)
+            ),
+            "object": appointment,
+        })
+
+    timeline.sort(key=lambda item: item["date"], reverse=True)
+
     return render(
         request,
         "listings/detail.html",
         {
-            "listing": listing
+            "listing": listing,
+            "comments": comments,
+            "comment_form": ListingCommentForm(),
+            "timeline": timeline,
+            "proposals": proposals,
         }
     )
+
+
+@login_required
+@require_POST
+def listing_add_comment(request, listing_id):
+    listing = get_object_or_404(
+        get_user_listings(request.user),
+        pk=listing_id,
+    )
+    form = ListingCommentForm(request.POST)
+
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.listing = listing
+        comment.user = request.user
+        comment.save()
+
+    return redirect("listing_detail", listing_id=listing.pk)
 
 @login_required
 def create_listing_from_appointment(request, appointment_id):
 
+    appointments = Appointment.objects.all()
+
+    if not (
+        request.user.is_superuser
+        or request.user.role in ["admin", "manager"]
+    ):
+        appointments = appointments.filter(agent=request.user)
+
     appointment = get_object_or_404(
-        Appointment,
+        appointments.select_related(
+            "agent",
+            "news",
+            "related_property",
+        ),
         id=appointment_id,
-        agent=request.user
     )
 
     if (
@@ -190,7 +261,7 @@ def create_listing_from_appointment(request, appointment_id):
         listing.listing_type = news.motivation
         listing.owner_price = news.client_price
         listing.agency_price = news.estimated_price
-        listing.agent = request.user
+        listing.agent = appointment.agent or request.user
         listing.source_appointment = appointment
         listing.status = "active"
         listing.price_diference = news.client_price - news.estimated_price
@@ -209,7 +280,7 @@ def create_listing_from_appointment(request, appointment_id):
             "appointment": appointment,
             "news": news,
             "property": property_obj,
-            "agent": request.user,
+            "agent": appointment.agent or request.user,
             "has_owners": form.fields["owner"].queryset.exists(),
         },
     )
