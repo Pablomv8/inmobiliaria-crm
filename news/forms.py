@@ -38,7 +38,6 @@ class NewsForm(forms.ModelForm):
             "motivation",
             "client_price",
             "estimated_price",
-            "status",
         ]
 
         labels = {
@@ -46,7 +45,6 @@ class NewsForm(forms.ModelForm):
             "motivation": "Motivación",
             "client_price": "Precio cliente",
             "estimated_price": "Precio estimado",
-            "status": "Estado",
         }
 
         widgets = {
@@ -63,9 +61,6 @@ class NewsForm(forms.ModelForm):
             "estimated_price": forms.NumberInput(attrs={
                 "class": INPUT_CLASS,
                 "placeholder": "Ej: 240000"
-            }),
-            "status": forms.Select(attrs={
-                "class": INPUT_CLASS,
             }),
         }
 

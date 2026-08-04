@@ -51,11 +51,13 @@ class AppointmentResultFlowTests(TestCase):
         self.client.force_login(self.user)
 
     def test_appointment_asks_for_comment_before_showing_outcome(self):
+        self.news.refresh_from_db()
         response = self.client.get(
             reverse("appointment_detail", args=[self.appointment.pk])
         )
 
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.news.status, "appointment")
         self.assertContains(response, "Guardar comentario y completar cita")
         self.assertNotContains(response, "¿Cita con éxito?")
 
@@ -141,6 +143,8 @@ class AppointmentResultFlowTests(TestCase):
         self.assertTrue(listing.is_exclusive)
         self.assertIs(self.appointment.result_success, True)
         self.assertEqual(self.property.status, "active")
+        self.news.refresh_from_db()
+        self.assertEqual(self.news.status, "closed")
 
 
 class SaleAppointmentFlowTests(TestCase):
@@ -213,6 +217,10 @@ class SaleAppointmentFlowTests(TestCase):
         self.assertEqual(appointment.related_property, self.property)
         self.assertEqual(appointment.contact, self.buyer)
         self.assertEqual(appointment.agent, self.agent)
+        self.order.refresh_from_db()
+        self.listing.refresh_from_db()
+        self.assertEqual(self.order.status, "sale_appointment")
+        self.assertEqual(self.listing.workflow_status, "sale_appointment")
 
     def test_sale_comment_completes_visit_and_asks_about_proposal(self):
         _, appointment = self.create_sale_appointment()
@@ -256,6 +264,10 @@ class SaleAppointmentFlowTests(TestCase):
         self.assertEqual(proposal_appointment.contact, self.buyer)
         self.assertEqual(proposal_appointment.status, "scheduled")
         self.assertIs(appointment.result_success, True)
+        self.order.refresh_from_db()
+        self.listing.refresh_from_db()
+        self.assertEqual(self.order.status, "proposal_appointment")
+        self.assertEqual(self.listing.workflow_status, "proposal_appointment")
 
         calendar_response = self.client.get(reverse("calendar_events"))
         self.assertContains(calendar_response, "Cita de Propuesta")
@@ -310,6 +322,10 @@ class SaleAppointmentFlowTests(TestCase):
         self.assertEqual(proposal.listing, self.listing)
         self.assertEqual(str(proposal.listing_price), "250000.00")
         self.assertEqual(str(proposal.offered_price), "242000.00")
+        self.order.refresh_from_db()
+        self.listing.refresh_from_db()
+        self.assertEqual(self.order.status, "proposal")
+        self.assertEqual(self.listing.workflow_status, "proposal")
 
         listing_response = self.client.get(
             reverse("listing_detail", args=[self.listing.pk])

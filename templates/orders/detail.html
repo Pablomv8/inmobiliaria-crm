@@ -3,7 +3,7 @@
 {% block content %}
 <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-        <div><a href="{% url 'order_list' %}" class="text-sm text-gray-500">← Volver a pedidos</a><h1 class="text-3xl font-bold text-gray-900 mt-3">Pedido de {{ order.buyer }}</h1><p class="text-gray-500 mt-1">Creado el {{ order.created_at|date:"d/m/Y" }}</p></div>
+        <div><a href="{% url 'order_list' %}" class="text-sm text-gray-500">← Volver a pedidos</a><h1 class="text-3xl font-bold text-gray-900 mt-3">Pedido de {{ order.buyer }}</h1><div class="flex flex-wrap items-center gap-2 mt-2"><p class="text-gray-500">Creado el {{ order.created_at|date:"d/m/Y" }}</p><span class="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium">{{ order.get_status_display }}</span></div></div>
         <div class="flex flex-wrap gap-2">
             <a href="{% url 'create_order_sale_appointment' order.id %}" class="px-4 py-2 rounded-xl bg-green-600 text-white">Programar cita de venta</a>
             <a href="{% url 'order_update' order.id %}" class="px-4 py-2 rounded-xl bg-gray-900 text-white">Editar</a>

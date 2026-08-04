@@ -33,6 +33,7 @@
 
             <div class="flex flex-wrap items-center gap-2">
                 <span class="px-3 py-2 rounded-full bg-green-100 text-green-700 text-sm">{{ listing.get_status_display }}</span>
+                <span class="px-3 py-2 rounded-full bg-violet-50 text-violet-700 text-sm">{{ listing.get_workflow_status_display }}</span>
                 {% if listing.owner %}
                     <a href="{% url 'create_listing_call' listing.id %}"
                        class="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm hover:bg-black">📞 Programar llamada</a>

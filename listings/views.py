@@ -82,6 +82,7 @@ def listing_list(request):
     # ------------------------
     agent = request.GET.get("agent")
     has_proposals = request.GET.get("has_proposals") == "1"
+    workflow_status = request.GET.get("workflow_status")
 
     if (
         agent
@@ -94,6 +95,9 @@ def listing_list(request):
 
     if has_proposals:
         listings = listings.filter(proposals__isnull=False).distinct()
+
+    if workflow_status:
+        listings = listings.filter(workflow_status=workflow_status)
 
     # ------------------------
     # FINAL QUERYSET
@@ -115,6 +119,7 @@ def listing_list(request):
         "listings": listings,
 
         "status_choices": Listing.STATUS_CHOICES,
+        "workflow_status_choices": Listing.WORKFLOW_STATUS_CHOICES,
         "type_choices": Listing.TYPE_CHOICES,
         "agents": User.objects.filter(is_active=True).order_by("username")
     }

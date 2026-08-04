@@ -76,6 +76,11 @@ class ListingFollowUpTests(TestCase):
         self.assertEqual(appointment.listing, self.listing)
         self.assertEqual(appointment.contact, self.owner)
         self.assertEqual(appointment.agent, self.agent)
+        self.listing.refresh_from_db()
+        self.assertEqual(
+            self.listing.workflow_status,
+            "follow_up_appointment",
+        )
 
     def test_follow_up_requires_comment_to_complete(self):
         appointment = Appointment.objects.create(
@@ -112,6 +117,8 @@ class ListingFollowUpTests(TestCase):
             appointment.result_comment,
             "El propietario mantiene el encargo activo.",
         )
+        self.listing.refresh_from_db()
+        self.assertEqual(self.listing.workflow_status, "active")
         self.assertContains(response, "Seguimiento completado")
 
     def test_schedule_call_from_listing(self):

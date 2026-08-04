@@ -88,7 +88,7 @@ class NewsCrudTests(TestCase):
         news.refresh_from_db()
         self.assertRedirects(response, reverse("news_detail", args=[news.pk]))
         self.assertEqual(news.motivation, "rent")
-        self.assertEqual(news.status, "follow_up")
+        self.assertEqual(news.status, "new")
 
     def test_add_comment_records_its_author(self):
         news = self.create_news()
@@ -101,6 +101,8 @@ class NewsCrudTests(TestCase):
         comment = NewsComment.objects.get()
         self.assertRedirects(response, reverse("news_detail", args=[news.pk]))
         self.assertEqual(comment.user, self.user)
+        news.refresh_from_db()
+        self.assertEqual(news.status, "contacted")
 
     def test_delete_news(self):
         news = self.create_news()

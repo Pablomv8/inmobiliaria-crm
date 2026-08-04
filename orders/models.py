@@ -5,6 +5,15 @@ from properties.models import Property, Zone
 
 
 class Order(models.Model):
+    STATUS_CHOICES = [
+        ("active", "Activo"),
+        ("sale_appointment", "Cita de venta programada"),
+        ("proposal_appointment", "Cita de propuesta programada"),
+        ("proposal", "Propuesta realizada"),
+        ("closed", "Cerrado"),
+        ("cancelled", "Cancelado"),
+    ]
+
     PAYMENT_TYPE_CHOICES = [
         ("cash", "Contado"),
         ("financing", "Financiación"),
@@ -15,6 +24,11 @@ class Order(models.Model):
         on_delete=models.PROTECT,
         related_name="orders",
         limit_choices_to={"contact_type": "buyer"},
+    )
+    status = models.CharField(
+        max_length=30,
+        choices=STATUS_CHOICES,
+        default="active",
     )
     zone = models.ForeignKey(
         Zone,

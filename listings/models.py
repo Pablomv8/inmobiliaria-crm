@@ -17,6 +17,15 @@ class Listing(models.Model):
         ("rented", "Alquilado"),
     ]
 
+    WORKFLOW_STATUS_CHOICES = [
+        ("active", "Activo"),
+        ("follow_up_appointment", "Seguimiento programado"),
+        ("sale_appointment", "Visita programada"),
+        ("proposal_appointment", "Cita de propuesta programada"),
+        ("proposal", "Propuesta recibida"),
+        ("closed", "Cerrado"),
+    ]
+
     property = models.ForeignKey(
         "properties.Property",
         on_delete=models.CASCADE,
@@ -32,6 +41,13 @@ class Listing(models.Model):
         max_length=20,
         choices=STATUS_CHOICES,
         default="active"
+    )
+
+    workflow_status = models.CharField(
+        max_length=30,
+        choices=WORKFLOW_STATUS_CHOICES,
+        default="active",
+        verbose_name="Estado del proceso",
     )
 
     owner_price = models.DecimalField(

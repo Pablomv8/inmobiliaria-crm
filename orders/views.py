@@ -23,6 +23,7 @@ def order_list(request):
     property_type = request.GET.get("property_type", "")
     zone = request.GET.get("zone", "")
     agent = request.GET.get("agent", "")
+    status = request.GET.get("status", "")
 
     if request.user.is_superuser or request.user.role in ["admin", "manager"]:
         if agent:
@@ -42,6 +43,8 @@ def order_list(request):
         orders = orders.filter(property_type=property_type)
     if zone:
         orders = orders.filter(zone_id=zone)
+    if status:
+        orders = orders.filter(status=status)
 
     return render(
         request,
@@ -49,6 +52,7 @@ def order_list(request):
         {
             "orders": orders,
             "payment_choices": Order.PAYMENT_TYPE_CHOICES,
+            "status_choices": Order.STATUS_CHOICES,
             "property_type_choices": Property.PROPERTY_TYPE_CHOICES,
             "zones": Zone.objects.all(),
             "agents": User.objects.filter(is_active=True).order_by("username"),
