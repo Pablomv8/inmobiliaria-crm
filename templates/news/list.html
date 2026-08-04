@@ -43,6 +43,15 @@
                 {% endfor %}
             </select>
 
+            {% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" %}
+                <select name="agent" class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm">
+                    <option value="">Todos los agentes</option>
+                    {% for agent in agents %}<option value="{{ agent.id }}" {% if request.GET.agent == agent.id|stringformat:"s" %}selected{% endif %}>{{ agent.get_full_name|default:agent.username }}</option>{% endfor %}
+                </select>
+            {% endif %}
+
+            {% if request.GET.open == "1" %}<input type="hidden" name="open" value="1">{% endif %}
+
             <button class="px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm hover:bg-black transition">
                 Filtrar
             </button>

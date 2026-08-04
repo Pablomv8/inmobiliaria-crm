@@ -25,6 +25,8 @@
 
         <div class="flex flex-wrap items-center gap-3">
 
+            {% if request.GET.has_proposals == "1" %}<input type="hidden" name="has_proposals" value="1">{% endif %}
+
             <div class="relative w-64">
 
                 <div class="absolute inset-y-0 left-3 flex items-center text-gray-400">

@@ -7,6 +7,7 @@ from django.urls import reverse
 from calendar_app.models import Appointment
 from contacts.models import Contact
 from listings.models import Listing
+from news.models import News
 from orders.models import Order
 from properties.models import Property
 
@@ -97,6 +98,20 @@ class DashboardScopeTests(TestCase):
             time=time(10, 0),
             listing=self.agent_listing,
         )
+        News.objects.create(
+            related_property=self.agent_property,
+            agent=self.agent,
+            motivation="sale",
+            client_price="210000",
+            estimated_price="205000",
+        )
+        News.objects.create(
+            related_property=other_property,
+            agent=self.other_agent,
+            motivation="sale",
+            client_price="260000",
+            estimated_price="255000",
+        )
 
     def test_agent_only_sees_personal_portfolio(self):
         self.client.force_login(self.agent)
@@ -127,3 +142,70 @@ class DashboardScopeTests(TestCase):
         self.assertContains(response, "Vista global de la oficina")
         self.assertContains(response, "dashboard-agent")
         self.assertContains(response, "dashboard-other")
+
+    def test_personal_cards_link_to_logged_user_filters(self):
+        self.client.force_login(self.manager)
+        response = self.client.get(reverse("dashboard"))
+        html = response.content.decode()
+
+        self.assertIn(
+            f"{reverse('listing_list')}?agent={self.manager.pk}",
+            html,
+        )
+        self.assertIn(
+            f"{reverse('order_list')}?agent={self.manager.pk}",
+            html,
+        )
+        self.assertIn(
+            f"{reverse('news_list')}?agent={self.manager.pk}",
+            html,
+        )
+        self.assertIn(
+            f"{reverse('calendar')}?agents={self.manager.pk}",
+            html,
+        )
+
+    def test_manager_can_filter_lists_by_user_from_global_view(self):
+        self.client.force_login(self.manager)
+
+        orders_response = self.client.get(
+            reverse("order_list"),
+            {"agent": self.agent.pk},
+        )
+        self.assertEqual(len(orders_response.context["orders"]), 1)
+        self.assertEqual(
+            orders_response.context["orders"][0].buyer,
+            self.agent_buyer,
+        )
+
+        news_response = self.client.get(
+            reverse("news_list"),
+            {"agent": self.agent.pk},
+        )
+        self.assertEqual(len(news_response.context["news_items"]), 1)
+        self.assertEqual(news_response.context["news_items"][0].agent, self.agent)
+
+        contacts_response = self.client.get(
+            reverse("contact_list"),
+            {"agent": self.agent.pk},
+        )
+        self.assertEqual(len(contacts_response.context["contacts"]), 2)
+
+        calendar_response = self.client.get(
+            reverse("calendar"),
+            {"agents": self.agent.pk},
+        )
+        self.assertEqual(
+            calendar_response.context["selected_agent_ids"],
+            [str(self.agent.pk)],
+        )
+
+    def test_agent_cannot_use_filter_to_see_another_agents_orders(self):
+        self.client.force_login(self.agent)
+        response = self.client.get(
+            reverse("order_list"),
+            {"agent": self.other_agent.pk},
+        )
+
+        self.assertEqual(len(response.context["orders"]), 1)
+        self.assertEqual(response.context["orders"][0].buyer, self.agent_buyer)

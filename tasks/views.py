@@ -34,6 +34,10 @@ class TaskListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
 
         user = self.request.user
+        can_manage_all = (
+            user.is_superuser
+            or user.role in ["admin", "manager"]
+        )
 
         qs = Task.objects.select_related(
             "assigned_to",
@@ -41,7 +45,7 @@ class TaskListView(LoginRequiredMixin, ListView):
         )
 
         # agentes solo ven sus tareas
-        if user.role == "agent":
+        if not can_manage_all:
             qs = qs.filter(assigned_to=user)
 
         # FILTRO ESTADO
@@ -59,7 +63,7 @@ class TaskListView(LoginRequiredMixin, ListView):
         # FILTRO AGENTE
         agent = self.request.GET.get("agent")
 
-        if agent:
+        if agent and can_manage_all:
             qs = qs.filter(assigned_to_id=agent)
 
         # BÚSQUEDA

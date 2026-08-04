@@ -610,20 +610,25 @@ def calendar_view(request):
 
     today = date.today()
     tomorrow = today + timedelta(days=1)
-    calls = Call.objects.filter(agent=request.user)
-    appointments = Appointment.objects.filter(agent=request.user)
-    today_calls = Call.objects.filter(
-        agent=request.user,
-        date=today
-    )
+    selected_agent_ids = request.GET.getlist("agents")
+    calls = Call.objects.all()
+    appointments = Appointment.objects.all()
+
+    if user_can_manage_all(request.user):
+        if selected_agent_ids:
+            calls = calls.filter(agent_id__in=selected_agent_ids)
+            appointments = appointments.filter(agent_id__in=selected_agent_ids)
+    else:
+        selected_agent_ids = [str(request.user.pk)]
+        calls = calls.filter(agent=request.user)
+        appointments = appointments.filter(agent=request.user)
+
+    today_calls = calls.filter(date=today)
 
     for item in today_calls:
         item.event_type = "call"
 
-    today_appointments = Appointment.objects.filter(
-        agent=request.user,
-        date=today
-    )
+    today_appointments = appointments.filter(date=today)
 
     for item in today_appointments:
         item.event_type = "appointment"
@@ -636,18 +641,12 @@ def calendar_view(request):
         key=lambda x: x.time
     )
 
-    tomorrow_calls = Call.objects.filter(
-        agent=request.user,
-        date=tomorrow
-    )
+    tomorrow_calls = calls.filter(date=tomorrow)
 
     for item in tomorrow_calls:
         item.event_type = "call"
 
-    tomorrow_appointments = Appointment.objects.filter(
-        agent=request.user,
-        date=tomorrow
-    )
+    tomorrow_appointments = appointments.filter(date=tomorrow)
 
     for item in tomorrow_appointments:
         item.event_type = "appointment"
@@ -706,6 +705,7 @@ def calendar_view(request):
             "tomorrow_events": tomorrow_events,
             "agents" : agents,
             "agenda_by_day" : agenda_by_day,
+            "selected_agent_ids": selected_agent_ids,
         }
     )
 
@@ -719,7 +719,7 @@ def calendar_events(request):
     calls = Call.objects.all()
 
     # SI NO ES MANAGER → solo sus eventos
-    if request.user.role not in ["admin", "manager"]:
+    if not user_can_manage_all(request.user):
 
         appointments = appointments.filter(agent=request.user)
         calls = calls.filter(agent=request.user)
@@ -729,21 +729,6 @@ def calendar_events(request):
 
         appointments = appointments.filter(agent_id__in=agent_ids)
         calls = calls.filter(agent_id__in=agent_ids)
-        print("AGENTS:", agent_ids)
-
-        print(
-            "APPOINTMENTS:",
-            Appointment.objects.filter(
-                agent_id__in=agent_ids
-            ).count()
-        )
-
-        print(
-            "CALLS:",
-            Call.objects.filter(
-                agent_id__in=agent_ids
-            ).count()
-        )
 
 
     events = []

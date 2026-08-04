@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="max-w-screen-2xl mx-auto space-y-8">
-    <section class="relative overflow-hidden rounded-3xl border border-gray-800 bg-gray-950 p-6 sm:p-8 text-white shadow-xl">
+    <section class="relative overflow-hidden rounded-3xl border border-gray-600 bg-gray-900 p-6 sm:p-8 text-white shadow-xl">
         <div class="relative z-10 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
             <div>
                 <p class="text-sm font-semibold text-indigo-300">{{ request.user.get_role_display }}</p>
@@ -31,7 +31,7 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <a href="{% url 'listing_list' %}" class="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition">
+            <a href="{% url 'listing_list' %}?agent={{ request.user.id }}&status=active" class="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition">
                 <div class="flex items-start justify-between">
                     <div><p class="text-sm text-gray-500">Encargos asignados</p><p class="text-3xl font-bold text-gray-900 mt-2">{{ my_active_listings }}</p></div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-xl">🏠</span>
@@ -39,7 +39,7 @@
                 <p class="text-xs text-gray-500 mt-4">{{ my_listings }} totales · {{ my_properties }} inmuebles</p>
             </a>
 
-            <a href="{% url 'order_list' %}" class="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition">
+            <a href="{% url 'order_list' %}?agent={{ request.user.id }}" class="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition">
                 <div class="flex items-start justify-between">
                     <div><p class="text-sm text-gray-500">Pedidos asignados</p><p class="text-3xl font-bold text-gray-900 mt-2">{{ my_orders }}</p></div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-xl">🛒</span>
@@ -47,7 +47,7 @@
                 <p class="text-xs text-gray-500 mt-4">Solicitudes activas de compradores</p>
             </a>
 
-            <a href="{% url 'news_list' %}" class="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition">
+            <a href="{% url 'news_list' %}?agent={{ request.user.id }}&open=1" class="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition">
                 <div class="flex items-start justify-between">
                     <div><p class="text-sm text-gray-500">Noticias abiertas</p><p class="text-3xl font-bold text-gray-900 mt-2">{{ my_open_news }}</p></div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-xl">📰</span>
@@ -55,7 +55,7 @@
                 <p class="text-xs text-gray-500 mt-4">Oportunidades aún no cerradas</p>
             </a>
 
-            <a href="{% url 'contact_list' %}" class="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition">
+            <a href="{% url 'contact_list' %}?agent={{ request.user.id }}" class="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition">
                 <div class="flex items-start justify-between">
                     <div><p class="text-sm text-gray-500">Personas asignadas</p><p class="text-3xl font-bold text-gray-900 mt-2">{{ my_contacts }}</p></div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-xl">👥</span>
@@ -63,7 +63,7 @@
                 <p class="text-xs text-gray-500 mt-4">Propietarios y compradores</p>
             </a>
 
-            <a href="{% url 'calendar' %}" class="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition">
+            <a href="{% url 'calendar' %}?agents={{ request.user.id }}" class="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition">
                 <div class="flex items-start justify-between">
                     <div><p class="text-sm text-gray-500">Agenda pendiente</p><p class="text-3xl font-bold text-gray-900 mt-2">{{ my_scheduled_appointments|add:my_pending_calls }}</p></div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50 text-xl">📅</span>
@@ -71,7 +71,7 @@
                 <p class="text-xs text-gray-500 mt-4">{{ my_scheduled_appointments }} citas · {{ my_pending_calls }} llamadas</p>
             </a>
 
-            <a href="{% url 'task_list' %}" class="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition">
+            <a href="{% url 'task_list' %}?agent={{ request.user.id }}" class="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition">
                 <div class="flex items-start justify-between">
                     <div><p class="text-sm text-gray-500">Tareas pendientes</p><p class="text-3xl font-bold text-gray-900 mt-2">{{ my_pending_tasks }}</p></div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-xl">✓</span>
@@ -79,15 +79,15 @@
                 <p class="text-xs {% if my_overdue_tasks %}text-red-600 font-medium{% else %}text-gray-500{% endif %} mt-4">{{ my_overdue_tasks }} vencidas</p>
             </a>
 
-            <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+            <a href="{% url 'listing_list' %}?agent={{ request.user.id }}&has_proposals=1" class="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition">
                 <div class="flex items-start justify-between">
                     <div><p class="text-sm text-gray-500">Propuestas</p><p class="text-3xl font-bold text-gray-900 mt-2">{{ my_proposals }}</p></div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-green-50 text-xl">🤝</span>
                 </div>
                 <p class="text-xs text-gray-500 mt-4">Ofertas económicas registradas</p>
-            </div>
+            </a>
 
-            <a href="{% url 'sale_list' %}" class="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition">
+            <a href="{% url 'sale_list' %}?agent={{ request.user.id }}&status=signed" class="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition">
                 <div class="flex items-start justify-between">
                     <div><p class="text-sm text-gray-500">Ventas firmadas</p><p class="text-3xl font-bold text-gray-900 mt-2">{{ my_signed_sales }}</p></div>
                     <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-50 text-xl">€</span>
@@ -181,14 +181,14 @@
             </div>
 
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div class="rounded-2xl bg-white border border-indigo-100 p-4"><p class="text-sm text-gray-500">Encargos activos</p><p class="text-2xl font-bold mt-2">{{ office_active_listings }}</p><p class="text-xs text-gray-500 mt-1">{{ office_listings }} totales</p></div>
-                <div class="rounded-2xl bg-white border border-indigo-100 p-4"><p class="text-sm text-gray-500">Pedidos</p><p class="text-2xl font-bold mt-2">{{ office_orders }}</p><p class="text-xs text-gray-500 mt-1">Todos los compradores</p></div>
-                <div class="rounded-2xl bg-white border border-indigo-100 p-4"><p class="text-sm text-gray-500">Personas</p><p class="text-2xl font-bold mt-2">{{ office_contacts }}</p><p class="text-xs text-gray-500 mt-1">Propietarios y compradores</p></div>
-                <div class="rounded-2xl bg-white border border-indigo-100 p-4"><p class="text-sm text-gray-500">Inmuebles activos</p><p class="text-2xl font-bold mt-2">{{ office_active_properties }}</p><p class="text-xs text-gray-500 mt-1">{{ office_properties }} totales</p></div>
-                <div class="rounded-2xl bg-white border border-indigo-100 p-4"><p class="text-sm text-gray-500">Noticias abiertas</p><p class="text-2xl font-bold mt-2">{{ office_open_news }}</p><p class="text-xs text-gray-500 mt-1">Oportunidades en proceso</p></div>
-                <div class="rounded-2xl bg-white border border-indigo-100 p-4"><p class="text-sm text-gray-500">Agenda pendiente</p><p class="text-2xl font-bold mt-2">{{ office_scheduled_appointments|add:office_pending_calls }}</p><p class="text-xs text-gray-500 mt-1">{{ office_scheduled_appointments }} citas · {{ office_pending_calls }} llamadas</p></div>
-                <div class="rounded-2xl bg-white border border-indigo-100 p-4"><p class="text-sm text-gray-500">Propuestas</p><p class="text-2xl font-bold mt-2">{{ office_proposals }}</p><p class="text-xs text-gray-500 mt-1">Ofertas registradas</p></div>
-                <div class="rounded-2xl bg-white border border-indigo-100 p-4"><p class="text-sm text-gray-500">Ventas firmadas</p><p class="text-2xl font-bold mt-2">{{ office_signed_sales }}</p><p class="text-xs text-gray-500 mt-1">{{ office_revenue|floatformat:0 }} € facturados</p></div>
+                <a href="{% url 'listing_list' %}?status=active" class="rounded-2xl bg-white border border-indigo-100 p-4 hover:-translate-y-0.5 hover:shadow-md transition"><p class="text-sm text-gray-500">Encargos activos</p><p class="text-2xl font-bold mt-2">{{ office_active_listings }}</p><p class="text-xs text-gray-500 mt-1">{{ office_listings }} totales</p></a>
+                <a href="{% url 'order_list' %}" class="rounded-2xl bg-white border border-indigo-100 p-4 hover:-translate-y-0.5 hover:shadow-md transition"><p class="text-sm text-gray-500">Pedidos</p><p class="text-2xl font-bold mt-2">{{ office_orders }}</p><p class="text-xs text-gray-500 mt-1">Todos los compradores</p></a>
+                <a href="{% url 'contact_list' %}" class="rounded-2xl bg-white border border-indigo-100 p-4 hover:-translate-y-0.5 hover:shadow-md transition"><p class="text-sm text-gray-500">Personas</p><p class="text-2xl font-bold mt-2">{{ office_contacts }}</p><p class="text-xs text-gray-500 mt-1">Propietarios y compradores</p></a>
+                <a href="{% url 'properties' %}?status=active" class="rounded-2xl bg-white border border-indigo-100 p-4 hover:-translate-y-0.5 hover:shadow-md transition"><p class="text-sm text-gray-500">Inmuebles activos</p><p class="text-2xl font-bold mt-2">{{ office_active_properties }}</p><p class="text-xs text-gray-500 mt-1">{{ office_properties }} totales</p></a>
+                <a href="{% url 'news_list' %}?open=1" class="rounded-2xl bg-white border border-indigo-100 p-4 hover:-translate-y-0.5 hover:shadow-md transition"><p class="text-sm text-gray-500">Noticias abiertas</p><p class="text-2xl font-bold mt-2">{{ office_open_news }}</p><p class="text-xs text-gray-500 mt-1">Oportunidades en proceso</p></a>
+                <a href="{% url 'calendar' %}" class="rounded-2xl bg-white border border-indigo-100 p-4 hover:-translate-y-0.5 hover:shadow-md transition"><p class="text-sm text-gray-500">Agenda pendiente</p><p class="text-2xl font-bold mt-2">{{ office_scheduled_appointments|add:office_pending_calls }}</p><p class="text-xs text-gray-500 mt-1">{{ office_scheduled_appointments }} citas · {{ office_pending_calls }} llamadas</p></a>
+                <a href="{% url 'listing_list' %}?has_proposals=1" class="rounded-2xl bg-white border border-indigo-100 p-4 hover:-translate-y-0.5 hover:shadow-md transition"><p class="text-sm text-gray-500">Propuestas</p><p class="text-2xl font-bold mt-2">{{ office_proposals }}</p><p class="text-xs text-gray-500 mt-1">Ofertas registradas</p></a>
+                <a href="{% url 'sale_list' %}?status=signed" class="rounded-2xl bg-white border border-indigo-100 p-4 hover:-translate-y-0.5 hover:shadow-md transition"><p class="text-sm text-gray-500">Ventas firmadas</p><p class="text-2xl font-bold mt-2">{{ office_signed_sales }}</p><p class="text-xs text-gray-500 mt-1">{{ office_revenue|floatformat:0 }} € facturados</p></a>
             </div>
 
             <div class="rounded-2xl border border-indigo-100 bg-white overflow-hidden">
@@ -197,12 +197,35 @@
                     <table class="w-full text-sm">
                         <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500"><tr><th class="px-5 py-3">Usuario</th><th class="px-4 py-3 text-center">Personas</th><th class="px-4 py-3 text-center">Encargos</th><th class="px-4 py-3 text-center">Pedidos</th><th class="px-4 py-3 text-center">Noticias</th><th class="px-4 py-3 text-center">Agenda</th><th class="px-4 py-3 text-center">Tareas</th><th class="px-4 py-3 text-center">Propuestas</th></tr></thead>
                         <tbody class="divide-y divide-gray-100">
-                            {% for row in user_rows %}<tr><td class="px-5 py-4"><p class="font-medium text-gray-900">{{ row.user.get_full_name|default:row.user.username }}</p><p class="text-xs text-gray-500">{{ row.user.get_role_display }}</p></td><td class="px-4 py-4 text-center">{{ row.contacts }}</td><td class="px-4 py-4 text-center"><strong>{{ row.active_listings }}</strong><span class="text-gray-400">/{{ row.listings }}</span></td><td class="px-4 py-4 text-center">{{ row.orders }}</td><td class="px-4 py-4 text-center">{{ row.news }}</td><td class="px-4 py-4 text-center">{{ row.appointments }}</td><td class="px-4 py-4 text-center">{{ row.tasks }}</td><td class="px-4 py-4 text-center">{{ row.proposals }}</td></tr>{% endfor %}
+                            {% for row in user_rows %}
+                                <tr>
+                                    <td class="px-5 py-4"><p class="font-medium text-gray-900">{{ row.user.get_full_name|default:row.user.username }}</p><p class="text-xs text-gray-500">{{ row.user.get_role_display }}</p></td>
+                                    <td class="px-4 py-4 text-center"><a href="{% url 'contact_list' %}?agent={{ row.user.id }}" class="font-medium text-indigo-700 hover:underline">{{ row.contacts }}</a></td>
+                                    <td class="px-4 py-4 text-center"><a href="{% url 'listing_list' %}?agent={{ row.user.id }}&status=active" class="text-indigo-700 hover:underline"><strong>{{ row.active_listings }}</strong><span class="text-gray-400">/{{ row.listings }}</span></a></td>
+                                    <td class="px-4 py-4 text-center"><a href="{% url 'order_list' %}?agent={{ row.user.id }}" class="font-medium text-indigo-700 hover:underline">{{ row.orders }}</a></td>
+                                    <td class="px-4 py-4 text-center"><a href="{% url 'news_list' %}?agent={{ row.user.id }}&open=1" class="font-medium text-indigo-700 hover:underline">{{ row.news }}</a></td>
+                                    <td class="px-4 py-4 text-center"><a href="{% url 'calendar' %}?agents={{ row.user.id }}" class="font-medium text-indigo-700 hover:underline">{{ row.appointments }}</a></td>
+                                    <td class="px-4 py-4 text-center"><a href="{% url 'task_list' %}?agent={{ row.user.id }}" class="font-medium text-indigo-700 hover:underline">{{ row.tasks }}</a></td>
+                                    <td class="px-4 py-4 text-center"><a href="{% url 'listing_list' %}?agent={{ row.user.id }}&has_proposals=1" class="font-medium text-indigo-700 hover:underline">{{ row.proposals }}</a></td>
+                                </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
                 <div class="lg:hidden divide-y divide-gray-100">
-                    {% for row in user_rows %}<div class="p-5"><div class="flex items-start justify-between"><div><p class="font-semibold">{{ row.user.get_full_name|default:row.user.username }}</p><p class="text-xs text-gray-500">{{ row.user.get_role_display }}</p></div><span class="rounded-full bg-indigo-50 px-3 py-1 text-xs text-indigo-700">{{ row.appointments }} en agenda</span></div><div class="grid grid-cols-3 gap-3 mt-4 text-center"><div class="rounded-lg bg-gray-50 p-2"><p class="text-lg font-semibold">{{ row.contacts }}</p><p class="text-xs text-gray-500">Personas</p></div><div class="rounded-lg bg-gray-50 p-2"><p class="text-lg font-semibold">{{ row.active_listings }}</p><p class="text-xs text-gray-500">Encargos</p></div><div class="rounded-lg bg-gray-50 p-2"><p class="text-lg font-semibold">{{ row.orders }}</p><p class="text-xs text-gray-500">Pedidos</p></div><div class="rounded-lg bg-gray-50 p-2"><p class="text-lg font-semibold">{{ row.news }}</p><p class="text-xs text-gray-500">Noticias</p></div><div class="rounded-lg bg-gray-50 p-2"><p class="text-lg font-semibold">{{ row.tasks }}</p><p class="text-xs text-gray-500">Tareas</p></div><div class="rounded-lg bg-gray-50 p-2"><p class="text-lg font-semibold">{{ row.proposals }}</p><p class="text-xs text-gray-500">Propuestas</p></div></div></div>{% endfor %}
+                    {% for row in user_rows %}
+                        <div class="p-5">
+                            <div class="flex items-start justify-between"><div><p class="font-semibold">{{ row.user.get_full_name|default:row.user.username }}</p><p class="text-xs text-gray-500">{{ row.user.get_role_display }}</p></div><a href="{% url 'calendar' %}?agents={{ row.user.id }}" class="rounded-full bg-indigo-50 px-3 py-1 text-xs text-indigo-700">{{ row.appointments }} en agenda</a></div>
+                            <div class="grid grid-cols-3 gap-3 mt-4 text-center">
+                                <a href="{% url 'contact_list' %}?agent={{ row.user.id }}" class="rounded-lg bg-gray-50 p-2"><p class="text-lg font-semibold">{{ row.contacts }}</p><p class="text-xs text-gray-500">Personas</p></a>
+                                <a href="{% url 'listing_list' %}?agent={{ row.user.id }}&status=active" class="rounded-lg bg-gray-50 p-2"><p class="text-lg font-semibold">{{ row.active_listings }}</p><p class="text-xs text-gray-500">Encargos</p></a>
+                                <a href="{% url 'order_list' %}?agent={{ row.user.id }}" class="rounded-lg bg-gray-50 p-2"><p class="text-lg font-semibold">{{ row.orders }}</p><p class="text-xs text-gray-500">Pedidos</p></a>
+                                <a href="{% url 'news_list' %}?agent={{ row.user.id }}&open=1" class="rounded-lg bg-gray-50 p-2"><p class="text-lg font-semibold">{{ row.news }}</p><p class="text-xs text-gray-500">Noticias</p></a>
+                                <a href="{% url 'task_list' %}?agent={{ row.user.id }}" class="rounded-lg bg-gray-50 p-2"><p class="text-lg font-semibold">{{ row.tasks }}</p><p class="text-xs text-gray-500">Tareas</p></a>
+                                <a href="{% url 'listing_list' %}?agent={{ row.user.id }}&has_proposals=1" class="rounded-lg bg-gray-50 p-2"><p class="text-lg font-semibold">{{ row.proposals }}</p><p class="text-xs text-gray-500">Propuestas</p></a>
+                            </div>
+                        </div>
+                    {% endfor %}
                 </div>
             </div>
         </section>

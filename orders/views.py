@@ -5,6 +5,7 @@ from django.views.decorators.http import require_POST
 
 from contacts.models import Contact
 from properties.models import Property, Zone
+from users.models import User
 
 from .forms import OrderCommentForm, OrderForm
 from .models import Order
@@ -21,6 +22,13 @@ def order_list(request):
     payment_type = request.GET.get("payment_type", "")
     property_type = request.GET.get("property_type", "")
     zone = request.GET.get("zone", "")
+    agent = request.GET.get("agent", "")
+
+    if request.user.is_superuser or request.user.role in ["admin", "manager"]:
+        if agent:
+            orders = orders.filter(buyer__assigned_agent_id=agent)
+    else:
+        orders = orders.filter(buyer__assigned_agent=request.user)
 
     if search:
         orders = orders.filter(
@@ -43,6 +51,7 @@ def order_list(request):
             "payment_choices": Order.PAYMENT_TYPE_CHOICES,
             "property_type_choices": Property.PROPERTY_TYPE_CHOICES,
             "zones": Zone.objects.all(),
+            "agents": User.objects.filter(is_active=True).order_by("username"),
         },
     )
 

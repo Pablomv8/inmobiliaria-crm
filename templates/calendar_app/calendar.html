@@ -228,9 +228,6 @@
 
 <script>
     
-let selectedAgents = [];
-
-
 document.addEventListener(
     "DOMContentLoaded",
     function() {
@@ -238,7 +235,7 @@ document.addEventListener(
         const calendarEl =
             document.getElementById("calendar");
 
-        let selectedAgents = [];
+        let selectedAgents = {{ selected_agent_ids|safe }};
 
         let calendar =
             new FullCalendar.Calendar(
@@ -330,6 +327,10 @@ document.addEventListener(
         document
             .querySelectorAll(".agent-filter")
             .forEach(button => {
+
+                if (selectedAgents.includes(button.dataset.agentId)) {
+                    button.classList.add("agent-selected");
+                }
 
                 button.addEventListener(
                     "click",

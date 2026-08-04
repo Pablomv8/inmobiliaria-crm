@@ -26,6 +26,12 @@
                 <option value="">Todas las zonas</option>
                 {% for zone in zones %}<option value="{{ zone.id }}" {% if request.GET.zone == zone.id|stringformat:"s" %}selected{% endif %}>{{ zone.name }}</option>{% endfor %}
             </select>
+            {% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" %}
+                <select name="agent" class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm">
+                    <option value="">Todos los agentes</option>
+                    {% for agent in agents %}<option value="{{ agent.id }}" {% if request.GET.agent == agent.id|stringformat:"s" %}selected{% endif %}>{{ agent.get_full_name|default:agent.username }}</option>{% endfor %}
+                </select>
+            {% endif %}
             <button class="px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm">Filtrar</button>
             <a href="{% url 'order_list' %}" class="px-4 py-2.5 rounded-xl bg-gray-100 text-sm">Limpiar</a>
         </div>

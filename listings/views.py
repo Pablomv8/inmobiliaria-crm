@@ -27,7 +27,12 @@ def get_user_listings(user):
 def listing_list(request):
 
     # BASE QUERYSET SEGÚN PERMISOS
-    if request.user.role in ["admin", "manager"]:
+    can_manage_all = (
+        request.user.is_superuser
+        or request.user.role in ["admin", "manager"]
+    )
+
+    if can_manage_all:
 
         listings = Listing.objects.all()
 
@@ -76,15 +81,19 @@ def listing_list(request):
     # AGENT (solo managers/admin)
     # ------------------------
     agent = request.GET.get("agent")
+    has_proposals = request.GET.get("has_proposals") == "1"
 
     if (
         agent
-        and request.user.role in ["admin", "manager"]
+        and can_manage_all
     ):
 
         listings = listings.filter(
             agent_id=agent
         )
+
+    if has_proposals:
+        listings = listings.filter(proposals__isnull=False).distinct()
 
     # ------------------------
     # FINAL QUERYSET
@@ -107,9 +116,7 @@ def listing_list(request):
 
         "status_choices": Listing.STATUS_CHOICES,
         "type_choices": Listing.TYPE_CHOICES,
-        "agents": User.objects.filter(
-            role="agent"
-        )
+        "agents": User.objects.filter(is_active=True).order_by("username")
     }
 
     return render(

@@ -38,8 +38,11 @@ def contact_list(request):
         contacts = contacts.filter(status=status)
 
     # 👤 AGENTE
-    if agent:
-        contacts = contacts.filter(assigned_agent_id=agent)
+    if request.user.is_superuser or request.user.role in ["admin", "manager"]:
+        if agent:
+            contacts = contacts.filter(assigned_agent_id=agent)
+    else:
+        contacts = contacts.filter(assigned_agent=request.user)
 
     # ↕ ORDENACIÓN
     if ordering:

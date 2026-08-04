@@ -67,7 +67,7 @@
                 </select>
 
                 <!-- AGENTE -->
-                <select name="agent"
+                {% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" %}<select name="agent"
                         onchange="this.form.submit()"
                         class="px-3 py-2 rounded-xl text-sm border-gray-200 bg-gray-50 text-gray-700 font-medium">
 
@@ -82,7 +82,7 @@
                         </option>
                     {% endfor %}
 
-                </select>
+                </select>{% endif %}
 
                 <!-- ORDEN -->
                 <select name="ordering"

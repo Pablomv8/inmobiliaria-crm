@@ -8,6 +8,7 @@ from django.views.decorators.http import require_POST
 
 from calendar_app.models import Appointment, Call
 from properties.models import Property
+from users.models import User
 
 from .forms import NewsCommentForm, NewsForm
 from .models import News
@@ -23,6 +24,14 @@ def news_list(request):
     search = request.GET.get("search", "").strip()
     motivation = request.GET.get("motivation", "")
     status = request.GET.get("status", "")
+    agent = request.GET.get("agent", "")
+    open_only = request.GET.get("open") == "1"
+
+    if request.user.is_superuser or request.user.role in ["admin", "manager"]:
+        if agent:
+            news_items = news_items.filter(agent_id=agent)
+    else:
+        news_items = news_items.filter(agent=request.user)
 
     if search:
         news_items = news_items.filter(
@@ -36,6 +45,8 @@ def news_list(request):
 
     if status:
         news_items = news_items.filter(status=status)
+    elif open_only:
+        news_items = news_items.exclude(status="closed")
 
     return render(
         request,
@@ -44,6 +55,7 @@ def news_list(request):
             "news_items": news_items.order_by("-created_at"),
             "motivation_choices": News.MOTIVATION_CHOICES,
             "status_choices": News.STATUS_CHOICES,
+            "agents": User.objects.filter(is_active=True).order_by("username"),
         },
     )
 
