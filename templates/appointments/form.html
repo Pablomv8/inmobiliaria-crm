@@ -158,7 +158,8 @@ async function loadSlots() {
         return;
 
     const response = await fetch(
-        `/calendar/available-slots/?date=${dateInput.value}&agent_id={{ schedule_agent.id }}`
+        `/calendar/available-slots/?date=${dateInput.value}&agent_id={{ schedule_agent.id }}`,
+        { cache: "no-store" }
     );
 
     const data = await response.json();

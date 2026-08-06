@@ -125,7 +125,7 @@
 
             </div>
 
-            {% if appointment.status != "cancelled" and appointment.appointment_type == "acquisition" or appointment.status != "cancelled" and appointment.appointment_type == "follow_up" or appointment.status != "cancelled" and appointment.appointment_type == "sale" or appointment.status != "cancelled" and appointment.appointment_type == "proposal" %}
+            {% if appointment.status != "cancelled" and appointment.appointment_type == "acquisition" or appointment.status != "cancelled" and appointment.appointment_type == "follow_up" or appointment.status != "cancelled" and appointment.appointment_type == "sale" or appointment.status != "cancelled" and appointment.appointment_type == "proposal" or appointment.status != "cancelled" and appointment.appointment_type == "proposal_acceptance" or appointment.status != "cancelled" and appointment.appointment_type == "contract" or appointment.status != "cancelled" and appointment.appointment_type == "signing" %}
                 <div class="mt-8 rounded-2xl border border-gray-200 bg-gray-50 p-6">
                     <div class="flex items-start justify-between gap-4 mb-4">
                         <div>
@@ -250,6 +250,54 @@
                 </div>
             {% endif %}
 
+            {% if appointment.appointment_type == "proposal_acceptance" and appointment.status == "completed" and appointment.result_comment %}
+                <div class="mt-6 rounded-2xl border border-violet-200 bg-violet-50 p-6">
+                    {% if appointment.result_success is None %}
+                        <h3 class="text-lg font-semibold text-gray-900">¿El propietario acepta la propuesta?</h3>
+                        <p class="text-sm text-gray-600 mt-1 mb-5">
+                            Si la acepta, programa la cita de contrato, la de escrituración o ambas. Si no, registra la contraoferta del propietario.
+                        </p>
+                        <div class="grid sm:grid-cols-3 gap-3">
+                            <a href="{% url 'create_post_acceptance_appointment' appointment.id 'contract' %}"
+                               class="px-5 py-3 rounded-xl bg-green-600 text-white text-center font-medium hover:bg-green-700 transition">
+                                Sí, cita de contrato
+                            </a>
+                            <a href="{% url 'create_post_acceptance_appointment' appointment.id 'signing' %}"
+                               class="px-5 py-3 rounded-xl bg-blue-600 text-white text-center font-medium hover:bg-blue-700 transition">
+                                Sí, cita de escrituración
+                            </a>
+                            <a href="{% url 'create_counteroffer' appointment.id %}"
+                               class="px-5 py-3 rounded-xl bg-gray-900 text-white text-center font-medium hover:bg-black transition">
+                                No, crear contraoferta
+                            </a>
+                        </div>
+                    {% elif appointment.result_success %}
+                        <h3 class="font-semibold text-green-800">Propuesta aceptada</h3>
+                        <p class="text-sm text-green-700 mt-1">Continúa el proceso con las citas finales.</p>
+                        <div class="flex flex-wrap gap-3 mt-4">
+                            {% if contract_appointment %}
+                                <a href="{% url 'appointment_detail' contract_appointment.id %}" class="px-4 py-2 rounded-xl bg-green-600 text-white text-sm">Ver cita de contrato</a>
+                            {% else %}
+                                <a href="{% url 'create_post_acceptance_appointment' appointment.id 'contract' %}" class="px-4 py-2 rounded-xl border border-green-300 text-green-800 text-sm">+ Programar contrato</a>
+                            {% endif %}
+                            {% if signing_appointment %}
+                                <a href="{% url 'appointment_detail' signing_appointment.id %}" class="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm">Ver cita de escrituración</a>
+                            {% else %}
+                                <a href="{% url 'create_post_acceptance_appointment' appointment.id 'signing' %}" class="px-4 py-2 rounded-xl border border-blue-300 text-blue-800 text-sm">+ Programar escrituración</a>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <h3 class="font-semibold text-gray-900">Propuesta no aceptada</h3>
+                        {% if counteroffer %}
+                            <p class="text-sm text-gray-600 mt-1">El propietario ha realizado una contraoferta.</p>
+                            <a href="{% url 'counteroffer_detail' counteroffer.id %}" class="inline-flex mt-4 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm">Ver contraoferta</a>
+                        {% else %}
+                            <a href="{% url 'create_counteroffer' appointment.id %}" class="inline-flex mt-4 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm">Crear contraoferta</a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endif %}
+
             {% if appointment.appointment_type == "acquisition" and appointment.status == "completed" and appointment.result_comment %}
                 <div class="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-6">
                     {% if appointment.result_success is None %}
@@ -323,6 +371,20 @@
                     <a href="{% url 'appointment_detail' appointment.source_sale_appointment.id %}"
                        class="ml-4 inline-flex items-center text-sm text-blue-600 hover:underline">
                         📅 Ver cita de venta origen
+                    </a>
+                {% endif %}
+
+                {% if appointment.purchase_proposal %}
+                    <a href="{% url 'proposal_appointment_detail' appointment.purchase_proposal.id %}"
+                       class="ml-4 inline-flex items-center text-sm text-blue-600 hover:underline">
+                        🤝 Ver propuesta relacionada
+                    </a>
+                {% endif %}
+
+                {% if appointment.source_acceptance_appointment %}
+                    <a href="{% url 'appointment_detail' appointment.source_acceptance_appointment.id %}"
+                       class="ml-4 inline-flex items-center text-sm text-blue-600 hover:underline">
+                        📅 Ver cita de aceptación origen
                     </a>
                 {% endif %}
 

@@ -10,6 +10,10 @@ class Order(models.Model):
         ("sale_appointment", "Cita de venta programada"),
         ("proposal_appointment", "Cita de propuesta programada"),
         ("proposal", "Propuesta realizada"),
+        ("acceptance_appointment", "Aceptación programada"),
+        ("counteroffer", "Contraoferta recibida"),
+        ("contract_appointment", "Contrato programado"),
+        ("signing_appointment", "Escrituración programada"),
         ("closed", "Cerrado"),
         ("cancelled", "Cancelado"),
     ]

@@ -1,36 +1,192 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+    <a href="{% url 'property_detail' property.id %}"
+       class="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 mb-5">
+        ← Volver al inmueble
+    </a>
 
-<div class="max-w-xl mx-auto p-6">
+    <div class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+        <header class="bg-gray-950 px-6 py-7 text-white sm:px-9">
+            <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                    <p class="text-sm font-medium text-indigo-300">Nuevo propietario</p>
+                    <h1 class="mt-2 text-3xl font-bold">Datos del propietario</h1>
+                    <p class="mt-2 max-w-2xl text-sm text-gray-300">
+                        Completa la información personal y de contacto. El propietario quedará asociado automáticamente a este inmueble.
+                    </p>
+                </div>
 
-    <div class="bg-white border rounded-2xl p-6 space-y-4">
+                <div class="rounded-2xl border border-white/15 bg-white/10 px-5 py-4 lg:min-w-72">
+                    <p class="text-xs font-medium uppercase tracking-wider text-gray-300">Inmueble relacionado</p>
+                    <p class="mt-2 font-semibold text-white">{{ property.full_address }}</p>
+                    <p class="mt-1 text-sm text-gray-300">{{ property.get_property_type_display }} · {{ property.get_status_display }}</p>
+                </div>
+            </div>
+        </header>
 
-        <h1 class="text-xl font-semibold">
-            Nuevo propietario
-        </h1>
-
-        <p class="text-sm text-gray-500">
-            {{ property.full_address }}
-        </p>
-
-        <p class="text-sm text-blue-600 bg-blue-50 p-3 rounded-xl">
-            Este contacto se creará como <b>propietario</b> de este inmueble
-        </p>
-
-        <form method="post" class="space-y-4">
-
+        <form method="post" class="space-y-8 p-6 sm:p-9">
             {% csrf_token %}
 
-            {{ form.as_p }}
+            {% if form.non_field_errors %}
+                <div class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                </div>
+            {% endif %}
 
-            <button class="w-full bg-black text-white py-3 rounded-xl">
-                Guardar propietario
-            </button>
+            <section class="rounded-2xl border border-gray-200 bg-gray-50/70 p-5 sm:p-6">
+                <div class="mb-6 flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 font-bold text-indigo-700">1</span>
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Información personal</h2>
+                        <p class="mt-1 text-sm text-gray-500">Identificación y datos básicos del propietario.</p>
+                    </div>
+                </div>
 
+                <div class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+                    <div>
+                        <label for="{{ form.name.id_for_label }}" class="mb-2 block text-sm font-medium text-gray-700">{{ form.name.label }} <span class="text-red-500">*</span></label>
+                        {{ form.name }}
+                        {% for error in form.name.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="lg:col-span-2">
+                        <label for="{{ form.last_name.id_for_label }}" class="mb-2 block text-sm font-medium text-gray-700">{{ form.last_name.label }}</label>
+                        {{ form.last_name }}
+                        {% for error in form.last_name.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div>
+                        <label for="{{ form.identification_number.id_for_label }}" class="mb-2 block text-sm font-medium text-gray-700">{{ form.identification_number.label }}</label>
+                        {{ form.identification_number }}
+                        {% if form.identification_number.help_text %}<p class="mt-2 text-xs text-gray-500">{{ form.identification_number.help_text }}</p>{% endif %}
+                        {% for error in form.identification_number.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div>
+                        <label for="{{ form.birth_date.id_for_label }}" class="mb-2 block text-sm font-medium text-gray-700">{{ form.birth_date.label }}</label>
+                        {{ form.birth_date }}
+                        {% for error in form.birth_date.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div>
+                        <label for="{{ form.marital_status.id_for_label }}" class="mb-2 block text-sm font-medium text-gray-700">{{ form.marital_status.label }}</label>
+                        {{ form.marital_status }}
+                        {% for error in form.marital_status.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="md:col-span-2 lg:col-span-3">
+                        <label for="{{ form.occupation.id_for_label }}" class="mb-2 block text-sm font-medium text-gray-700">{{ form.occupation.label }}</label>
+                        {{ form.occupation }}
+                        {% for error in form.occupation.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="rounded-2xl border border-gray-200 p-5 sm:p-6">
+                <div class="mb-6 flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 font-bold text-emerald-700">2</span>
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Datos de contacto</h2>
+                        <p class="mt-1 text-sm text-gray-500">Canales principales para comunicarse con el propietario.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <div>
+                        <label for="{{ form.phone.id_for_label }}" class="mb-2 block text-sm font-medium text-gray-700">{{ form.phone.label }} <span class="text-red-500">*</span></label>
+                        {{ form.phone }}
+                        {% if form.phone.help_text %}<p class="mt-2 text-xs text-gray-500">{{ form.phone.help_text }}</p>{% endif %}
+                        {% for error in form.phone.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div>
+                        <label for="{{ form.email.id_for_label }}" class="mb-2 block text-sm font-medium text-gray-700">{{ form.email.label }}</label>
+                        {{ form.email }}
+                        {% for error in form.email.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="rounded-2xl border border-gray-200 bg-gray-50/70 p-5 sm:p-6">
+                <div class="mb-6 flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 font-bold text-amber-700">3</span>
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Domicilio del propietario</h2>
+                        <p class="mt-1 text-sm text-gray-500">Dirección habitual para documentación y comunicaciones.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-5 md:grid-cols-6">
+                    <div class="md:col-span-4">
+                        <label for="{{ form.street.id_for_label }}" class="mb-2 block text-sm font-medium text-gray-700">{{ form.street.label }}</label>
+                        {{ form.street }}
+                        {% for error in form.street.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="md:col-span-1">
+                        <label for="{{ form.number.id_for_label }}" class="mb-2 block text-sm font-medium text-gray-700">{{ form.number.label }}</label>
+                        {{ form.number }}
+                        {% for error in form.number.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="md:col-span-1">
+                        <label for="{{ form.floor.id_for_label }}" class="mb-2 block text-sm font-medium text-gray-700">{{ form.floor.label }}</label>
+                        {{ form.floor }}
+                        {% for error in form.floor.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="{{ form.postal_code.id_for_label }}" class="mb-2 block text-sm font-medium text-gray-700">{{ form.postal_code.label }}</label>
+                        {{ form.postal_code }}
+                        {% for error in form.postal_code.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="{{ form.city.id_for_label }}" class="mb-2 block text-sm font-medium text-gray-700">{{ form.city.label }}</label>
+                        {{ form.city }}
+                        {% for error in form.city.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="{{ form.province.id_for_label }}" class="mb-2 block text-sm font-medium text-gray-700">{{ form.province.label }}</label>
+                        {{ form.province }}
+                        {% for error in form.province.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div class="rounded-2xl border border-gray-200 p-5 sm:p-6">
+                    <div class="mb-5 flex items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 font-bold text-blue-700">4</span>
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-900">Gestión comercial</h2>
+                            <p class="mt-1 text-sm text-gray-500">Responsable interno del propietario.</p>
+                        </div>
+                    </div>
+                    <label for="{{ form.assigned_agent.id_for_label }}" class="mb-2 block text-sm font-medium text-gray-700">{{ form.assigned_agent.label }}</label>
+                    {{ form.assigned_agent }}
+                    {% if form.assigned_agent.help_text %}<p class="mt-2 text-xs text-gray-500">{{ form.assigned_agent.help_text }}</p>{% endif %}
+                    {% for error in form.assigned_agent.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                </div>
+
+                <div class="rounded-2xl border border-gray-200 p-5 sm:p-6">
+                    <div class="mb-5 flex items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 font-bold text-violet-700">5</span>
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-900">Notas internas</h2>
+                            <p class="mt-1 text-sm text-gray-500">Observaciones útiles para el equipo.</p>
+                        </div>
+                    </div>
+                    <label for="{{ form.notes.id_for_label }}" class="sr-only">{{ form.notes.label }}</label>
+                    {{ form.notes }}
+                    {% if form.notes.help_text %}<p class="mt-2 text-xs text-gray-500">{{ form.notes.help_text }}</p>{% endif %}
+                    {% for error in form.notes.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
+                </div>
+            </section>
+
+            <div class="flex flex-col-reverse gap-3 border-t border-gray-200 pt-7 sm:flex-row sm:justify-end">
+                <a href="{% url 'property_detail' property.id %}"
+                   class="rounded-xl border border-gray-300 px-6 py-3 text-center font-medium text-gray-700 transition hover:bg-gray-50">
+                    Cancelar
+                </a>
+                <button type="submit"
+                        class="rounded-xl bg-gray-950 px-7 py-3 font-medium text-white shadow-sm transition hover:bg-black">
+                    Guardar propietario
+                </button>
+            </div>
         </form>
-
     </div>
-
 </div>
 {% endblock %}

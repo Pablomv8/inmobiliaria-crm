@@ -1,6 +1,10 @@
+from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.urls import reverse
 
-from .forms import PropertyForm
+from contacts.models import Contact
+
+from .forms import OwnerContactForm, PropertyForm
 from .models import Property
 
 
@@ -44,3 +48,62 @@ class PropertyModelTests(TestCase):
                 })
 
                 self.assertTrue(form.is_valid(), form.errors)
+
+
+class OwnerContactFormTests(TestCase):
+    def setUp(self):
+        self.agent = get_user_model().objects.create_user(
+            username="owner-form-agent",
+            password="test-password",
+            role="agent",
+        )
+        self.property = Property.objects.create(
+            street="Calle del Formulario",
+            number="8",
+            city="Madrid",
+            property_type="flat",
+        )
+        self.client.force_login(self.agent)
+
+    def test_owner_form_uses_spanish_labels_and_hides_fixed_fields(self):
+        form = OwnerContactForm(property_obj=self.property)
+
+        self.assertEqual(form.fields["name"].label, "Nombre")
+        self.assertEqual(form.fields["last_name"].label, "Apellidos")
+        self.assertEqual(form.fields["assigned_agent"].label, "Agente asignado")
+        self.assertEqual(form.fields["marital_status"].choices[0][1], "Selecciona el estado civil")
+        self.assertNotIn("contact_type", form.fields)
+        self.assertNotIn("properties", form.fields)
+
+    def test_owner_form_view_is_grouped_into_visual_sections(self):
+        response = self.client.get(
+            reverse("create_owner_for_property", args=[self.property.pk])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Información personal")
+        self.assertContains(response, "Datos de contacto")
+        self.assertContains(response, "Domicilio del propietario")
+        self.assertContains(response, "Gestión comercial")
+        self.assertContains(response, "Notas internas")
+
+    def test_creating_owner_keeps_automatic_property_relationship(self):
+        response = self.client.post(
+            reverse("create_owner_for_property", args=[self.property.pk]),
+            {
+                "name": "María",
+                "last_name": "García",
+                "phone": "612345678",
+                "email": "maria@example.com",
+                "assigned_agent": self.agent.pk,
+            },
+        )
+
+        owner = Contact.objects.get(name="María")
+        self.assertRedirects(
+            response,
+            reverse("property_detail", args=[self.property.pk]),
+        )
+        self.assertEqual(owner.contact_type, "owner")
+        self.assertEqual(owner.assigned_agent, self.agent)
+        self.assertTrue(owner.properties.filter(pk=self.property.pk).exists())

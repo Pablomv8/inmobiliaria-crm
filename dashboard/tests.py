@@ -209,3 +209,78 @@ class DashboardScopeTests(TestCase):
 
         self.assertEqual(len(response.context["orders"]), 1)
         self.assertEqual(response.context["orders"][0].buyer, self.agent_buyer)
+
+    def test_manager_sees_worker_tracking_cards_with_assigned_metrics(self):
+        inactive_agent = get_user_model().objects.create_user(
+            username="inactive-agent",
+            password="test-password",
+            role="agent",
+            is_active=False,
+        )
+        self.client.force_login(self.manager)
+
+        response = self.client.get(reverse("team_overview"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["worker_count"], 2)
+        workers = [row["user"] for row in response.context["worker_rows"]]
+        self.assertIn(self.agent, workers)
+        self.assertIn(self.other_agent, workers)
+        self.assertNotIn(self.manager, workers)
+        self.assertNotIn(inactive_agent, workers)
+        agent_row = next(
+            row for row in response.context["worker_rows"]
+            if row["user"] == self.agent
+        )
+        self.assertEqual(agent_row["contacts"], 2)
+        self.assertEqual(agent_row["news"], 1)
+        self.assertEqual(agent_row["listings"], 1)
+        self.assertEqual(agent_row["orders"], 1)
+        self.assertEqual(agent_row["scheduled_appointments"], 1)
+        self.assertContains(
+            response,
+            reverse("team_member_detail", args=[self.agent.pk]),
+        )
+
+    def test_manager_sees_selected_worker_detail_and_recent_portfolio(self):
+        self.client.force_login(self.manager)
+
+        response = self.client.get(
+            reverse("team_member_detail", args=[self.agent.pk])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["worker"], self.agent)
+        self.assertEqual(response.context["contacts_total"], 2)
+        self.assertEqual(response.context["owners_total"], 1)
+        self.assertEqual(response.context["buyers_total"], 1)
+        self.assertEqual(response.context["news_total"], 1)
+        self.assertEqual(response.context["listings_total"], 1)
+        self.assertEqual(response.context["orders_total"], 1)
+        self.assertEqual(response.context["scheduled_appointments"], 1)
+        self.assertContains(response, "Indicadores de seguimiento")
+        self.assertContains(response, self.agent_property.full_address)
+        self.assertContains(
+            response,
+            f"{reverse('contact_list')}?agent={self.agent.pk}",
+        )
+
+    def test_agent_cannot_access_team_tracking(self):
+        self.client.force_login(self.agent)
+
+        overview_response = self.client.get(reverse("team_overview"))
+        detail_response = self.client.get(
+            reverse("team_member_detail", args=[self.other_agent.pk])
+        )
+
+        self.assertEqual(overview_response.status_code, 403)
+        self.assertEqual(detail_response.status_code, 403)
+
+    def test_only_active_agents_have_a_tracking_detail(self):
+        self.client.force_login(self.manager)
+
+        response = self.client.get(
+            reverse("team_member_detail", args=[self.manager.pk])
+        )
+
+        self.assertEqual(response.status_code, 404)

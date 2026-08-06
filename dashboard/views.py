@@ -5,7 +5,8 @@ from itertools import chain
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, DecimalField, ExpressionWrapper, F, Sum
 from django.db.models.functions import TruncDate
-from django.shortcuts import render
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
 from activities.models import Activity
@@ -73,6 +74,77 @@ def build_user_rows():
         }
         for member in users
     ]
+
+
+def build_worker_rows():
+    workers = list(
+        User.objects.filter(is_active=True, role="agent").order_by(
+            "first_name",
+            "last_name",
+            "username",
+        )
+    )
+    contact_counts = grouped_counts(Contact.objects.all(), "assigned_agent_id")
+    news_counts = grouped_counts(News.objects.all(), "agent_id")
+    open_news_counts = grouped_counts(
+        News.objects.exclude(status="closed"),
+        "agent_id",
+    )
+    listing_counts = grouped_counts(Listing.objects.all(), "agent_id")
+    active_listing_counts = grouped_counts(
+        Listing.objects.filter(status="active"),
+        "agent_id",
+    )
+    order_counts = grouped_counts(Order.objects.all(), "buyer__assigned_agent_id")
+    open_order_counts = grouped_counts(
+        Order.objects.exclude(status__in=["closed", "cancelled"]),
+        "buyer__assigned_agent_id",
+    )
+    scheduled_appointment_counts = grouped_counts(
+        Appointment.objects.filter(status="scheduled"),
+        "agent_id",
+    )
+    pending_call_counts = grouped_counts(
+        Call.objects.filter(status="pending"),
+        "agent_id",
+    )
+    pending_task_counts = grouped_counts(
+        Task.objects.filter(status__in=["pending", "in_progress"]),
+        "assigned_to_id",
+    )
+    proposal_counts = grouped_counts(ProposalAppointment.objects.all(), "agent_id")
+    signed_sale_rows = {
+        item["agent_id"]: item
+        for item in Sale.objects.filter(status="signed")
+        .values("agent_id")
+        .annotate(total=Count("id"), revenue=Sum("sale_price"))
+        if item["agent_id"] is not None
+    }
+
+    rows = []
+    for worker in workers:
+        scheduled_appointments = scheduled_appointment_counts.get(worker.pk, 0)
+        pending_calls = pending_call_counts.get(worker.pk, 0)
+        pending_tasks = pending_task_counts.get(worker.pk, 0)
+        sale_data = signed_sale_rows.get(worker.pk, {})
+        rows.append({
+            "user": worker,
+            "contacts": contact_counts.get(worker.pk, 0),
+            "news": news_counts.get(worker.pk, 0),
+            "open_news": open_news_counts.get(worker.pk, 0),
+            "listings": listing_counts.get(worker.pk, 0),
+            "active_listings": active_listing_counts.get(worker.pk, 0),
+            "orders": order_counts.get(worker.pk, 0),
+            "open_orders": open_order_counts.get(worker.pk, 0),
+            "scheduled_appointments": scheduled_appointments,
+            "pending_calls": pending_calls,
+            "pending_tasks": pending_tasks,
+            "pending_workload": scheduled_appointments + pending_calls + pending_tasks,
+            "proposals": proposal_counts.get(worker.pk, 0),
+            "signed_sales": sale_data.get("total", 0),
+            "revenue": sale_data.get("revenue", 0) or 0,
+        })
+    return rows
 
 
 def build_activity_chart(days, news, appointments, proposals):
@@ -287,3 +359,129 @@ def dashboard(request):
         })
 
     return render(request, "dashboard/home.html", context)
+
+
+@login_required
+def team_overview(request):
+    if not user_can_see_office(request.user):
+        raise PermissionDenied
+
+    worker_rows = build_worker_rows()
+    return render(
+        request,
+        "dashboard/team_overview.html",
+        {
+            "worker_rows": worker_rows,
+            "worker_count": len(worker_rows),
+            "total_contacts": sum(row["contacts"] for row in worker_rows),
+            "total_active_listings": sum(
+                row["active_listings"] for row in worker_rows
+            ),
+            "total_open_orders": sum(row["open_orders"] for row in worker_rows),
+            "total_pending_workload": sum(
+                row["pending_workload"] for row in worker_rows
+            ),
+        },
+    )
+
+
+@login_required
+def team_member_detail(request, pk):
+    if not user_can_see_office(request.user):
+        raise PermissionDenied
+
+    worker = get_object_or_404(User, pk=pk, role="agent", is_active=True)
+    today = timezone.localdate()
+    now = timezone.now()
+
+    contacts = Contact.objects.filter(assigned_agent=worker)
+    news = News.objects.filter(agent=worker)
+    listings = Listing.objects.filter(agent=worker)
+    orders = Order.objects.filter(buyer__assigned_agent=worker)
+    appointments = Appointment.objects.filter(agent=worker)
+    calls = Call.objects.filter(agent=worker)
+    tasks = Task.objects.filter(assigned_to=worker)
+    proposals = ProposalAppointment.objects.filter(agent=worker)
+    sales = Sale.objects.filter(agent=worker)
+
+    pending_tasks = tasks.filter(status__in=["pending", "in_progress"])
+    overdue_tasks = pending_tasks.filter(due_date__lt=now)
+    completed_tasks = tasks.filter(status="done").count()
+    task_total = tasks.exclude(status="cancelled").count()
+    completed_appointments = appointments.filter(status="completed").count()
+    appointment_total = appointments.exclude(status="cancelled").count()
+    closed_news = news.filter(status="closed").count()
+    news_total = news.count()
+    signed_sales = sales.filter(status="signed")
+
+    commission_expression = ExpressionWrapper(
+        F("sale_price") * F("commission_percent") / 100,
+        output_field=DecimalField(max_digits=14, decimal_places=2),
+    )
+    signed_sale_totals = signed_sales.aggregate(
+        revenue=Sum("sale_price"),
+        commission=Sum(commission_expression),
+    )
+
+    upcoming_appointments = list(
+        appointments.filter(status="scheduled", date__gte=today)
+        .select_related("contact", "related_property")
+        .order_by("date", "time")[:8]
+    )
+    upcoming_calls = list(
+        calls.filter(status="pending", date__gte=today)
+        .select_related("contact")
+        .order_by("date", "time")[:8]
+    )
+    for appointment in upcoming_appointments:
+        appointment.team_event_type = "appointment"
+    for call in upcoming_calls:
+        call.team_event_type = "call"
+    upcoming_events = sorted(
+        chain(upcoming_appointments, upcoming_calls),
+        key=lambda event: (event.date, event.time),
+    )[:8]
+
+    context = {
+        "worker": worker,
+        "today": today,
+        "contacts_total": contacts.count(),
+        "owners_total": contacts.filter(contact_type="owner").count(),
+        "buyers_total": contacts.filter(contact_type="buyer").count(),
+        "news_total": news_total,
+        "open_news": news.exclude(status="closed").count(),
+        "closed_news": closed_news,
+        "news_completion_rate": round(closed_news * 100 / news_total) if news_total else 0,
+        "listings_total": listings.count(),
+        "active_listings": listings.filter(status="active").count(),
+        "finished_listings": listings.filter(status__in=["sold", "rented"]).count(),
+        "orders_total": orders.count(),
+        "open_orders": orders.exclude(status__in=["closed", "cancelled"]).count(),
+        "proposals_total": proposals.count(),
+        "scheduled_appointments": appointments.filter(status="scheduled").count(),
+        "completed_appointments": completed_appointments,
+        "appointment_completion_rate": (
+            round(completed_appointments * 100 / appointment_total)
+            if appointment_total
+            else 0
+        ),
+        "pending_calls": calls.filter(status="pending").count(),
+        "completed_calls": calls.filter(status="completed").count(),
+        "pending_tasks": pending_tasks.count(),
+        "overdue_tasks": overdue_tasks.count(),
+        "completed_tasks": completed_tasks,
+        "task_completion_rate": (
+            round(completed_tasks * 100 / task_total) if task_total else 0
+        ),
+        "signed_sales": signed_sales.count(),
+        "sales_revenue": signed_sale_totals["revenue"] or 0,
+        "sales_commission": signed_sale_totals["commission"] or 0,
+        "upcoming_events": upcoming_events,
+        "recent_contacts": contacts.order_by("-created_at")[:5],
+        "recent_news": news.select_related("related_property").order_by("-created_at")[:5],
+        "recent_listings": listings.select_related("property", "owner").order_by("-created_at")[:5],
+        "recent_orders": orders.select_related("buyer", "zone").order_by("-created_at")[:5],
+        "recent_activities": Activity.objects.filter(user=worker)
+        .select_related("contact", "task")[:8],
+    }
+    return render(request, "dashboard/team_member_detail.html", context)

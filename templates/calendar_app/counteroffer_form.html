@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+    <a href="{% url 'appointment_detail' appointment.id %}" class="text-sm text-gray-500 hover:text-gray-900">← Volver a la cita de aceptación</a>
+
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8 mt-5">
+        <div class="mb-7">
+            <p class="text-sm font-medium text-amber-700">Propuesta de {{ proposal.buyer }}</p>
+            <h1 class="text-3xl font-bold text-gray-900 mt-2">Registrar contraoferta</h1>
+            <p class="text-gray-500 mt-2">Oferta del comprador: {{ proposal.offered_price }} €</p>
+        </div>
+
+        <form method="post" class="space-y-5">
+            {% csrf_token %}
+            {% for field in form %}
+                <div>
+                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}<p class="text-sm text-red-600 mt-2">{{ field.errors.0 }}</p>{% endif %}
+                </div>
+            {% endfor %}
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4">
+                <a href="{% url 'appointment_detail' appointment.id %}" class="px-5 py-3 rounded-xl bg-gray-100 text-center text-gray-700">Cancelar</a>
+                <button type="submit" class="px-5 py-3 rounded-xl bg-gray-900 text-white font-medium hover:bg-black">Guardar contraoferta</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

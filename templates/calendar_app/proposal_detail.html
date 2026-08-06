@@ -11,7 +11,7 @@
                 <h1 class="text-3xl font-bold text-gray-900 mt-2">Propuesta de {{ proposal.buyer }}</h1>
                 <p class="text-gray-500 mt-2">{{ proposal.listing.property.full_address }}</p>
             </div>
-            <span class="rounded-full bg-green-100 text-green-800 px-3 py-1 text-sm">Propuesta registrada</span>
+            <span class="rounded-full bg-green-100 text-green-800 px-3 py-1 text-sm">{{ proposal.get_status_display }}</span>
         </div>
 
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
@@ -26,7 +26,52 @@
         <div class="flex flex-wrap gap-3 mt-8 pt-6 border-t border-gray-200">
             <a href="{% url 'order_detail' proposal.order.id %}" class="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm">Ver pedido</a>
             <a href="{% url 'listing_detail' proposal.listing.id %}" class="px-4 py-2 rounded-xl bg-blue-50 text-blue-700 text-sm">Ver encargo</a>
+            <a href="{% url 'create_acceptance_appointment' proposal.id %}" class="px-4 py-2 rounded-xl bg-violet-600 text-white text-sm">Programar cita de aceptación</a>
         </div>
     </div>
+
+    <section class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8 mt-6">
+        <div class="flex items-center justify-between gap-4 mb-5">
+            <div>
+                <h2 class="text-xl font-semibold text-gray-900">Citas relacionadas</h2>
+                <p class="text-sm text-gray-500 mt-1">Aceptación, contrato y escrituración de esta propuesta.</p>
+            </div>
+            <a href="{% url 'create_acceptance_appointment' proposal.id %}" class="text-sm font-medium text-violet-700">+ Cita de aceptación</a>
+        </div>
+        <div class="space-y-3">
+            {% for appointment in appointments %}
+                <a href="{% url 'appointment_detail' appointment.id %}" class="block rounded-xl border border-gray-200 p-4 hover:border-violet-400 transition">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div>
+                            <p class="font-semibold text-gray-900">{{ appointment.get_appointment_type_display }}</p>
+                            <p class="text-sm text-gray-500 mt-1">{{ appointment.date|date:"d/m/Y" }} · {{ appointment.time|time:"H:i" }} · {{ appointment.agent }}</p>
+                        </div>
+                        <span class="text-sm {% if appointment.status == 'completed' %}text-green-700{% elif appointment.status == 'cancelled' %}text-red-700{% else %}text-blue-700{% endif %}">{{ appointment.get_status_display }}</span>
+                    </div>
+                </a>
+            {% empty %}
+                <div class="rounded-xl bg-gray-50 p-5 text-sm text-gray-500">Todavía no hay citas de aceptación, contrato o escrituración.</div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8 mt-6">
+        <div class="mb-5">
+            <h2 class="text-xl font-semibold text-gray-900">Contraofertas</h2>
+            <p class="text-sm text-gray-500 mt-1">Condiciones alternativas solicitadas por el propietario.</p>
+        </div>
+        <div class="space-y-3">
+            {% for counteroffer in counteroffers %}
+                <a href="{% url 'counteroffer_detail' counteroffer.id %}" class="block rounded-xl border border-amber-200 bg-amber-50 p-4 hover:border-amber-400 transition">
+                    <div class="flex items-center justify-between gap-3">
+                        <div><p class="text-sm text-amber-800">{{ counteroffer.counteroffer_date|date:"d/m/Y" }}</p><p class="font-semibold text-gray-900 mt-1">{{ counteroffer.owner_price }} €</p></div>
+                        <span class="text-sm text-amber-800">Ver contraoferta →</span>
+                    </div>
+                </a>
+            {% empty %}
+                <div class="rounded-xl bg-gray-50 p-5 text-sm text-gray-500">No hay contraofertas registradas.</div>
+            {% endfor %}
+        </div>
+    </section>
 </div>
 {% endblock %}

@@ -103,7 +103,7 @@ def order_detail(request, pk):
     sale_appointments = order.sale_appointments.select_related(
         "listing__property",
         "agent",
-    ).filter(appointment_type="sale").order_by("-date", "-time")
+    ).order_by("-date", "-time")
     comments = order.comments.select_related("user")
     return render(
         request,
@@ -140,7 +140,7 @@ def order_add_comment(request, pk):
     sale_appointments = order.sale_appointments.select_related(
         "listing__property",
         "agent",
-    ).filter(appointment_type="sale").order_by("-date", "-time")
+    ).order_by("-date", "-time")
     return render(
         request,
         "orders/detail.html",

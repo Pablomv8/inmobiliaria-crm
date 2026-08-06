@@ -64,8 +64,8 @@
     <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8 mt-6">
         <div class="flex items-center justify-between gap-4 mb-5">
             <div>
-                <h2 class="text-xl font-semibold text-gray-900">Citas de venta</h2>
-                <p class="text-sm text-gray-500 mt-1">Visitas a inmuebles compatibles con este pedido.</p>
+                <h2 class="text-xl font-semibold text-gray-900">Citas del pedido</h2>
+                <p class="text-sm text-gray-500 mt-1">Visitas, aceptación de propuestas, contrato y escrituración.</p>
             </div>
             <a href="{% url 'create_order_sale_appointment' order.id %}" class="text-sm font-medium text-green-700">+ Nueva cita</a>
         </div>
@@ -76,7 +76,7 @@
                    class="block rounded-xl border border-gray-200 p-4 hover:border-gray-400 transition">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                         <div>
-                            <p class="font-semibold text-gray-900">{{ appointment.listing.property.full_address }}</p>
+                            <p class="font-semibold text-gray-900">{{ appointment.get_appointment_type_display }} · {{ appointment.listing.property.full_address }}</p>
                             <p class="text-sm text-gray-500 mt-1">{{ appointment.date|date:"d/m/Y" }} · {{ appointment.time|time:"H:i" }} · {{ appointment.agent }}</p>
                         </div>
                         <span class="text-sm {% if appointment.status == 'completed' %}text-green-700{% elif appointment.status == 'cancelled' %}text-red-700{% else %}text-blue-700{% endif %}">
@@ -86,7 +86,7 @@
                 </a>
             {% empty %}
                 <div class="rounded-xl bg-gray-50 p-5 text-sm text-gray-500">
-                    Todavía no hay citas de venta programadas para este pedido.
+                    Todavía no hay citas programadas para este pedido.
                 </div>
             {% endfor %}
         </div>

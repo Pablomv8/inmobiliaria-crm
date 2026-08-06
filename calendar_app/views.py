@@ -2,11 +2,13 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.http import JsonResponse
 from django.urls import reverse
 
-from .models import Appointment, Call, ProposalAppointment
+from .models import Appointment, Call, CounterOffer, ProposalAppointment
 from .forms import (
     AppointmentForm,
     AppointmentResultForm,
     CallForm,
+    CallCommentForm,
+    CounterOfferForm,
     ProposalAppointmentForm,
     SaleAppointmentForm,
 )
@@ -15,6 +17,7 @@ from contacts.models import Contact
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.http import require_POST
+from django.views.decorators.cache import never_cache
 from collections import defaultdict
 
 
@@ -40,6 +43,18 @@ def get_user_appointments(user):
     return appointments
 
 
+def get_user_calls(user):
+    calls = Call.objects.select_related(
+        "contact",
+        "agent",
+        "news",
+        "listing",
+    )
+    if not user_can_manage_all(user):
+        calls = calls.filter(agent=user)
+    return calls
+
+
 def user_can_manage_all(user):
     return user.is_superuser or user.role in ["admin", "manager"]
 
@@ -51,6 +66,19 @@ def get_user_order_or_404(user, order_id):
         "zone",
     )
     return get_object_or_404(orders, pk=order_id)
+
+
+def get_user_proposal_or_404(user, proposal_id):
+    proposals = ProposalAppointment.objects.select_related(
+        "order__buyer",
+        "listing__property",
+        "listing__owner",
+        "buyer",
+        "agent",
+    )
+    if not user_can_manage_all(user):
+        proposals = proposals.filter(agent=user)
+    return get_object_or_404(proposals, pk=proposal_id)
 
 
 @login_required
@@ -268,11 +296,19 @@ def appointment_detail(request, pk):
             "agent",
             "listing",
             "order",
+            "purchase_proposal",
         ),
         pk=pk
     )
 
     listing = appointment.generated_listing.first()
+
+    proposal = getattr(appointment, "proposal", None)
+    if proposal is None:
+        proposal = appointment.purchase_proposal
+    resulting_appointments = list(
+        appointment.resulting_appointments.all().order_by("date", "time")
+    )
 
     return render(
         request,
@@ -281,10 +317,28 @@ def appointment_detail(request, pk):
             "appointment": appointment,
             "result_form": AppointmentResultForm(instance=appointment),
             "listing": listing,
-            "proposal": getattr(appointment, "proposal", None),
+            "proposal": proposal,
             "proposal_appointment": getattr(
                 appointment,
                 "proposal_appointment",
+                None,
+            ),
+            "counteroffer": getattr(appointment, "counteroffer", None),
+            "resulting_appointments": resulting_appointments,
+            "contract_appointment": next(
+                (
+                    item
+                    for item in resulting_appointments
+                    if item.appointment_type == "contract"
+                ),
+                None,
+            ),
+            "signing_appointment": next(
+                (
+                    item
+                    for item in resulting_appointments
+                    if item.appointment_type == "signing"
+                ),
                 None,
             ),
         }
@@ -317,11 +371,20 @@ def add_appointment_result(request, pk):
             success_message = (
                 "Comentario guardado. Ya puedes registrar la propuesta de compra."
             )
+        elif appointment.appointment_type == "proposal_acceptance":
+            success_message = (
+                "Comentario guardado. Indica si la propuesta ha sido aceptada."
+            )
+        elif appointment.appointment_type in ["contract", "signing"]:
+            success_message = "Comentario guardado y cita completada."
         else:
             success_message = "Comentario guardado y cita completada."
         messages.success(request, success_message)
     else:
         listing = appointment.generated_listing.first()
+        proposal = getattr(appointment, "proposal", None)
+        if proposal is None:
+            proposal = appointment.purchase_proposal
         return render(
             request,
             "calendar_app/appointment_detail.html",
@@ -329,12 +392,14 @@ def add_appointment_result(request, pk):
                 "appointment": appointment,
                 "result_form": form,
                 "listing": listing,
-                "proposal": getattr(appointment, "proposal", None),
+                "proposal": proposal,
                 "proposal_appointment": getattr(
                     appointment,
                     "proposal_appointment",
                     None,
                 ),
+                "counteroffer": getattr(appointment, "counteroffer", None),
+                "resulting_appointments": appointment.resulting_appointments.all(),
             },
             status=400,
         )
@@ -504,10 +569,232 @@ def proposal_appointment_detail(request, pk):
     if not user_can_manage_all(request.user):
         proposals = proposals.filter(agent=request.user)
     proposal = get_object_or_404(proposals, pk=pk)
+    appointments = proposal.appointments.select_related(
+        "agent",
+        "contact",
+    ).order_by("-date", "-time")
     return render(
         request,
         "calendar_app/proposal_detail.html",
-        {"proposal": proposal},
+        {
+            "proposal": proposal,
+            "appointments": appointments,
+            "counteroffers": proposal.counteroffers.all(),
+        },
+    )
+
+
+@login_required
+def create_acceptance_appointment(request, proposal_id):
+    proposal = get_user_proposal_or_404(request.user, proposal_id)
+    if proposal.status in [
+        "accepted",
+        "contract_appointment",
+        "signing_appointment",
+    ]:
+        messages.warning(
+            request,
+            "La propuesta ya fue aceptada y ha continuado a la fase final.",
+        )
+        return redirect("proposal_appointment_detail", pk=proposal.pk)
+
+    existing = proposal.appointments.filter(
+        appointment_type="proposal_acceptance",
+        status="scheduled",
+    ).first()
+    if existing:
+        messages.info(request, "Esta propuesta ya tiene una cita de aceptación pendiente.")
+        return redirect("appointment_detail", pk=existing.pk)
+
+    assigned_agent = proposal.agent or request.user
+    form = AppointmentForm(
+        request.POST or None,
+        user=assigned_agent,
+        appointment_type="proposal_acceptance",
+    )
+    if request.method == "POST" and form.is_valid():
+        appointment = form.save(commit=False)
+        appointment.appointment_type = "proposal_acceptance"
+        appointment.purchase_proposal = proposal
+        appointment.order = proposal.order
+        appointment.listing = proposal.listing
+        appointment.contact = proposal.listing.owner or proposal.buyer
+        appointment.related_property = proposal.listing.property
+        appointment.agent = assigned_agent
+        appointment.save()
+        messages.success(request, "Cita de aceptación programada correctamente.")
+        return redirect("appointment_detail", pk=appointment.pk)
+
+    return render(
+        request,
+        "appointments/form.html",
+        {
+            "form": form,
+            "order": proposal.order,
+            "listing": proposal.listing,
+            "proposal": proposal,
+            "page_title": "Nueva cita de aceptación de propuesta",
+            "schedule_agent": assigned_agent,
+        },
+    )
+
+
+@login_required
+def create_post_acceptance_appointment(request, pk, appointment_type):
+    if appointment_type not in ["contract", "signing"]:
+        messages.error(request, "El tipo de cita solicitado no es válido.")
+        return redirect("appointment_detail", pk=pk)
+
+    acceptance = get_object_or_404(
+        get_user_appointments(request.user).select_related(
+            "purchase_proposal__buyer",
+            "purchase_proposal__listing__property",
+            "purchase_proposal__order",
+            "agent",
+        ),
+        pk=pk,
+        appointment_type="proposal_acceptance",
+    )
+    if acceptance.status != "completed" or not acceptance.result_comment.strip():
+        messages.warning(
+            request,
+            "Añade el comentario de la cita de aceptación antes de continuar.",
+        )
+        return redirect("appointment_detail", pk=acceptance.pk)
+
+    if acceptance.result_success is False or hasattr(acceptance, "counteroffer"):
+        messages.warning(
+            request,
+            "Esta cita terminó con una contraoferta. Programa una nueva cita de aceptación desde la propuesta para continuar.",
+        )
+        return redirect("appointment_detail", pk=acceptance.pk)
+
+    proposal = acceptance.purchase_proposal
+    if proposal is None:
+        messages.error(request, "La cita no tiene una propuesta relacionada.")
+        return redirect("appointment_detail", pk=acceptance.pk)
+
+    existing = acceptance.resulting_appointments.filter(
+        appointment_type=appointment_type,
+    ).first()
+    if existing:
+        return redirect("appointment_detail", pk=existing.pk)
+
+    assigned_agent = acceptance.agent or request.user
+    form = AppointmentForm(
+        request.POST or None,
+        user=assigned_agent,
+        appointment_type=appointment_type,
+    )
+    if request.method == "POST" and form.is_valid():
+        appointment = form.save(commit=False)
+        appointment.appointment_type = appointment_type
+        appointment.purchase_proposal = proposal
+        appointment.source_acceptance_appointment = acceptance
+        appointment.order = proposal.order
+        appointment.listing = proposal.listing
+        appointment.contact = proposal.buyer
+        appointment.related_property = proposal.listing.property
+        appointment.agent = assigned_agent
+        appointment.save()
+
+        if acceptance.result_success is not True:
+            acceptance.result_success = True
+            acceptance.save(update_fields=["result_success"])
+
+        label = "contrato" if appointment_type == "contract" else "escrituración"
+        messages.success(request, f"Cita de {label} programada correctamente.")
+        return redirect("appointment_detail", pk=appointment.pk)
+
+    label = "contrato" if appointment_type == "contract" else "escrituración"
+    return render(
+        request,
+        "appointments/form.html",
+        {
+            "form": form,
+            "order": proposal.order,
+            "listing": proposal.listing,
+            "proposal": proposal,
+            "page_title": f"Nueva cita de {label}",
+            "schedule_agent": assigned_agent,
+        },
+    )
+
+
+@login_required
+def create_counteroffer(request, pk):
+    acceptance = get_object_or_404(
+        get_user_appointments(request.user).select_related(
+            "purchase_proposal__listing",
+            "purchase_proposal__order",
+        ),
+        pk=pk,
+        appointment_type="proposal_acceptance",
+    )
+    if acceptance.status != "completed" or not acceptance.result_comment.strip():
+        messages.warning(
+            request,
+            "Añade el comentario de la cita de aceptación antes de continuar.",
+        )
+        return redirect("appointment_detail", pk=acceptance.pk)
+
+    if acceptance.result_success is True or acceptance.resulting_appointments.exists():
+        messages.warning(
+            request,
+            "La propuesta ya fue aceptada y tiene citas finales relacionadas.",
+        )
+        return redirect("appointment_detail", pk=acceptance.pk)
+
+    proposal = acceptance.purchase_proposal
+    if proposal is None:
+        messages.error(request, "La cita no tiene una propuesta relacionada.")
+        return redirect("appointment_detail", pk=acceptance.pk)
+
+    existing = getattr(acceptance, "counteroffer", None)
+    if existing:
+        return redirect("counteroffer_detail", pk=existing.pk)
+
+    form = CounterOfferForm(
+        request.POST or None,
+        initial={"counteroffer_date": date.today()},
+    )
+    if request.method == "POST" and form.is_valid():
+        counteroffer = form.save(commit=False)
+        counteroffer.proposal = proposal
+        counteroffer.source_acceptance_appointment = acceptance
+        counteroffer.save()
+
+        acceptance.result_success = False
+        acceptance.save(update_fields=["result_success"])
+        messages.success(request, "Contraoferta registrada correctamente.")
+        return redirect("counteroffer_detail", pk=counteroffer.pk)
+
+    return render(
+        request,
+        "calendar_app/counteroffer_form.html",
+        {
+            "form": form,
+            "appointment": acceptance,
+            "proposal": proposal,
+        },
+    )
+
+
+@login_required
+def counteroffer_detail(request, pk):
+    counteroffers = CounterOffer.objects.select_related(
+        "proposal__listing__property",
+        "proposal__order",
+        "proposal__buyer",
+        "source_acceptance_appointment",
+    )
+    if not user_can_manage_all(request.user):
+        counteroffers = counteroffers.filter(proposal__agent=request.user)
+    counteroffer = get_object_or_404(counteroffers, pk=pk)
+    return render(
+        request,
+        "calendar_app/counteroffer_detail.html",
+        {"counteroffer": counteroffer},
     )
 
 
@@ -542,16 +829,43 @@ def schedule_call_from_appointment(request, pk):
 def call_detail(request, pk):
 
     call = get_object_or_404(
-        Call,
-        pk=pk
+        get_user_calls(request.user),
+        pk=pk,
     )
 
     return render(
         request,
         "calendar_app/call_detail.html",
         {
-            "call": call
+            "call": call,
+            "comments": call.comments.select_related("user"),
+            "comment_form": CallCommentForm(),
         }
+    )
+
+
+@login_required
+@require_POST
+def add_call_comment(request, pk):
+    call = get_object_or_404(get_user_calls(request.user), pk=pk)
+    form = CallCommentForm(request.POST)
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.call = call
+        comment.user = request.user
+        comment.save()
+        messages.success(request, "Comentario añadido a la llamada.")
+        return redirect("call_detail", pk=call.pk)
+
+    return render(
+        request,
+        "calendar_app/call_detail.html",
+        {
+            "call": call,
+            "comments": call.comments.select_related("user"),
+            "comment_form": form,
+        },
+        status=400,
     )
 
 @login_required
@@ -569,6 +883,9 @@ def update_appointment_status(request, appointment_id, status):
             "follow_up",
             "sale",
             "proposal",
+            "proposal_acceptance",
+            "contract",
+            "signing",
         ]
         and not appointment.result_comment.strip()
     ):
@@ -587,18 +904,22 @@ def update_appointment_status(request, appointment_id, status):
     )
 
 @login_required
+@require_POST
 def update_call_status(request, call_id, status):
 
     call = get_object_or_404(
-        Call,
+        get_user_calls(request.user),
         id=call_id,
-        agent=request.user
     )
 
     if status in ["completed", "cancelled", "pending"]:
 
         call.status = status
         call.save()
+        messages.success(
+            request,
+            f"La llamada se ha marcado como {call.get_status_display().lower()}.",
+        )
 
     return redirect(
         "call_detail",
@@ -613,6 +934,8 @@ def calendar_view(request):
     selected_agent_ids = request.GET.getlist("agents")
     calls = Call.objects.all()
     appointments = Appointment.objects.all()
+    calls = calls.exclude(status="cancelled")
+    appointments = appointments.exclude(status="cancelled")
 
     if user_can_manage_all(request.user):
         if selected_agent_ids:
@@ -715,8 +1038,8 @@ def calendar_events(request):
     agent_ids = request.GET.getlist("agents")
 
     # BASE QUERYSET
-    appointments = Appointment.objects.all()
-    calls = Call.objects.all()
+    appointments = Appointment.objects.exclude(status="cancelled")
+    calls = Call.objects.exclude(status="cancelled")
 
     # SI NO ES MANAGER → solo sus eventos
     if not user_can_manage_all(request.user):
@@ -784,11 +1107,11 @@ def agenda(request):
 
     appointments = Appointment.objects.filter(
         agent=request.user
-    )
+    ).exclude(status="cancelled")
 
     calls = Call.objects.filter(
         agent=request.user
-    )
+    ).exclude(status="cancelled")
 
     events = []
 
@@ -827,6 +1150,7 @@ def agenda(request):
 
 
 @login_required
+@never_cache
 def available_slots(request):
 
     selected_date = request.GET.get("date")

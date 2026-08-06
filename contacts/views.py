@@ -8,6 +8,9 @@ from django.contrib.auth import get_user_model
 from .models import Contact
 from .forms import ContactForm
 from activities.models import Activity
+from listings.models import Listing
+from news.models import News
+from orders.models import Order
 
 from activities.utils import log_activity
 
@@ -53,15 +56,6 @@ def contact_list(request):
     return render(request, "contacts/list.html", {
         "contacts": contacts,
         "agents": User.objects.filter(role="agent")
-    })
-
-@login_required
-def contact_detail(request, pk):
-
-    contact = get_object_or_404(Contact, pk=pk)
-
-    return render(request, 'contacts/detail.html', {
-        'contact': contact
     })
 
 @login_required
@@ -212,6 +206,7 @@ def contact_assign_agent(request, pk):
     })
 
 
+@login_required
 def contact_detail(request, pk):
 
     contact = get_object_or_404(
@@ -225,11 +220,38 @@ def contact_detail(request, pk):
         "user"
     )[:20]
 
+    news_items = News.objects.none()
+    listings = Listing.objects.none()
+    orders = Order.objects.none()
+
+    if contact.contact_type == "owner":
+        news_items = News.objects.filter(
+            related_property__contacts=contact,
+        ).select_related(
+            "related_property",
+            "agent",
+        ).distinct().order_by("-created_at")
+        listings = Listing.objects.filter(
+            Q(owner=contact) | Q(property__contacts=contact),
+        ).select_related(
+            "property",
+            "owner",
+            "agent",
+        ).distinct().order_by("-created_at")
+    elif contact.contact_type == "buyer":
+        orders = Order.objects.filter(buyer=contact).select_related(
+            "zone",
+            "buyer__assigned_agent",
+        ).order_by("-created_at")
+
     return render(
         request,
         "contacts/detail.html",
         {
             "contact": contact,
-            "activities": activities
+            "activities": activities,
+            "news_items": news_items,
+            "listings": listings,
+            "orders": orders,
         }
     )

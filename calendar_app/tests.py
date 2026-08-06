@@ -10,7 +10,13 @@ from news.models import News
 from orders.models import Order
 from properties.models import Property, Zone
 
-from .models import Appointment, ProposalAppointment
+from .models import (
+    Appointment,
+    Call,
+    CallComment,
+    CounterOffer,
+    ProposalAppointment,
+)
 
 
 class AppointmentResultFlowTests(TestCase):
@@ -207,6 +213,32 @@ class SaleAppointmentFlowTests(TestCase):
         )
         return response, Appointment.objects.get()
 
+    def create_registered_proposal(self):
+        proposal_meeting = Appointment.objects.create(
+            related_property=self.property,
+            contact=self.buyer,
+            agent=self.agent,
+            appointment_type="proposal",
+            date=date(2026, 8, 24),
+            time=time(13, 0),
+            listing=self.listing,
+            order=self.order,
+            status="completed",
+            result_comment="Se presenta la oferta.",
+        )
+        return ProposalAppointment.objects.create(
+            source_sale_appointment=proposal_meeting,
+            order=self.order,
+            listing=self.listing,
+            buyer=self.buyer,
+            agent=self.agent,
+            listing_price="250000",
+            offered_price="242000",
+            deposit_amount="5000",
+            proposal_date=date(2026, 8, 24),
+            end_date=date(2026, 8, 29),
+        )
+
     def test_order_creates_sale_appointment_linked_to_listing(self):
         response, appointment = self.create_sale_appointment()
 
@@ -350,6 +382,284 @@ class SaleAppointmentFlowTests(TestCase):
         )
         self.assertIs(appointment.result_success, False)
 
+    def test_registered_proposal_schedules_acceptance_appointment(self):
+        proposal = self.create_registered_proposal()
+
+        response = self.client.post(
+            reverse("create_acceptance_appointment", args=[proposal.pk]),
+            {
+                "date": "2026-08-26",
+                "time": "11:00",
+                "notes": "Reunión con la propietaria.",
+            },
+        )
+
+        acceptance = Appointment.objects.get(
+            appointment_type="proposal_acceptance"
+        )
+        self.assertRedirects(
+            response,
+            reverse("appointment_detail", args=[acceptance.pk]),
+        )
+        self.assertEqual(acceptance.purchase_proposal, proposal)
+        self.assertEqual(acceptance.order, self.order)
+        self.assertEqual(acceptance.listing, self.listing)
+        self.assertEqual(acceptance.contact, self.owner)
+        proposal.refresh_from_db()
+        self.order.refresh_from_db()
+        self.listing.refresh_from_db()
+        self.assertEqual(proposal.status, "acceptance_appointment")
+        self.assertEqual(self.order.status, "acceptance_appointment")
+        self.assertEqual(self.listing.workflow_status, "acceptance_appointment")
+
+    def test_accepted_proposal_can_schedule_contract_and_signing(self):
+        proposal = self.create_registered_proposal()
+        self.client.post(
+            reverse("create_acceptance_appointment", args=[proposal.pk]),
+            {"date": "2026-08-26", "time": "11:00", "notes": "Aceptación."},
+        )
+        acceptance = Appointment.objects.get(
+            appointment_type="proposal_acceptance"
+        )
+        self.client.post(
+            reverse("appointment_add_result", args=[acceptance.pk]),
+            {"result_comment": "La propietaria acepta la oferta."},
+        )
+
+        contract_response = self.client.post(
+            reverse(
+                "create_post_acceptance_appointment",
+                args=[acceptance.pk, "contract"],
+            ),
+            {"date": "2026-08-27", "time": "12:00", "notes": "Contrato."},
+        )
+        signing_response = self.client.post(
+            reverse(
+                "create_post_acceptance_appointment",
+                args=[acceptance.pk, "signing"],
+            ),
+            {"date": "2026-08-28", "time": "13:00", "notes": "Notaría."},
+        )
+
+        contract = Appointment.objects.get(appointment_type="contract")
+        signing = Appointment.objects.get(appointment_type="signing")
+        self.assertRedirects(
+            contract_response,
+            reverse("appointment_detail", args=[contract.pk]),
+        )
+        self.assertRedirects(
+            signing_response,
+            reverse("appointment_detail", args=[signing.pk]),
+        )
+        self.assertEqual(contract.source_acceptance_appointment, acceptance)
+        self.assertEqual(signing.source_acceptance_appointment, acceptance)
+        acceptance.refresh_from_db()
+        proposal.refresh_from_db()
+        self.order.refresh_from_db()
+        self.listing.refresh_from_db()
+        self.assertIs(acceptance.result_success, True)
+        self.assertEqual(proposal.status, "signing_appointment")
+        self.assertEqual(self.order.status, "signing_appointment")
+        self.assertEqual(self.listing.workflow_status, "signing_appointment")
+
+        calendar_response = self.client.get(reverse("calendar_events"))
+        calendar_titles = [event["title"] for event in calendar_response.json()]
+        self.assertTrue(any("Cita de Contrato" in title for title in calendar_titles))
+        self.assertTrue(
+            any("Cita de Escrituración" in title for title in calendar_titles)
+        )
+
+    def test_rejected_proposal_creates_counteroffer_visible_from_contexts(self):
+        proposal = self.create_registered_proposal()
+        self.client.post(
+            reverse("create_acceptance_appointment", args=[proposal.pk]),
+            {"date": "2026-08-26", "time": "11:00", "notes": "Aceptación."},
+        )
+        acceptance = Appointment.objects.get(
+            appointment_type="proposal_acceptance"
+        )
+        self.client.post(
+            reverse("appointment_add_result", args=[acceptance.pk]),
+            {"result_comment": "La propietaria solicita revisar el precio."},
+        )
+
+        response = self.client.post(
+            reverse("create_counteroffer", args=[acceptance.pk]),
+            {
+                "counteroffer_date": "2026-08-26",
+                "owner_price": "247000",
+                "notes": "Mantiene el mobiliario incluido.",
+            },
+        )
+
+        counteroffer = CounterOffer.objects.get()
+        self.assertRedirects(
+            response,
+            reverse("counteroffer_detail", args=[counteroffer.pk]),
+        )
+        self.assertEqual(counteroffer.proposal, proposal)
+        self.assertEqual(counteroffer.source_acceptance_appointment, acceptance)
+        self.assertEqual(str(counteroffer.owner_price), "247000.00")
+        acceptance.refresh_from_db()
+        proposal.refresh_from_db()
+        self.order.refresh_from_db()
+        self.listing.refresh_from_db()
+        self.assertIs(acceptance.result_success, False)
+        self.assertEqual(proposal.status, "counteroffer")
+        self.assertEqual(self.order.status, "counteroffer")
+        self.assertEqual(self.listing.workflow_status, "counteroffer")
+
+        proposal_response = self.client.get(
+            reverse("proposal_appointment_detail", args=[proposal.pk])
+        )
+        listing_response = self.client.get(
+            reverse("listing_detail", args=[self.listing.pk])
+        )
+        self.assertContains(proposal_response, "247000.00")
+        self.assertContains(listing_response, "247000.00")
+        self.assertContains(
+            proposal_response,
+            reverse("counteroffer_detail", args=[counteroffer.pk]),
+        )
+        self.assertContains(
+            listing_response,
+            reverse("counteroffer_detail", args=[counteroffer.pk]),
+        )
+
+
+class CallFlowTests(TestCase):
+    def setUp(self):
+        self.agent = get_user_model().objects.create_user(
+            username="call-agent",
+            password="test-password",
+            role="agent",
+        )
+        self.property = Property.objects.create(
+            street="Calle Llamada",
+            number="7",
+            city="Madrid",
+            property_type="flat",
+        )
+        self.contact = Contact.objects.create(
+            name="Contacto llamada",
+            phone="600777777",
+            contact_type="buyer",
+            assigned_agent=self.agent,
+        )
+        self.call = Call.objects.create(
+            contact=self.contact,
+            agent=self.agent,
+            date=date(2026, 9, 1),
+            time=time(10, 0),
+            status="pending",
+        )
+        self.client.force_login(self.agent)
+
+    def test_call_accepts_comments_and_shows_them_in_detail(self):
+        response = self.client.post(
+            reverse("call_add_comment", args=[self.call.pk]),
+            {"text": "El cliente solicita que volvamos a llamar por la tarde."},
+        )
+
+        comment = CallComment.objects.get()
+        self.assertRedirects(
+            response,
+            reverse("call_detail", args=[self.call.pk]),
+        )
+        self.assertEqual(comment.call, self.call)
+        self.assertEqual(comment.user, self.agent)
+
+        detail_response = self.client.get(
+            reverse("call_detail", args=[self.call.pk])
+        )
+        self.assertContains(detail_response, comment.text)
+
+    def test_call_can_be_completed_cancelled_and_reactivated(self):
+        for status in ["completed", "cancelled", "pending"]:
+            with self.subTest(status=status):
+                response = self.client.post(
+                    reverse("call_update_status", args=[self.call.pk, status])
+                )
+                self.call.refresh_from_db()
+                self.assertRedirects(
+                    response,
+                    reverse("call_detail", args=[self.call.pk]),
+                )
+                self.assertEqual(self.call.status, status)
+
+    def test_cancelled_events_are_hidden_but_active_and_completed_remain(self):
+        completed_call = Call.objects.create(
+            contact=self.contact,
+            agent=self.agent,
+            date=date(2026, 9, 1),
+            time=time(11, 0),
+            status="completed",
+        )
+        cancelled_call = Call.objects.create(
+            contact=self.contact,
+            agent=self.agent,
+            date=date(2026, 9, 1),
+            time=time(12, 0),
+            status="cancelled",
+        )
+        active_appointment = Appointment.objects.create(
+            related_property=self.property,
+            contact=self.contact,
+            agent=self.agent,
+            appointment_type="valuation",
+            date=date(2026, 9, 2),
+            time=time(10, 0),
+            status="scheduled",
+        )
+        cancelled_appointment = Appointment.objects.create(
+            related_property=self.property,
+            contact=self.contact,
+            agent=self.agent,
+            appointment_type="valuation",
+            date=date(2026, 9, 2),
+            time=time(11, 0),
+            status="cancelled",
+        )
+
+        calendar_response = self.client.get(reverse("calendar"))
+        calendar_objects = {
+            (event["type"], event["object"].pk)
+            for _, events in calendar_response.context["agenda_by_day"]
+            for event in events
+        }
+        self.assertIn(("call", self.call.pk), calendar_objects)
+        self.assertIn(("call", completed_call.pk), calendar_objects)
+        self.assertIn(("appointment", active_appointment.pk), calendar_objects)
+        self.assertNotIn(("call", cancelled_call.pk), calendar_objects)
+        self.assertNotIn(
+            ("appointment", cancelled_appointment.pk),
+            calendar_objects,
+        )
+
+        event_ids = {
+            event["id"]
+            for event in self.client.get(reverse("calendar_events")).json()
+        }
+        self.assertIn(f"call-{self.call.pk}", event_ids)
+        self.assertIn(f"call-{completed_call.pk}", event_ids)
+        self.assertNotIn(f"call-{cancelled_call.pk}", event_ids)
+        self.assertNotIn(
+            f"appointment-{cancelled_appointment.pk}",
+            event_ids,
+        )
+
+        agenda_response = self.client.get(reverse("agenda"))
+        agenda_objects = {
+            (event["type"], event["object"].pk)
+            for event in agenda_response.context["events"]
+        }
+        self.assertIn(("call", completed_call.pk), agenda_objects)
+        self.assertNotIn(("call", cancelled_call.pk), agenda_objects)
+        self.assertNotIn(
+            ("appointment", cancelled_appointment.pk),
+            agenda_objects,
+        )
+
 
 class AvailableSlotsTests(TestCase):
     def setUp(self):
@@ -406,6 +716,27 @@ class AvailableSlotsTests(TestCase):
 
         self.assertNotIn("10:30", response.json()["occupied"])
 
+    def test_proposal_appointment_is_returned_as_occupied_without_cache(self):
+        Appointment.objects.create(
+            related_property=Property.objects.first(),
+            contact=Contact.objects.first(),
+            agent=self.agent,
+            appointment_type="proposal",
+            date=date(2026, 8, 25),
+            time=time(11, 0),
+            status="scheduled",
+        )
+        self.client.force_login(self.manager)
+
+        response = self.client.get(
+            reverse("available_slots"),
+            {"date": "2026-08-25", "agent_id": self.agent.pk},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("11:00", response.json()["occupied"])
+        self.assertIn("no-cache", response.headers["Cache-Control"])
+
 class AppointmentResultFlowAdditionalTests(TestCase):
     setUp = AppointmentResultFlowTests.setUp
 
@@ -431,7 +762,7 @@ class AppointmentResultFlowAdditionalTests(TestCase):
         )
         self.assertFalse(Listing.objects.exists())
         self.property.refresh_from_db()
-        self.assertEqual(self.property.status, "prospect")
+        self.assertEqual(self.property.status, "active")
 
     def test_listing_form_rejects_owner_from_another_property(self):
         other_owner = Contact.objects.create(

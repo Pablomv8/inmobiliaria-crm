@@ -1,4 +1,9 @@
-from calendar_app.models import Appointment, Call, ProposalAppointment
+from calendar_app.models import (
+    Appointment,
+    Call,
+    CounterOffer,
+    ProposalAppointment,
+)
 from listings.models import Listing
 from news.models import News
 from orders.models import Order
@@ -43,6 +48,26 @@ def sync_listing_workflow_status(listing_id):
 
     if listing.status in ["cancelled", "sold", "rented"]:
         workflow_status = "closed"
+    elif Appointment.objects.filter(
+        listing_id=listing_id,
+        appointment_type="signing",
+        status="scheduled",
+    ).exists():
+        workflow_status = "signing_appointment"
+    elif Appointment.objects.filter(
+        listing_id=listing_id,
+        appointment_type="contract",
+        status="scheduled",
+    ).exists():
+        workflow_status = "contract_appointment"
+    elif Appointment.objects.filter(
+        listing_id=listing_id,
+        appointment_type="proposal_acceptance",
+        status="scheduled",
+    ).exists():
+        workflow_status = "acceptance_appointment"
+    elif CounterOffer.objects.filter(proposal__listing_id=listing_id).exists():
+        workflow_status = "counteroffer"
     elif ProposalAppointment.objects.filter(listing_id=listing_id).exists():
         workflow_status = "proposal"
     elif Appointment.objects.filter(
@@ -79,7 +104,27 @@ def sync_order_status(order_id):
     if order is None or order.status in ["closed", "cancelled"]:
         return
 
-    if ProposalAppointment.objects.filter(order_id=order_id).exists():
+    if Appointment.objects.filter(
+        order_id=order_id,
+        appointment_type="signing",
+        status="scheduled",
+    ).exists():
+        status = "signing_appointment"
+    elif Appointment.objects.filter(
+        order_id=order_id,
+        appointment_type="contract",
+        status="scheduled",
+    ).exists():
+        status = "contract_appointment"
+    elif Appointment.objects.filter(
+        order_id=order_id,
+        appointment_type="proposal_acceptance",
+        status="scheduled",
+    ).exists():
+        status = "acceptance_appointment"
+    elif CounterOffer.objects.filter(proposal__order_id=order_id).exists():
+        status = "counteroffer"
+    elif ProposalAppointment.objects.filter(order_id=order_id).exists():
         status = "proposal"
     elif Appointment.objects.filter(
         order_id=order_id,
@@ -97,3 +142,43 @@ def sync_order_status(order_id):
         status = "active"
 
     Order.objects.filter(pk=order_id).exclude(status=status).update(status=status)
+
+
+def sync_proposal_status(proposal_id):
+    if not proposal_id:
+        return
+
+    proposal = ProposalAppointment.objects.filter(pk=proposal_id).first()
+    if proposal is None:
+        return
+
+    appointments = Appointment.objects.filter(purchase_proposal_id=proposal_id)
+    if appointments.filter(
+        appointment_type="signing",
+        status="scheduled",
+    ).exists():
+        status = "signing_appointment"
+    elif appointments.filter(
+        appointment_type="contract",
+        status="scheduled",
+    ).exists():
+        status = "contract_appointment"
+    elif appointments.filter(
+        appointment_type="proposal_acceptance",
+        status="scheduled",
+    ).exists():
+        status = "acceptance_appointment"
+    elif CounterOffer.objects.filter(proposal_id=proposal_id).exists():
+        status = "counteroffer"
+    elif appointments.filter(
+        appointment_type="proposal_acceptance",
+        status="completed",
+        result_success=True,
+    ).exists():
+        status = "accepted"
+    else:
+        status = "submitted"
+
+    ProposalAppointment.objects.filter(pk=proposal_id).exclude(
+        status=status,
+    ).update(status=status)

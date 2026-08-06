@@ -20,7 +20,7 @@
     </div>
 
     <!-- Navigation -->
-    <nav class="flex-1 p-4 space-y-2">
+    <nav class="flex-1 overflow-y-auto p-4 space-y-2">
 
         <a href="{% url 'dashboard' %}"
         class="flex items-center gap-3 px-4 py-3 rounded-xl
@@ -31,6 +31,18 @@
         {% endif %}">
                 <i class="fa-regular fa-house"></i> Dashboard
         </a>
+
+        {% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" %}
+        <a href="{% url 'team_overview' %}"
+        class="flex items-center gap-3 px-4 py-3 rounded-xl
+        {% if request.resolver_match.url_name == 'team_overview' or request.resolver_match.url_name == 'team_member_detail' %}
+                bg-gray-900 text-white
+        {% else %}
+                text-gray-700 hover:bg-gray-100
+        {% endif %}">
+            <i class="fa-solid fa-users"></i> Seguimiento
+        </a>
+        {% endif %}
 
         <a href="{% url 'contact_list' %}"
         class="flex items-center gap-3 px-4 py-3 rounded-xl

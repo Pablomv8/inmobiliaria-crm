@@ -23,6 +23,10 @@ class Listing(models.Model):
         ("sale_appointment", "Visita programada"),
         ("proposal_appointment", "Cita de propuesta programada"),
         ("proposal", "Propuesta recibida"),
+        ("acceptance_appointment", "Aceptación programada"),
+        ("counteroffer", "Contraoferta recibida"),
+        ("contract_appointment", "Contrato programado"),
+        ("signing_appointment", "Escrituración programada"),
         ("closed", "Cerrado"),
     ]
 

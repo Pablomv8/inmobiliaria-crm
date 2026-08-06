@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mx-auto max-w-7xl space-y-7">
+    <section class="overflow-hidden rounded-3xl bg-gray-900 px-6 py-7 text-white shadow-lg sm:px-8">
+        <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <p class="text-sm font-semibold text-indigo-300">Administración del equipo</p>
+                <h1 class="mt-2 text-3xl font-bold">Seguimiento de trabajadores</h1>
+                <p class="mt-2 max-w-2xl text-sm text-gray-300">Consulta la cartera, la carga pendiente y los resultados de cada agente.</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div class="rounded-2xl bg-white/10 px-4 py-3"><p class="text-xs text-gray-300">Agentes</p><p class="mt-1 text-xl font-bold">{{ worker_count }}</p></div>
+                <a href="{% url 'contact_list' %}" class="rounded-2xl bg-white/10 px-4 py-3 transition hover:bg-white/20"><p class="text-xs text-gray-300">Contactos</p><p class="mt-1 text-xl font-bold">{{ total_contacts }}</p></a>
+                <a href="{% url 'listing_list' %}?status=active" class="rounded-2xl bg-white/10 px-4 py-3 transition hover:bg-white/20"><p class="text-xs text-gray-300">Encargos activos</p><p class="mt-1 text-xl font-bold">{{ total_active_listings }}</p></a>
+                <a href="{% url 'order_list' %}" class="rounded-2xl bg-white/10 px-4 py-3 transition hover:bg-white/20"><p class="text-xs text-gray-300">Pedidos abiertos</p><p class="mt-1 text-xl font-bold">{{ total_open_orders }}</p></a>
+            </div>
+        </div>
+    </section>
+
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <h2 class="text-xl font-bold text-gray-900">Equipo comercial</h2>
+            <p class="mt-1 text-sm text-gray-500">La carga pendiente combina citas, llamadas y tareas todavía activas.</p>
+        </div>
+        <span class="w-fit rounded-full bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700">{{ total_pending_workload }} acciones pendientes</span>
+    </div>
+
+    <section class="grid gap-5 lg:grid-cols-2">
+        {% for row in worker_rows %}
+            <article class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                <div class="border-b border-gray-100 p-5 sm:p-6">
+                    <div class="flex items-start gap-4">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-lg font-bold text-indigo-700">
+                            {{ row.user.get_full_name|default:row.user.username|slice:":1"|upper }}
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                    <a href="{% url 'team_member_detail' row.user.id %}" class="text-lg font-bold text-gray-900 hover:text-indigo-700">{{ row.user.get_full_name|default:row.user.username }}</a>
+                                    <p class="mt-1 truncate text-sm text-gray-500">{{ row.user.email|default:"Sin correo registrado" }}</p>
+                                </div>
+                                <span class="w-fit rounded-full {% if row.pending_workload > 5 %}bg-amber-50 text-amber-700{% else %}bg-emerald-50 text-emerald-700{% endif %} px-3 py-1 text-xs font-semibold">{{ row.pending_workload }} pendientes</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-px bg-gray-100 sm:grid-cols-4">
+                    <a href="{% url 'contact_list' %}?agent={{ row.user.id }}" class="bg-white p-4 text-center hover:bg-gray-50"><p class="text-2xl font-bold text-gray-900">{{ row.contacts }}</p><p class="mt-1 text-xs text-gray-500">Contactos</p></a>
+                    <a href="{% url 'news_list' %}?agent={{ row.user.id }}" class="bg-white p-4 text-center hover:bg-gray-50"><p class="text-2xl font-bold text-gray-900">{{ row.open_news }}</p><p class="mt-1 text-xs text-gray-500">Noticias abiertas</p></a>
+                    <a href="{% url 'listing_list' %}?agent={{ row.user.id }}&status=active" class="bg-white p-4 text-center hover:bg-gray-50"><p class="text-2xl font-bold text-gray-900">{{ row.active_listings }}</p><p class="mt-1 text-xs text-gray-500">Encargos activos</p></a>
+                    <a href="{% url 'order_list' %}?agent={{ row.user.id }}" class="bg-white p-4 text-center hover:bg-gray-50"><p class="text-2xl font-bold text-gray-900">{{ row.open_orders }}</p><p class="mt-1 text-xs text-gray-500">Pedidos abiertos</p></a>
+                </div>
+
+                <div class="p-5 sm:p-6">
+                    <div class="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                        <div><p class="text-gray-500">Agenda</p><p class="mt-1 font-semibold text-gray-900">{{ row.scheduled_appointments }} citas</p></div>
+                        <div><p class="text-gray-500">Llamadas</p><p class="mt-1 font-semibold text-gray-900">{{ row.pending_calls }} pendientes</p></div>
+                        <div><p class="text-gray-500">Propuestas</p><p class="mt-1 font-semibold text-gray-900">{{ row.proposals }}</p></div>
+                        <div><p class="text-gray-500">Ventas</p><p class="mt-1 font-semibold text-gray-900">{{ row.signed_sales }} · {{ row.revenue|floatformat:0 }} €</p></div>
+                    </div>
+                    <div class="mt-5 flex items-center justify-between border-t border-gray-100 pt-4">
+                        <p class="text-xs text-gray-500">{{ row.listings }} encargos · {{ row.orders }} pedidos · {{ row.news }} noticias totales</p>
+                        <a href="{% url 'team_member_detail' row.user.id %}" class="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black">Ver seguimiento <span aria-hidden="true">→</span></a>
+                    </div>
+                </div>
+            </article>
+        {% empty %}
+            <div class="rounded-3xl border border-dashed border-gray-300 bg-white p-12 text-center lg:col-span-2">
+                <p class="font-semibold text-gray-900">No hay agentes activos</p>
+                <p class="mt-2 text-sm text-gray-500">Los usuarios con rol de agente aparecerán aquí.</p>
+            </div>
+        {% endfor %}
+    </section>
+</div>
+{% endblock %}

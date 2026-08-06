@@ -38,6 +38,11 @@ urlpatterns = [
         views.call_detail,
         name="call_detail"
     ),
+    path(
+        "calls/<int:pk>/comments/",
+        views.add_call_comment,
+        name="call_add_comment",
+    ),
 
     path(
         "appointments/<int:pk>/",
@@ -73,6 +78,26 @@ urlpatterns = [
         "proposals/<int:pk>/",
         views.proposal_appointment_detail,
         name="proposal_appointment_detail",
+    ),
+    path(
+        "proposals/<int:proposal_id>/acceptance/create/",
+        views.create_acceptance_appointment,
+        name="create_acceptance_appointment",
+    ),
+    path(
+        "appointments/<int:pk>/after-acceptance/<str:appointment_type>/create/",
+        views.create_post_acceptance_appointment,
+        name="create_post_acceptance_appointment",
+    ),
+    path(
+        "appointments/<int:pk>/counteroffer/create/",
+        views.create_counteroffer,
+        name="create_counteroffer",
+    ),
+    path(
+        "counteroffers/<int:pk>/",
+        views.counteroffer_detail,
+        name="counteroffer_detail",
     ),
     path(
         "available-slots/",

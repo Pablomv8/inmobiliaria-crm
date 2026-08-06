@@ -135,12 +135,21 @@ class OwnerContactForm(forms.ModelForm):
 
         self.property_obj = property_obj
 
-        self.fields["contact_type"].initial = "owner"
-        self.fields["contact_type"].disabled = True
+        self.fields["marital_status"].choices = [
+            ("", "Selecciona el estado civil"),
+            *Contact.MARITAL_STATUS_CHOICES,
+        ]
+        self.fields["assigned_agent"].empty_label = "Sin agente asignado"
 
-        if property_obj:
-            self.fields["properties"].initial = [property_obj]
-            self.fields["properties"].disabled = True
+        for field in self.fields.values():
+            field.error_messages["required"] = "Este campo es obligatorio."
+
+        self.fields["email"].error_messages["invalid"] = (
+            "Introduce un correo electrónico válido."
+        )
+        self.fields["birth_date"].error_messages["invalid"] = (
+            "Introduce una fecha válida."
+        )
 
     class Meta:
 
@@ -163,12 +172,35 @@ class OwnerContactForm(forms.ModelForm):
 
             "phone",
             "email",
-
-            "contact_type",
             "notes",
-            "properties",
             "assigned_agent",
         ]
+
+        labels = {
+            "name": "Nombre",
+            "last_name": "Apellidos",
+            "identification_number": "DNI, NIE o pasaporte",
+            "marital_status": "Estado civil",
+            "birth_date": "Fecha de nacimiento",
+            "occupation": "Profesión",
+            "street": "Calle",
+            "number": "Número",
+            "floor": "Piso o puerta",
+            "postal_code": "Código postal",
+            "city": "Localidad",
+            "province": "Provincia",
+            "phone": "Teléfono",
+            "email": "Correo electrónico",
+            "assigned_agent": "Agente asignado",
+            "notes": "Notas internas",
+        }
+
+        help_texts = {
+            "identification_number": "Documento identificativo del propietario.",
+            "phone": "Número de contacto principal.",
+            "assigned_agent": "Persona responsable de gestionar este propietario.",
+            "notes": "Información interna visible para el equipo.",
+        }
 
         widgets = {
 
@@ -234,6 +266,7 @@ class OwnerContactForm(forms.ModelForm):
             "phone": forms.TextInput(attrs={
                 "class": INPUT_CLASS,
                 "placeholder": "612 345 678",
+                "autocomplete": "tel",
             }),
 
             "email": forms.EmailInput(attrs={
@@ -241,18 +274,10 @@ class OwnerContactForm(forms.ModelForm):
                 "placeholder": "correo@email.com",
             }),
 
-            "contact_type": forms.Select(attrs={
-                "class": SELECT_CLASS,
-            }),
-
             "notes": forms.Textarea(attrs={
                 "class": TEXTAREA_CLASS,
                 "rows": 4,
                 "placeholder": "Notas del propietario...",
-            }),
-
-            "properties": forms.SelectMultiple(attrs={
-                "class": "tom-select",
             }),
 
             "assigned_agent": forms.Select(attrs={

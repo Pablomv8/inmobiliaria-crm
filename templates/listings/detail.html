@@ -221,14 +221,13 @@
 
         <div class="grid md:grid-cols-2 gap-4">
             {% for proposal in proposals %}
-                <a href="{% url 'proposal_appointment_detail' proposal.id %}"
-                   class="block rounded-xl border border-gray-200 p-5 hover:border-green-400 transition">
+                <article class="rounded-xl border border-gray-200 p-5">
                     <div class="flex items-start justify-between gap-3">
                         <div>
-                            <p class="font-semibold text-gray-900">{{ proposal.buyer }}</p>
+                            <a href="{% url 'proposal_appointment_detail' proposal.id %}" class="font-semibold text-gray-900 hover:text-green-700">{{ proposal.buyer }}</a>
                             <p class="text-sm text-gray-500 mt-1">Creada el {{ proposal.proposal_date|date:"d/m/Y" }}</p>
                         </div>
-                        <span class="rounded-full bg-green-100 text-green-800 px-3 py-1 text-xs">Hasta {{ proposal.end_date|date:"d/m/Y" }}</span>
+                        <span class="rounded-full bg-green-100 text-green-800 px-3 py-1 text-xs">{{ proposal.get_status_display }}</span>
                     </div>
                     <div class="grid grid-cols-2 gap-3 mt-4">
                         <div class="rounded-lg bg-gray-50 p-3">
@@ -240,7 +239,15 @@
                             <p class="font-semibold mt-1">{{ proposal.deposit_amount }} €</p>
                         </div>
                     </div>
-                </a>
+                    <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
+                        <a href="{% url 'proposal_appointment_detail' proposal.id %}" class="text-sm font-medium text-green-700">Ver propuesta</a>
+                        {% for counteroffer in proposal.counteroffers.all %}
+                            <a href="{% url 'counteroffer_detail' counteroffer.id %}" class="text-sm font-medium text-amber-700">
+                                Contraoferta: {{ counteroffer.owner_price }} € →
+                            </a>
+                        {% endfor %}
+                    </div>
+                </article>
             {% empty %}
                 <div class="md:col-span-2 rounded-xl bg-gray-50 p-5 text-sm text-gray-500">
                     Este encargo todavía no tiene propuestas de compra.

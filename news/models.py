@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 
 from properties.models import Property
 from users.models import User
@@ -68,6 +68,21 @@ class News(models.Model):
 
     def __str__(self):
         return f"{self.get_motivation_display()} · {self.related_property}"
+
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+
+        if not is_new:
+            return super().save(*args, **kwargs)
+
+        with transaction.atomic():
+            result = super().save(*args, **kwargs)
+            changed = Property.objects.filter(pk=self.related_property_id).exclude(
+                status="active"
+            ).update(status="active")
+            if changed:
+                self.related_property.status = "active"
+            return result
     
 
 class NewsComment(models.Model):

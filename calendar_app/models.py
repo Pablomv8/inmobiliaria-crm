@@ -17,9 +17,11 @@ class Appointment(models.Model):
         ("acquisition", "Adquisición"),
         ("sale", "Venta"),
         ("valuation", "Valoración"),
-        ("signing", "Firma"),
+        ("signing", "Escrituración"),
         ("follow_up", "Seguimiento"),
         ("proposal", "Propuesta"),
+        ("proposal_acceptance", "Aceptación de propuesta"),
+        ("contract", "Contrato"),
     ]
 
     STATUS_CHOICES = [
@@ -110,6 +112,24 @@ class Appointment(models.Model):
         verbose_name="Cita de venta origen",
     )
 
+    purchase_proposal = models.ForeignKey(
+        "calendar_app.ProposalAppointment",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="appointments",
+        verbose_name="Propuesta de compra",
+    )
+
+    source_acceptance_appointment = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="resulting_appointments",
+        verbose_name="Cita de aceptación origen",
+    )
+
     def __str__(self):
         return (
             f"{self.get_appointment_type_display()} "
@@ -175,7 +195,41 @@ class Call(models.Model):
         )
 
 
+class CallComment(models.Model):
+    call = models.ForeignKey(
+        Call,
+        on_delete=models.CASCADE,
+        related_name="comments",
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="call_comments",
+    )
+    text = models.TextField(verbose_name="Comentario")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Comentario de llamada"
+        verbose_name_plural = "Comentarios de llamada"
+
+    def __str__(self):
+        return f"Comentario de la llamada {self.call_id}"
+
+
 class ProposalAppointment(models.Model):
+    STATUS_CHOICES = [
+        ("submitted", "Presentada"),
+        ("acceptance_appointment", "Cita de aceptación programada"),
+        ("accepted", "Aceptada"),
+        ("counteroffer", "Contraoferta recibida"),
+        ("contract_appointment", "Cita de contrato programada"),
+        ("signing_appointment", "Cita de escrituración programada"),
+    ]
+
     source_sale_appointment = models.OneToOneField(
         Appointment,
         on_delete=models.CASCADE,
@@ -202,6 +256,11 @@ class ProposalAppointment(models.Model):
         null=True,
         related_name="purchase_proposals",
     )
+    status = models.CharField(
+        max_length=30,
+        choices=STATUS_CHOICES,
+        default="submitted",
+    )
     listing_price = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -227,3 +286,32 @@ class ProposalAppointment(models.Model):
 
     def __str__(self):
         return f"Propuesta de {self.buyer} para {self.listing.property}"
+
+
+class CounterOffer(models.Model):
+    proposal = models.ForeignKey(
+        ProposalAppointment,
+        on_delete=models.CASCADE,
+        related_name="counteroffers",
+    )
+    source_acceptance_appointment = models.OneToOneField(
+        Appointment,
+        on_delete=models.PROTECT,
+        related_name="counteroffer",
+    )
+    counteroffer_date = models.DateField(verbose_name="Fecha de la contraoferta")
+    owner_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name="Precio solicitado por el propietario",
+    )
+    notes = models.TextField(blank=True, verbose_name="Notas")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-counteroffer_date", "-created_at"]
+        verbose_name = "Contraoferta"
+        verbose_name_plural = "Contraofertas"
+
+    def __str__(self):
+        return f"Contraoferta de {self.owner_price} €"

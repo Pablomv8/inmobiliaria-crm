@@ -464,6 +464,70 @@
 
             </div>
 
+            {% if contact.contact_type == "owner" %}
+                <section class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
+                    <div class="flex items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-900">Noticias relacionadas</h2>
+                            <p class="text-sm text-gray-500 mt-1">Oportunidades registradas sobre los inmuebles de este propietario.</p>
+                        </div>
+                        <span class="shrink-0 px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-sm font-medium">{{ news_items|length }}</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for news in news_items %}
+                            <a href="{% url 'news_detail' news.id %}"
+                               class="group rounded-xl border border-gray-200 p-4 hover:border-amber-300 hover:bg-amber-50/40 transition">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="font-semibold text-gray-900 truncate">{{ news.related_property.full_address }}</p>
+                                        <p class="text-sm text-gray-500 mt-1">{{ news.get_motivation_display }} · {{ news.created_at|date:"d/m/Y" }}</p>
+                                    </div>
+                                    <span class="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-700">{{ news.get_status_display }}</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3 mt-4 text-sm">
+                                    <div class="rounded-lg bg-gray-50 p-3"><p class="text-xs text-gray-500">Precio cliente</p><p class="font-medium mt-1">{{ news.client_price }} €</p></div>
+                                    <div class="rounded-lg bg-gray-50 p-3"><p class="text-xs text-gray-500">Valoración</p><p class="font-medium mt-1">{{ news.estimated_price }} €</p></div>
+                                </div>
+                            </a>
+                        {% empty %}
+                            <div class="md:col-span-2 rounded-xl border border-dashed border-gray-300 p-8 text-center text-gray-500">Este propietario todavía no tiene noticias relacionadas.</div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
+                    <div class="flex items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-900">Encargos relacionados</h2>
+                            <p class="text-sm text-gray-500 mt-1">Encargos asociados al propietario o a sus inmuebles.</p>
+                        </div>
+                        <span class="shrink-0 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-sm font-medium">{{ listings|length }}</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for listing in listings %}
+                            <a href="{% url 'listing_detail' listing.id %}"
+                               class="group rounded-xl border border-gray-200 p-4 hover:border-blue-300 hover:bg-blue-50/40 transition">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="font-semibold text-gray-900 truncate">{{ listing.property.full_address }}</p>
+                                        <p class="text-sm text-gray-500 mt-1">{{ listing.get_listing_type_display }} · {{ listing.start_date|date:"d/m/Y" }}</p>
+                                    </div>
+                                    <span class="shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-xs text-blue-700">{{ listing.get_workflow_status_display }}</span>
+                                </div>
+                                <div class="flex items-center justify-between gap-3 mt-4 pt-3 border-t border-gray-100 text-sm">
+                                    <span class="text-gray-500">{{ listing.get_status_display }}</span>
+                                    <span class="font-semibold text-gray-900">{{ listing.agency_price }} €</span>
+                                </div>
+                            </a>
+                        {% empty %}
+                            <div class="md:col-span-2 rounded-xl border border-dashed border-gray-300 p-8 text-center text-gray-500">Este propietario todavía no tiene encargos relacionados.</div>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+
             {% if contact.contact_type == "buyer" %}
                 <!-- PEDIDOS -->
                 <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
@@ -479,14 +543,15 @@
                     </div>
 
                     <div class="grid md:grid-cols-2 gap-4">
-                        {% for order in contact.orders.all %}
+                        {% for order in orders %}
                             <a href="{% url 'order_detail' order.id %}"
                                class="rounded-xl border border-gray-200 p-4 hover:bg-gray-50 transition">
                                 <div class="flex justify-between gap-3">
                                     <p class="font-semibold text-gray-900">{{ order.get_property_type_display }}</p>
-                                    <p class="font-semibold text-gray-900">{{ order.max_price }} €</p>
+                                    <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs text-blue-700">{{ order.get_status_display }}</span>
                                 </div>
                                 <p class="text-sm text-gray-500 mt-2">{{ order.zone|default:"Cualquier zona" }} · {{ order.get_payment_type_display }}</p>
+                                <p class="font-semibold text-gray-900 mt-3">Hasta {{ order.max_price }} €</p>
                             </a>
                         {% empty %}
                             <div class="md:col-span-2 rounded-xl border border-dashed border-gray-300 p-8 text-center text-gray-500">No hay pedidos registrados.</div>

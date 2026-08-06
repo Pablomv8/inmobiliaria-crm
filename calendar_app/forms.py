@@ -1,7 +1,36 @@
 from django import forms
 from listings.models import Listing
 
-from .models import Appointment, Call, ProposalAppointment
+from .models import (
+    Appointment,
+    Call,
+    CallComment,
+    CounterOffer,
+    ProposalAppointment,
+)
+
+
+class CallCommentForm(forms.ModelForm):
+    class Meta:
+        model = CallComment
+        fields = ["text"]
+        widgets = {
+            "text": forms.Textarea(attrs={
+                "class": "w-full border border-gray-300 rounded-xl p-3 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 focus:outline-none",
+                "rows": 3,
+                "maxlength": 1000,
+                "placeholder": "Añade el resultado o una observación de la llamada...",
+            }),
+        }
+        error_messages = {
+            "text": {"required": "El comentario no puede estar vacío."},
+        }
+
+    def clean_text(self):
+        text = self.cleaned_data["text"].strip()
+        if not text:
+            raise forms.ValidationError("El comentario no puede estar vacío.")
+        return text
 
 
 class AppointmentResultForm(forms.ModelForm):
@@ -328,3 +357,33 @@ class ProposalAppointmentForm(forms.ModelForm):
             )
 
         return cleaned_data
+
+
+class CounterOfferForm(forms.ModelForm):
+    class Meta:
+        model = CounterOffer
+        fields = ["counteroffer_date", "owner_price", "notes"]
+        widgets = {
+            "counteroffer_date": forms.DateInput(attrs={
+                "class": "w-full border rounded-xl p-3",
+                "type": "date",
+            }),
+            "owner_price": forms.NumberInput(attrs={
+                "class": "w-full border rounded-xl p-3",
+                "min": 0,
+                "step": "0.01",
+            }),
+            "notes": forms.Textarea(attrs={
+                "class": "w-full border rounded-xl p-3",
+                "rows": 4,
+                "placeholder": "Condiciones o información adicional...",
+            }),
+        }
+
+    def clean_owner_price(self):
+        price = self.cleaned_data["owner_price"]
+        if price <= 0:
+            raise forms.ValidationError(
+                "El precio solicitado debe ser mayor que cero."
+            )
+        return price

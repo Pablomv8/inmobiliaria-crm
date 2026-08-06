@@ -71,6 +71,31 @@ class NewsCrudTests(TestCase):
         self.assertRedirects(response, reverse("news_detail", args=[news.pk]))
         self.assertEqual(news.related_property, self.property)
 
+    def test_creating_news_activates_property_from_any_previous_status(self):
+        for index, previous_status in enumerate(
+            ["reserved", "sold", "rented", "prospect"],
+            start=1,
+        ):
+            with self.subTest(previous_status=previous_status):
+                property_obj = Property.objects.create(
+                    street="Calle Reactivación",
+                    number=str(index),
+                    city="Madrid",
+                    property_type="flat",
+                    status=previous_status,
+                )
+
+                News.objects.create(
+                    related_property=property_obj,
+                    agent=self.user,
+                    motivation="sale",
+                    client_price="250000",
+                    estimated_price="240000",
+                )
+
+                property_obj.refresh_from_db()
+                self.assertEqual(property_obj.status, "active")
+
     def test_update_news(self):
         news = self.create_news()
 
