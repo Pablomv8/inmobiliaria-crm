@@ -108,3 +108,64 @@ class ContactRelatedWorkflowTests(TestCase):
         self.assertContains(response, "Tipo de contacto")
         self.assertContains(response, "Propietario")
         self.assertContains(response, "Comprador")
+
+    def test_contact_list_can_filter_by_contact_type(self):
+        owner = Contact.objects.create(
+            name="Propietario filtrado",
+            phone="600666111",
+            contact_type="owner",
+            assigned_agent=self.agent,
+        )
+        buyer = Contact.objects.create(
+            name="Comprador excluido",
+            phone="600666222",
+            contact_type="buyer",
+            assigned_agent=self.agent,
+        )
+
+        response = self.client.get(
+            reverse("contact_list"),
+            {"contact_type": "owner"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertQuerySetEqual(response.context["contacts"], [owner])
+        self.assertContains(response, "Propietarios")
+        self.assertContains(response, owner.name)
+        self.assertNotContains(response, buyer.name)
+
+    def test_contact_search_includes_document_and_city(self):
+        matching_contact = Contact.objects.create(
+            name="Contacto encontrado",
+            phone="600777111",
+            identification_number="12345678Z",
+            city="Alcalá de Henares",
+            contact_type="buyer",
+            assigned_agent=self.agent,
+        )
+        Contact.objects.create(
+            name="Contacto diferente",
+            phone="600777222",
+            identification_number="87654321X",
+            city="Toledo",
+            contact_type="buyer",
+            assigned_agent=self.agent,
+        )
+
+        document_response = self.client.get(
+            reverse("contact_list"),
+            {"search": "12345678Z"},
+        )
+        city_response = self.client.get(
+            reverse("contact_list"),
+            {"search": "Alcalá"},
+        )
+
+        self.assertQuerySetEqual(
+            document_response.context["contacts"],
+            [matching_contact],
+        )
+        self.assertQuerySetEqual(
+            city_response.context["contacts"],
+            [matching_contact],
+        )
