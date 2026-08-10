@@ -7,11 +7,11 @@
     <div class="mb-8">
 
         <h1 class="text-3xl font-bold">
-            Agenda
+            Agenda del equipo
         </h1>
 
         <p class="text-gray-500">
-            Próximas llamadas, citas y tareas
+            Llamadas, citas y tareas de todos los usuarios
         </p>
 
     </div>
@@ -38,9 +38,9 @@
 
                         {% elif event.type == "task" %}
 
-                            <a href="{% url 'task_detail' event.object.id %}" class="text-sm font-semibold text-purple-700 hover:underline">
+                            {% if event.detail_url %}<a href="{{ event.detail_url }}" class="text-sm font-semibold text-purple-700 hover:underline">{% else %}<span class="text-sm font-semibold text-purple-700">{% endif %}
                                 {% if event.object.task_type == "zone_sweep" %}📍{% else %}✅{% endif %} {{ event.object.get_task_type_display }}
-                            </a>
+                            {% if event.detail_url %}</a>{% else %}</span>{% endif %}
 
                             <p class="mt-1">
                                 {{ event.object.title }}
@@ -57,6 +57,10 @@
                             </p>
 
                         {% endif %}
+
+                        <p class="mt-2 text-xs font-medium text-indigo-600">
+                            👤 {{ event.agent_name }}
+                        </p>
 
                     </div>
 
@@ -80,7 +84,7 @@
 
             <div class="p-10 text-center text-gray-400">
 
-                No tienes eventos programados.
+                No hay eventos programados.
 
             </div>
 

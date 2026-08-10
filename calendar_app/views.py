@@ -65,7 +65,17 @@ def user_can_manage_all(user):
     return user.is_superuser or user.role in ["admin", "manager"]
 
 
-def build_task_events(tasks):
+def user_display_name(user):
+    if user is None:
+        return "Sin asignar"
+    return user.get_full_name() or user.username
+
+
+def can_open_calendar_item(user, assigned_user):
+    return user_can_manage_all(user) or assigned_user == user
+
+
+def build_task_events(tasks, viewer=None):
     events = []
     for task in tasks:
         for occurrence_index, (start, end) in enumerate(task_occurrences(task)):
@@ -78,6 +88,13 @@ def build_task_events(tasks):
                 "end": end,
                 "occurrence_index": occurrence_index,
                 "object": task,
+                "agent_name": user_display_name(task.assigned_to),
+                "detail_url": (
+                    reverse("task_detail", args=[task.id])
+                    if viewer is not None
+                    and can_open_calendar_item(viewer, task.assigned_to)
+                    else ""
+                ),
             })
     return events
 
@@ -961,26 +978,28 @@ def calendar_view(request):
     today = date.today()
     tomorrow = today + timedelta(days=1)
     selected_agent_ids = request.GET.getlist("agents")
-    calls = Call.objects.all()
-    appointments = Appointment.objects.all()
+    calls = Call.objects.select_related("contact", "agent")
+    appointments = Appointment.objects.select_related(
+        "related_property",
+        "agent",
+    )
     tasks = Task.objects.filter(
         status__in=ACTIVE_TASK_STATUSES,
     ).select_related("zone", "assigned_to")
     calls = calls.exclude(status="cancelled")
     appointments = appointments.exclude(status="cancelled")
 
-    if user_can_manage_all(request.user):
-        if selected_agent_ids:
-            calls = calls.filter(agent_id__in=selected_agent_ids)
-            appointments = appointments.filter(agent_id__in=selected_agent_ids)
-            tasks = tasks.filter(assigned_to_id__in=selected_agent_ids)
-    else:
-        selected_agent_ids = [str(request.user.pk)]
-        calls = calls.filter(agent=request.user)
-        appointments = appointments.filter(agent=request.user)
-        tasks = tasks.filter(assigned_to=request.user)
+    if selected_agent_ids:
+        calls = calls.filter(agent_id__in=selected_agent_ids)
+        appointments = appointments.filter(agent_id__in=selected_agent_ids)
+        tasks = tasks.filter(assigned_to_id__in=selected_agent_ids)
+
     agents = User.objects.filter(
-        role="agent"
+        is_active=True,
+    ).exclude(pk=request.user.pk).order_by(
+        "first_name",
+        "last_name",
+        "username",
     )
 
     
@@ -994,7 +1013,13 @@ def calendar_view(request):
             "type": "call",
             "date": call.date,
             "time": call.time,
-            "object": call
+            "object": call,
+            "agent_name": user_display_name(call.agent),
+            "detail_url": (
+                reverse("call_detail", args=[call.id])
+                if can_open_calendar_item(request.user, call.agent)
+                else ""
+            ),
         })
 
     for appt in appointments:
@@ -1005,10 +1030,16 @@ def calendar_view(request):
             "type": "appointment",
             "date": appt.date,
             "time": appt.time,
-            "object": appt
+            "object": appt,
+            "agent_name": user_display_name(appt.agent),
+            "detail_url": (
+                reverse("appointment_detail", args=[appt.id])
+                if can_open_calendar_item(request.user, appt.agent)
+                else ""
+            ),
         })
 
-    events.extend(build_task_events(tasks))
+    events.extend(build_task_events(tasks, viewer=request.user))
 
     events = sorted(events, key=lambda e: (e["date"], e["time"]))
 
@@ -1038,23 +1069,19 @@ def calendar_events(request):
 
     agent_ids = request.GET.getlist("agents")
 
-    # BASE QUERYSET
-    appointments = Appointment.objects.exclude(status="cancelled")
-    calls = Call.objects.exclude(status="cancelled")
+    appointments = Appointment.objects.exclude(status="cancelled").select_related(
+        "related_property",
+        "agent",
+    )
+    calls = Call.objects.exclude(status="cancelled").select_related(
+        "contact",
+        "agent",
+    )
     tasks = Task.objects.filter(
         status__in=ACTIVE_TASK_STATUSES,
     ).select_related("zone", "assigned_to")
 
-    # SI NO ES MANAGER → solo sus eventos
-    if not user_can_manage_all(request.user):
-
-        appointments = appointments.filter(agent=request.user)
-        calls = calls.filter(agent=request.user)
-        tasks = tasks.filter(assigned_to=request.user)
-
-    # SI ES MANAGER Y HAY FILTRO DE AGENTES
-    elif agent_ids:
-
+    if agent_ids:
         appointments = appointments.filter(agent_id__in=agent_ids)
         calls = calls.filter(agent_id__in=agent_ids)
         tasks = tasks.filter(assigned_to_id__in=agent_ids)
@@ -1064,11 +1091,12 @@ def calendar_events(request):
     
     for appointment in appointments:
 
-        events.append({
+        event = {
             "id": f"appointment-{appointment.id}",
             "title": (
                 f"📅 Cita de {appointment.get_appointment_type_display()}\n"
-                f"{appointment.related_property.full_address}"
+                f"{appointment.related_property.full_address}\n"
+                f"👤 {user_display_name(appointment.agent)}"
             ),
             "start": (
                 f"{appointment.date}"
@@ -1076,20 +1104,23 @@ def calendar_events(request):
                 f"{appointment.time}"
             ),
             "color": "#16a34a",
-            "url": reverse(
+        }
+        if can_open_calendar_item(request.user, appointment.agent):
+            event["url"] = reverse(
                 "appointment_detail",
                 args=[appointment.id]
             )
-        })
+        events.append(event)
 
 
     for call in calls:
 
-        events.append({
+        event = {
             "id": f"call-{call.id}",
             "title": (
                 f"📞 Llamada a "
-                f"{call.contact.name}"
+                f"{call.contact.name}\n"
+                f"👤 {user_display_name(call.agent)}"
             ),
             "start": (
                 f"{call.date}"
@@ -1097,26 +1128,30 @@ def calendar_events(request):
                 f"{call.time}"
             ),
             "color": "#2563eb",
-            "url": reverse(
+        }
+        if can_open_calendar_item(request.user, call.agent):
+            event["url"] = reverse(
                 "call_detail",
                 args=[call.id]
             )
-        })
+        events.append(event)
 
-    for task_event in build_task_events(tasks):
+    for task_event in build_task_events(tasks, viewer=request.user):
         task = task_event["object"]
-        events.append({
+        event = {
             "id": f"task-{task.id}-{task_event['occurrence_index']}",
             "title": (
-                f"📍 {task.title}"
+                f"📍 {task.title}\n👤 {task_event['agent_name']}"
                 if task.task_type == "zone_sweep"
-                else f"✅ Tarea: {task.title}"
+                else f"✅ Tarea: {task.title}\n👤 {task_event['agent_name']}"
             ),
             "start": task_event["start"].isoformat(),
             "end": task_event["end"].isoformat(),
             "color": "#ea580c" if task.task_type == "zone_sweep" else "#7c3aed",
-            "url": reverse("task_detail", args=[task.id]),
-        })
+        }
+        if task_event["detail_url"]:
+            event["url"] = task_event["detail_url"]
+        events.append(event)
 
     return JsonResponse(
         events,
@@ -1126,18 +1161,19 @@ def calendar_events(request):
 @login_required
 def agenda(request):
 
-    appointments = Appointment.objects.filter(
-        agent=request.user
-    ).exclude(status="cancelled")
+    appointments = Appointment.objects.exclude(status="cancelled").select_related(
+        "related_property",
+        "agent",
+    )
 
-    calls = Call.objects.filter(
-        agent=request.user
-    ).exclude(status="cancelled")
+    calls = Call.objects.exclude(status="cancelled").select_related(
+        "contact",
+        "agent",
+    )
 
     tasks = Task.objects.filter(
-        assigned_to=request.user,
         status__in=ACTIVE_TASK_STATUSES,
-    ).select_related("zone")
+    ).select_related("zone", "assigned_to")
 
     events = []
 
@@ -1148,6 +1184,12 @@ def agenda(request):
             "date": appointment.date,
             "time": appointment.time,
             "object": appointment,
+            "agent_name": user_display_name(appointment.agent),
+            "detail_url": (
+                reverse("appointment_detail", args=[appointment.id])
+                if can_open_calendar_item(request.user, appointment.agent)
+                else ""
+            ),
         })
 
     for call in calls:
@@ -1157,9 +1199,15 @@ def agenda(request):
             "date": call.date,
             "time": call.time,
             "object": call,
+            "agent_name": user_display_name(call.agent),
+            "detail_url": (
+                reverse("call_detail", args=[call.id])
+                if can_open_calendar_item(request.user, call.agent)
+                else ""
+            ),
         })
 
-    events.extend(build_task_events(tasks))
+    events.extend(build_task_events(tasks, viewer=request.user))
 
     events.sort(
         key=lambda x: (
@@ -1185,7 +1233,7 @@ def available_slots(request):
     selected_agent = request.user
     requested_agent_id = request.GET.get("agent_id")
 
-    if requested_agent_id and user_can_manage_all(request.user):
+    if requested_agent_id:
         selected_agent = get_object_or_404(User, pk=requested_agent_id)
 
     appointments = Appointment.objects.filter(

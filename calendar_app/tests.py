@@ -247,7 +247,7 @@ class TaskCalendarIntegrationTests(TestCase):
         self.assertIn(f"task-{self.zone_task.pk}-1", event_ids)
         self.assertIn(f"task-{self.zone_task.pk}-2", event_ids)
         self.assertNotIn(f"task-{self.completed_task.pk}-0", event_ids)
-        self.assertNotIn(f"task-{self.other_task.pk}-0", event_ids)
+        self.assertIn(f"task-{self.other_task.pk}-0", event_ids)
 
         custom_event = next(
             event
@@ -276,14 +276,13 @@ class TaskCalendarIntegrationTests(TestCase):
             if event["type"] == "task"
         ]
 
-        self.assertEqual(len(calendar_task_events), 4)
-        self.assertEqual(len(agenda_task_events), 4)
+        self.assertEqual(len(calendar_task_events), 5)
+        self.assertEqual(len(agenda_task_events), 5)
         self.assertContains(calendar_response, "Peinar zona Zona agenda")
         self.assertContains(agenda_response, "Preparar informe")
+        self.assertContains(calendar_response, self.other_agent.username)
 
-    def test_manager_agent_filter_also_filters_tasks(self):
-        self.client.force_login(self.manager)
-
+    def test_any_user_can_filter_the_calendar_by_another_agent(self):
         events = self.client.get(
             reverse("calendar_events"),
             {"agents": self.other_agent.pk},
@@ -293,6 +292,10 @@ class TaskCalendarIntegrationTests(TestCase):
         self.assertIn(f"task-{self.other_task.pk}-0", event_ids)
         self.assertNotIn(f"task-{self.custom_task.pk}-0", event_ids)
         self.assertNotIn(f"task-{self.zone_task.pk}-0", event_ids)
+
+        calendar_response = self.client.get(reverse("calendar"))
+        self.assertContains(calendar_response, "Filtrar agendas")
+        self.assertContains(calendar_response, self.other_agent.username)
 
     def test_tasks_block_all_overlapping_available_slots(self):
         custom_response = self.client.get(
@@ -886,8 +889,7 @@ class AvailableSlotsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("10:30", response.json()["occupied"])
 
-    def test_agent_cannot_inspect_another_agents_slots(self):
-        self.client.force_login(self.manager)
+    def test_agent_can_inspect_another_agents_calendar_and_slots(self):
         another_agent = get_user_model().objects.create_user(
             username="slots-other-agent",
             password="test-password",
@@ -898,7 +900,20 @@ class AvailableSlotsTests(TestCase):
             {"date": "2026-08-25", "agent_id": self.agent.pk},
         )
 
-        self.assertNotIn("10:30", response.json()["occupied"])
+        self.assertIn("10:30", response.json()["occupied"])
+
+        calendar_event_ids = {
+            event["id"]
+            for event in self.client.get(reverse("calendar_events")).json()
+        }
+        appointment = Appointment.objects.get(agent=self.agent)
+        self.assertIn(f"appointment-{appointment.pk}", calendar_event_ids)
+
+        agenda_objects = {
+            (event["type"], event["object"].pk)
+            for event in self.client.get(reverse("agenda")).context["events"]
+        }
+        self.assertIn(("appointment", appointment.pk), agenda_objects)
 
     def test_proposal_appointment_is_returned_as_occupied_without_cache(self):
         Appointment.objects.create(

@@ -24,19 +24,24 @@
 
     <!-- HEADER -->
     <div class="mb-8">
-        <h1 class="text-2xl sm:text-3xl font-bold">Agenda</h1>
-        <p class="text-gray-500">Calendario de llamadas, citas y tareas</p>
+        <h1 class="text-2xl sm:text-3xl font-bold">Agenda del equipo</h1>
+        <p class="text-gray-500">Calendario compartido de llamadas, citas y tareas</p>
     </div>
 
     <!-- FILTER AGENTS -->
-    {% if request.user.role == "admin" or request.user.role == "manager" %}
     <div class="bg-white rounded-2xl shadow-sm p-4 mb-6">
 
         <h3 class="text-sm font-semibold text-gray-700 mb-3">
-            Filtrar agentes
+            Filtrar agendas
         </h3>
 
         <div class="flex flex-wrap gap-2">
+
+            <button type="button"
+                    id="all-agents-filter"
+                    class="px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition">
+                Todo el equipo
+            </button>
 
             <button type="button"
                     class="agent-filter px-4 py-2 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition"
@@ -54,7 +59,6 @@
 
         </div>
     </div>
-    {% endif %}
 
     <!-- MOBILE: AGENDA LIST -->
     <div class="block lg:hidden space-y-6">
@@ -72,14 +76,8 @@
                     {% for event in events %}
 
                         <a
-                            href="{% if event.type == 'call' %}
-                                        {% url 'call_detail' event.object.id %}
-                                {% elif event.type == 'task' %}
-                                        {% url 'task_detail' event.object.id %}
-                                {% else %}
-                                        {% url 'appointment_detail' event.object.id %}
-                                {% endif %}"
-                            class="block border rounded-xl p-3 hover:bg-gray-50 transition"
+                            {% if event.detail_url %}href="{{ event.detail_url }}"{% endif %}
+                            class="block border rounded-xl p-3 transition {% if event.detail_url %}hover:bg-gray-50{% else %}cursor-default{% endif %}"
                         >
 
                             <div class="flex justify-between items-center">
@@ -111,6 +109,10 @@
                                 {{ event.object.related_property.full_address }}
                             </div>
                             {% endif %}
+
+                            <div class="mt-2 text-xs font-medium text-indigo-600">
+                                👤 {{ event.agent_name }}
+                            </div>
 
                         </a>
 
@@ -183,9 +185,13 @@
                         </div>
                     {% endif %}
 
+                    <div class="mt-1 text-xs font-medium text-indigo-600">
+                        👤 {{ event.agent_name }}
+                    </div>
+
                 </div>
                 {% empty %}
-                <p class="text-sm text-gray-500">No tienes eventos hoy.</p>
+                <p class="text-sm text-gray-500">No hay eventos hoy.</p>
                 {% endfor %}
 
             </div>
@@ -222,9 +228,13 @@
                         </div>
                     {% endif %}
 
+                    <div class="mt-1 text-xs font-medium text-indigo-600">
+                        👤 {{ event.agent_name }}
+                    </div>
+
                 </div>
                 {% empty %}
-                <p class="text-sm text-gray-500">No tienes eventos mañana.</p>
+                <p class="text-sm text-gray-500">No hay eventos mañana.</p>
                 {% endfor %}
 
             </div>
@@ -254,6 +264,9 @@ document.addEventListener(
             document.getElementById("calendar");
 
         let selectedAgents = {{ selected_agent_ids|safe }};
+
+        const allAgentsButton =
+            document.getElementById("all-agents-filter");
 
         let calendar =
             new FullCalendar.Calendar(
@@ -342,6 +355,14 @@ document.addEventListener(
 
         // FILTRO DE AGENTES
 
+        if (selectedAgents.length === 0) {
+            allAgentsButton.classList.add("agent-selected");
+        }
+
+        allAgentsButton.addEventListener("click", function() {
+            window.location.href = "{% url 'calendar' %}";
+        });
+
         document
             .querySelectorAll(".agent-filter")
             .forEach(button => {
@@ -381,7 +402,11 @@ document.addEventListener(
 
                         }
 
-                        calendar.refetchEvents();
+                        const target = new URL("{% url 'calendar' %}", window.location.origin);
+                        selectedAgents.forEach(
+                            agentId => target.searchParams.append("agents", agentId)
+                        );
+                        window.location.href = target.toString();
 
                     }
                 );
