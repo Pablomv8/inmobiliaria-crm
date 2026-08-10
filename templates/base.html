@@ -2,7 +2,6 @@
 
 <!DOCTYPE html>
 <html lang="es">
-     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.css" rel="stylesheet">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +9,8 @@
     <title>CRM Inmobiliario</title>
 
     <link rel="stylesheet" href="{% static 'css/main.min.css' %}">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.css" rel="stylesheet">
+    <style>[x-cloak] { display: none !important; }</style>
 
     <script src="https://kit.fontawesome.com/c30b7a5850.js" crossorigin="anonymous"></script>
 
@@ -33,24 +34,27 @@
 </head>
 
 
-<body class="bg-gray-100">
+<body class="overflow-x-hidden bg-gray-100">
 
-<div x-data="{ sidebarOpen: false }" class="flex min-h-screen">
+<div
+    x-data="{ sidebarOpen: false }"
+    @keydown.escape.window="sidebarOpen = false"
+    class="flex min-h-dvh"
+>
 
     <!-- Overlay -->
     <div
         x-show="sidebarOpen"
         x-transition.opacity
-        class="fixed inset-0 bg-black/40 z-40 lg:hidden"
+        class="fixed inset-0 z-40 bg-black/40 lg:hidden"
         @click="sidebarOpen = false"
+        x-cloak
     ></div>
 
     <!-- Sidebar -->
     <aside
-        class="fixed xl:static z-50 w-72 h-screen bg-white border-r border-gray-200 flex flex-col
-            transform transition-transform duration-300 ease-out
-            xl:translate-x-0"
-        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full xl:translate-x-0'"
+        class="fixed inset-y-0 left-0 z-50 flex h-dvh w-72 shrink-0 flex-col border-r border-gray-200 bg-white shadow-xl transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:translate-x-0 lg:shadow-none"
+        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
     >
         {% include 'partials/sidebar.html' %}
     </aside>
@@ -58,13 +62,13 @@
 
 
     <!-- Main Content -->
-    <div class="flex-1 flex flex-col w-full">
+    <div class="flex min-w-0 flex-1 flex-col">
 
         <!-- Navbar -->
         {% include 'partials/navbar.html' %}
 
         <!-- Page Content -->
-        <main class="p-8">
+        <main class="p-4 sm:p-6 lg:p-8">
 
             {% if messages %}
 

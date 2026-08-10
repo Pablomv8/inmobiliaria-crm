@@ -128,6 +128,18 @@ class DashboardScopeTests(TestCase):
         self.assertContains(response, "Mi cartera")
         self.assertNotContains(response, "Vista global de la oficina")
 
+    def test_base_layout_has_no_search_and_only_one_scrollable_sidebar(self):
+        self.client.force_login(self.agent)
+
+        response = self.client.get(reverse("dashboard"))
+        html = response.content.decode()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('placeholder="Buscar..."', html)
+        self.assertEqual(html.count("<aside"), 1)
+        self.assertIn("min-h-0 flex-1 overflow-y-auto", html)
+        self.assertIn("Abrir menú principal", html)
+
     def test_manager_sees_office_totals_and_every_user(self):
         self.client.force_login(self.manager)
         response = self.client.get(reverse("dashboard"))
