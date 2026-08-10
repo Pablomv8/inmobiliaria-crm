@@ -242,7 +242,7 @@ def dashboard(request):
     overdue_tasks = pending_tasks.filter(due_date__lt=now)
     upcoming_tasks = (
         pending_tasks.filter(due_date__gte=now)
-        .select_related("contact")
+        .select_related("contact", "zone")
         .order_by("due_date")[:6]
     )
     acquisition_decisions = personal_appointments.filter(
