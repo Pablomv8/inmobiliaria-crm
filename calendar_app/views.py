@@ -101,13 +101,15 @@ def create_appointment(request, news_id):
 
         form = AppointmentForm(
             request.POST or None,
-            user=request.user
+            user=request.user,
+            appointment_type="acquisition",
         )
 
         if form.is_valid():
 
             appointment = form.save(commit=False)
 
+            appointment.appointment_type = "acquisition"
             appointment.news = news
             appointment.contact = news.related_property.contacts.first()
             appointment.related_property = news.related_property
@@ -119,11 +121,15 @@ def create_appointment(request, news_id):
 
     else:
 
-        form = AppointmentForm(user=request.user)
+        form = AppointmentForm(
+            user=request.user,
+            appointment_type="acquisition",
+        )
 
     return render(request, "appointments/form.html", {
         "form": form,
         "news": news,
+        "page_title": "Nueva cita de adquisición",
         "schedule_agent": request.user,
     })
 

@@ -56,6 +56,36 @@ class AppointmentResultFlowTests(TestCase):
         )
         self.client.force_login(self.user)
 
+    def test_acquisition_form_has_its_type_fixed_automatically(self):
+        response = self.client.get(
+            reverse("create_appointment", args=[self.news.pk])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("appointment_type", response.context["form"].fields)
+        self.assertContains(response, "Nueva cita de adquisición")
+        self.assertNotContains(response, "Tipo de cita")
+
+    def test_acquisition_form_creates_the_fixed_type_without_posting_it(self):
+        response = self.client.post(
+            reverse("create_appointment", args=[self.news.pk]),
+            {
+                "date": "2026-08-11",
+                "time": "11:00",
+                "notes": "Primera reunión con la propiedad.",
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("news_detail", args=[self.news.pk]),
+        )
+        created_appointment = Appointment.objects.exclude(
+            pk=self.appointment.pk
+        ).get()
+        self.assertEqual(created_appointment.appointment_type, "acquisition")
+        self.assertEqual(created_appointment.news, self.news)
+
     def test_appointment_asks_for_comment_before_showing_outcome(self):
         self.news.refresh_from_db()
         response = self.client.get(
