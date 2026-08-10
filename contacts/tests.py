@@ -87,3 +87,24 @@ class ContactRelatedWorkflowTests(TestCase):
         self.assertContains(response, reverse("order_detail", args=[order.pk]))
         self.assertNotContains(response, "Noticias relacionadas")
         self.assertNotContains(response, "Encargos relacionados")
+
+    def test_contact_list_shows_contact_type_column(self):
+        Contact.objects.create(
+            name="Propietario del listado",
+            phone="600555111",
+            contact_type="owner",
+            assigned_agent=self.agent,
+        )
+        Contact.objects.create(
+            name="Compradora del listado",
+            phone="600555222",
+            contact_type="buyer",
+            assigned_agent=self.agent,
+        )
+
+        response = self.client.get(reverse("contact_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Tipo de contacto")
+        self.assertContains(response, "Propietario")
+        self.assertContains(response, "Comprador")

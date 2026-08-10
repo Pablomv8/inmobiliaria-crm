@@ -1,20 +1,46 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="mx-auto max-w-7xl space-y-7">
+<div class="mx-auto max-w-7xl space-y-10">
     <section class="overflow-hidden rounded-3xl bg-gray-900 px-6 py-7 text-white shadow-lg sm:px-8">
-        <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-                <p class="text-sm font-semibold text-indigo-300">Administración del equipo</p>
-                <h1 class="mt-2 text-3xl font-bold">Seguimiento de trabajadores</h1>
-                <p class="mt-2 max-w-2xl text-sm text-gray-300">Consulta la cartera, la carga pendiente y los resultados de cada agente.</p>
+        <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+
+            <div class= "mt-2">
+                <p class="text-sm font-semibold text-indigo-300">
+                    Administración del equipo
+                </p>
+
+                <h1 class="mt-2 text-3xl font-bold">
+                    Seguimiento de trabajadores
+                </h1>
+
+                <p class="mt-2 max-w-2xl text-sm text-gray-300">
+                    Consulta la cartera, la carga pendiente y los resultados de cada agente.
+                </p>
             </div>
-            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div class="rounded-2xl bg-white/10 px-4 py-3"><p class="text-xs text-gray-300">Agentes</p><p class="mt-1 text-xl font-bold">{{ worker_count }}</p></div>
-                <a href="{% url 'contact_list' %}" class="rounded-2xl bg-white/10 px-4 py-3 transition hover:bg-white/20"><p class="text-xs text-gray-300">Contactos</p><p class="mt-1 text-xl font-bold">{{ total_contacts }}</p></a>
-                <a href="{% url 'listing_list' %}?status=active" class="rounded-2xl bg-white/10 px-4 py-3 transition hover:bg-white/20"><p class="text-xs text-gray-300">Encargos activos</p><p class="mt-1 text-xl font-bold">{{ total_active_listings }}</p></a>
-                <a href="{% url 'order_list' %}" class="rounded-2xl bg-white/10 px-4 py-3 transition hover:bg-white/20"><p class="text-xs text-gray-300">Pedidos abiertos</p><p class="mt-1 text-xl font-bold">{{ total_open_orders }}</p></a>
+
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 mt-2 mb-2">
+                <div class="rounded-2xl bg-white/10 px-4 py-3">
+                    <p class="text-xs text-gray-300">Agentes</p>
+                    <p class="mt-1 text-xl font-bold">{{ worker_count }}</p>
+                </div>
+
+                <a href="{% url 'contact_list' %}" class="rounded-2xl bg-white/10 px-4 py-3 transition hover:bg-white/20">
+                    <p class="text-xs text-gray-300">Contactos</p>
+                    <p class="mt-1 text-xl font-bold">{{ total_contacts }}</p>
+                </a>
+
+                <a href="{% url 'listing_list' %}?status=active" class="rounded-2xl bg-white/10 px-4 py-3 transition hover:bg-white/20">
+                    <p class="text-xs text-gray-300">Encargos activos</p>
+                    <p class="mt-1 text-xl font-bold">{{ total_active_listings }}</p>
+                </a>
+
+                <a href="{% url 'order_list' %}" class="rounded-2xl bg-white/10 px-4 py-3 transition hover:bg-white/20">
+                    <p class="text-xs text-gray-300">Pedidos abiertos</p>
+                    <p class="mt-1 text-xl font-bold">{{ total_open_orders }}</p>
+                </a>
             </div>
+
         </div>
     </section>
 
@@ -26,9 +52,9 @@
         <span class="w-fit rounded-full bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700">{{ total_pending_workload }} acciones pendientes</span>
     </div>
 
-    <section class="grid gap-5 lg:grid-cols-2">
+    <section class="grid gap-7 lg:grid-cols-2">
         {% for row in worker_rows %}
-            <article class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+            <article class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ml-2 mt-2">
                 <div class="border-b border-gray-100 p-5 sm:p-6">
                     <div class="flex items-start gap-4">
                         <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-indigo-100 text-lg font-bold text-indigo-700">
