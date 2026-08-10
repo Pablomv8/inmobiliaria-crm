@@ -1,5 +1,6 @@
 from django import forms
 from listings.models import Listing
+from tasks.scheduling import task_has_conflict_with_slot
 
 from .models import (
     Appointment,
@@ -141,10 +142,16 @@ class AppointmentForm(forms.ModelForm):
             .exists()
         )
 
+        occupied = occupied or task_has_conflict_with_slot(
+            self.user,
+            date,
+            time,
+        )
+
         if occupied:
 
             raise forms.ValidationError(
-                "Ya existe una cita o llamada en esa hora."
+                "Ya existe una cita, llamada o tarea en esa hora."
             )
 
         return cleaned_data
@@ -223,10 +230,16 @@ class CallForm(forms.ModelForm):
             .exists()
         )
 
+        occupied = occupied or task_has_conflict_with_slot(
+            self.user,
+            date,
+            time,
+        )
+
         if occupied:
 
             raise forms.ValidationError(
-                "Ya existe una cita o llamada en esa hora."
+                "Ya existe una cita, llamada o tarea en esa hora."
             )
 
         return cleaned_data
@@ -286,9 +299,15 @@ class SaleAppointmentForm(forms.ModelForm):
             status="pending",
         ).exists()
 
+        occupied = occupied or task_has_conflict_with_slot(
+            self.user,
+            selected_date,
+            selected_time,
+        )
+
         if occupied:
             raise forms.ValidationError(
-                "Ya existe una cita o llamada en esa hora."
+                "Ya existe una cita, llamada o tarea en esa hora."
             )
 
         return cleaned_data

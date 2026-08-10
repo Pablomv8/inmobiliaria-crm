@@ -25,7 +25,7 @@
     <!-- HEADER -->
     <div class="mb-8">
         <h1 class="text-2xl sm:text-3xl font-bold">Agenda</h1>
-        <p class="text-gray-500">Calendario de llamadas y citas</p>
+        <p class="text-gray-500">Calendario de llamadas, citas y tareas</p>
     </div>
 
     <!-- FILTER AGENTS -->
@@ -74,6 +74,8 @@
                         <a
                             href="{% if event.type == 'call' %}
                                         {% url 'call_detail' event.object.id %}
+                                {% elif event.type == 'task' %}
+                                        {% url 'task_detail' event.object.id %}
                                 {% else %}
                                         {% url 'appointment_detail' event.object.id %}
                                 {% endif %}"
@@ -87,7 +89,7 @@
                                 </span>
 
                                 <span class="text-xs px-2 py-1 rounded-full bg-gray-100">
-                                    {{ event.type }}
+                                    {% if event.type == "call" %}Llamada{% elif event.type == "task" %}Tarea{% else %}Cita{% endif %}
                                 </span>
 
                             </div>
@@ -96,6 +98,8 @@
 
                                 {% if event.type == "call" %}
                                     📞 {{ event.object.contact.name }}
+                                {% elif event.type == "task" %}
+                                    {% if event.object.task_type == "zone_sweep" %}📍{% else %}✅{% endif %} {{ event.object.title }}
                                 {% else %}
                                     📅 {{ event.object.get_appointment_type_display }}
                                 {% endif %}
@@ -159,16 +163,23 @@
                         {{ event.time|time:"H:i" }}
                     </div>
 
-                    {% if event.event_type == "call" %}
+                    {% if event.type == "call" %}
                         <div class="text-sm text-gray-600">
-                            📞 {{ event.contact.name }}
+                            📞 {{ event.object.contact.name }}
+                        </div>
+                    {% elif event.type == "task" %}
+                        <div class="text-sm text-gray-600">
+                            {% if event.object.task_type == "zone_sweep" %}📍{% else %}✅{% endif %} {{ event.object.title }}
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            Hasta las {{ event.end_time|time:"H:i" }}
                         </div>
                     {% else %}
                         <div class="text-sm text-gray-600">
-                            📅 {{ event.get_appointment_type_display }}
+                            📅 {{ event.object.get_appointment_type_display }}
                         </div>
                         <div class="text-xs text-gray-500">
-                            {{ event.related_property.full_address }}
+                            {{ event.object.related_property.full_address }}
                         </div>
                     {% endif %}
 
@@ -191,16 +202,23 @@
                         {{ event.time|time:"H:i" }}
                     </div>
 
-                    {% if event.event_type == "call" %}
+                    {% if event.type == "call" %}
                         <div class="text-sm text-gray-600">
-                            📞 {{ event.contact.name }}
+                            📞 {{ event.object.contact.name }}
+                        </div>
+                    {% elif event.type == "task" %}
+                        <div class="text-sm text-gray-600">
+                            {% if event.object.task_type == "zone_sweep" %}📍{% else %}✅{% endif %} {{ event.object.title }}
+                        </div>
+                        <div class="text-xs text-gray-500">
+                            Hasta las {{ event.end_time|time:"H:i" }}
                         </div>
                     {% else %}
                         <div class="text-sm text-gray-600">
-                            📅 {{ event.get_appointment_type_display }}
+                            📅 {{ event.object.get_appointment_type_display }}
                         </div>
                         <div class="text-xs text-gray-500">
-                            {{ event.related_property.full_address }}
+                            {{ event.object.related_property.full_address }}
                         </div>
                     {% endif %}
 

@@ -11,7 +11,7 @@
         </h1>
 
         <p class="text-gray-500">
-            Próximas llamadas y citas
+            Próximas llamadas, citas y tareas
         </p>
 
     </div>
@@ -36,6 +36,16 @@
                                 {{ event.object.contact }}
                             </p>
 
+                        {% elif event.type == "task" %}
+
+                            <a href="{% url 'task_detail' event.object.id %}" class="text-sm font-semibold text-purple-700 hover:underline">
+                                {% if event.object.task_type == "zone_sweep" %}📍{% else %}✅{% endif %} {{ event.object.get_task_type_display }}
+                            </a>
+
+                            <p class="mt-1">
+                                {{ event.object.title }}
+                            </p>
+
                         {% else %}
 
                             <span class="text-sm font-semibold text-green-600">
@@ -57,7 +67,7 @@
                         </div>
 
                         <div class="text-gray-500">
-                            {{ event.time }}
+                            {{ event.time }}{% if event.type == "task" %}–{{ event.end_time|time:"H:i" }}{% endif %}
                         </div>
 
                     </div>

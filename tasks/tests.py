@@ -1,6 +1,9 @@
 from django.contrib.auth import get_user_model
+from datetime import datetime
+
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from properties.models import Zone
 
@@ -115,6 +118,10 @@ class TaskTypeFlowTests(TestCase):
                 "title": "Este nombre debe ignorarse",
                 "description": "Este texto también debe ignorarse",
                 "zone": self.zone.pk,
+                "schedule_date": "2026-08-21",
+                "start_time": "09:00",
+                "end_time": "11:00",
+                "repeat_days": "3",
                 "assigned_to": self.agent.pk,
                 "priority": "medium",
                 "status": "pending",
@@ -129,6 +136,11 @@ class TaskTypeFlowTests(TestCase):
         self.assertEqual(task.title, "Peinar zona Centro tareas")
         self.assertEqual(task.description, "")
         self.assertEqual(task.assigned_to, self.agent)
+        self.assertEqual(task.schedule_date.isoformat(), "2026-08-21")
+        self.assertEqual(task.start_time.strftime("%H:%M"), "09:00")
+        self.assertEqual(task.end_time.strftime("%H:%M"), "11:00")
+        self.assertEqual(task.repeat_days, 3)
+        self.assertIsNone(task.due_date)
 
     def test_editing_can_change_custom_task_into_zone_sweep(self):
         task = Task.objects.create(
@@ -144,6 +156,10 @@ class TaskTypeFlowTests(TestCase):
             {
                 "task_type": "zone_sweep",
                 "zone": self.other_zone.pk,
+                "schedule_date": "2026-08-25",
+                "start_time": "10:00",
+                "end_time": "12:00",
+                "repeat_days": "2",
                 "assigned_to": self.other_agent.pk,
                 "priority": "low",
                 "status": "in_progress",
@@ -157,6 +173,58 @@ class TaskTypeFlowTests(TestCase):
         self.assertEqual(task.title, "Peinar zona Norte tareas")
         self.assertEqual(task.zone, self.other_zone)
         self.assertEqual(task.assigned_to, self.other_agent)
+
+    def test_zone_sweep_rejects_invalid_time_range(self):
+        response = self.client.post(
+            reverse("task_create"),
+            {
+                "task_type": "zone_sweep",
+                "zone": self.zone.pk,
+                "schedule_date": "2026-08-25",
+                "start_time": "12:00",
+                "end_time": "10:00",
+                "repeat_days": "2",
+                "assigned_to": self.agent.pk,
+                "priority": "medium",
+                "status": "pending",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(
+            response.context["form"],
+            "end_time",
+            "La hora de fin debe ser posterior a la hora de inicio.",
+        )
+
+    def test_task_form_rejects_schedule_conflicts(self):
+        Task.objects.create(
+            task_type="custom",
+            title="Tarea ya programada",
+            description="Ocupa una hora.",
+            assigned_to=self.agent,
+            due_date=timezone.make_aware(datetime(2026, 8, 28, 10, 0)),
+        )
+
+        response = self.client.post(
+            reverse("task_create"),
+            {
+                "task_type": "custom",
+                "title": "Tarea solapada",
+                "description": "No debería poder guardarse.",
+                "assigned_to": self.agent.pk,
+                "priority": "medium",
+                "status": "pending",
+                "due_date": "2026-08-28T10:30",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "La persona asignada ya tiene otra cita, llamada o tarea en ese tramo horario.",
+        )
+        self.assertEqual(Task.objects.count(), 1)
 
     def test_manager_can_filter_tasks_by_type_and_zone(self):
         custom_task = Task.objects.create(
@@ -247,6 +315,10 @@ class TaskFormModelValidationTests(TestCase):
                 "assigned_to",
                 "priority",
                 "due_date",
+                "schedule_date",
+                "start_time",
+                "end_time",
+                "repeat_days",
                 "status",
             ],
         )

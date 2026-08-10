@@ -1,15 +1,18 @@
-from datetime import date, time
+from datetime import date, datetime, time
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from contacts.models import Contact
 from listings.models import Listing
 from news.models import News
 from orders.models import Order
 from properties.models import Property, Zone
+from tasks.models import Task
 
+from .forms import AppointmentForm, CallForm
 from .models import (
     Appointment,
     Call,
@@ -181,6 +184,157 @@ class AppointmentResultFlowTests(TestCase):
         self.assertEqual(self.property.status, "active")
         self.news.refresh_from_db()
         self.assertEqual(self.news.status, "closed")
+
+
+class TaskCalendarIntegrationTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.agent = user_model.objects.create_user(
+            username="calendar-task-agent",
+            password="test-password",
+            role="agent",
+        )
+        self.other_agent = user_model.objects.create_user(
+            username="calendar-task-other",
+            password="test-password",
+            role="agent",
+        )
+        self.manager = user_model.objects.create_user(
+            username="calendar-task-manager",
+            password="test-password",
+            role="manager",
+        )
+        self.zone = Zone.objects.create(name="Zona agenda")
+        self.custom_task = Task.objects.create(
+            task_type="custom",
+            title="Preparar informe",
+            description="Preparar el informe semanal.",
+            assigned_to=self.agent,
+            due_date=timezone.make_aware(datetime(2026, 9, 7, 10, 0)),
+        )
+        self.zone_task = Task.objects.create(
+            task_type="zone_sweep",
+            zone=self.zone,
+            assigned_to=self.agent,
+            schedule_date=date(2026, 9, 8),
+            start_time=time(14, 0),
+            end_time=time(16, 0),
+            repeat_days=3,
+        )
+        self.completed_task = Task.objects.create(
+            task_type="custom",
+            title="Tarea completada",
+            description="No debe mostrarse.",
+            assigned_to=self.agent,
+            due_date=timezone.make_aware(datetime(2026, 9, 7, 12, 0)),
+            status="done",
+        )
+        self.other_task = Task.objects.create(
+            task_type="custom",
+            title="Tarea de otro agente",
+            description="No pertenece al agente principal.",
+            assigned_to=self.other_agent,
+            due_date=timezone.make_aware(datetime(2026, 9, 7, 13, 0)),
+        )
+        self.client.force_login(self.agent)
+
+    def test_task_occurrences_are_returned_by_calendar_events(self):
+        events = self.client.get(reverse("calendar_events")).json()
+        event_ids = {event["id"] for event in events}
+
+        self.assertIn(f"task-{self.custom_task.pk}-0", event_ids)
+        self.assertIn(f"task-{self.zone_task.pk}-0", event_ids)
+        self.assertIn(f"task-{self.zone_task.pk}-1", event_ids)
+        self.assertIn(f"task-{self.zone_task.pk}-2", event_ids)
+        self.assertNotIn(f"task-{self.completed_task.pk}-0", event_ids)
+        self.assertNotIn(f"task-{self.other_task.pk}-0", event_ids)
+
+        custom_event = next(
+            event
+            for event in events
+            if event["id"] == f"task-{self.custom_task.pk}-0"
+        )
+        self.assertIn("2026-09-07T10:00:00", custom_event["start"])
+        self.assertIn("2026-09-07T11:00:00", custom_event["end"])
+        self.assertEqual(
+            custom_event["url"],
+            reverse("task_detail", args=[self.custom_task.pk]),
+        )
+
+    def test_tasks_are_in_mobile_calendar_and_agenda_views(self):
+        calendar_response = self.client.get(reverse("calendar"))
+        calendar_task_events = [
+            event
+            for _, events in calendar_response.context["agenda_by_day"]
+            for event in events
+            if event["type"] == "task"
+        ]
+        agenda_response = self.client.get(reverse("agenda"))
+        agenda_task_events = [
+            event
+            for event in agenda_response.context["events"]
+            if event["type"] == "task"
+        ]
+
+        self.assertEqual(len(calendar_task_events), 4)
+        self.assertEqual(len(agenda_task_events), 4)
+        self.assertContains(calendar_response, "Peinar zona Zona agenda")
+        self.assertContains(agenda_response, "Preparar informe")
+
+    def test_manager_agent_filter_also_filters_tasks(self):
+        self.client.force_login(self.manager)
+
+        events = self.client.get(
+            reverse("calendar_events"),
+            {"agents": self.other_agent.pk},
+        ).json()
+        event_ids = {event["id"] for event in events}
+
+        self.assertIn(f"task-{self.other_task.pk}-0", event_ids)
+        self.assertNotIn(f"task-{self.custom_task.pk}-0", event_ids)
+        self.assertNotIn(f"task-{self.zone_task.pk}-0", event_ids)
+
+    def test_tasks_block_all_overlapping_available_slots(self):
+        custom_response = self.client.get(
+            reverse("available_slots"),
+            {"date": "2026-09-07"},
+        )
+        zone_response = self.client.get(
+            reverse("available_slots"),
+            {"date": "2026-09-09"},
+        )
+
+        self.assertIn("10:00", custom_response.json()["occupied"])
+        self.assertIn("10:30", custom_response.json()["occupied"])
+        self.assertIn("14:00", zone_response.json()["occupied"])
+        self.assertIn("14:30", zone_response.json()["occupied"])
+        self.assertIn("15:00", zone_response.json()["occupied"])
+        self.assertIn("15:30", zone_response.json()["occupied"])
+        self.assertNotIn("16:00", zone_response.json()["occupied"])
+
+    def test_appointment_and_call_forms_reject_a_task_time(self):
+        appointment_form = AppointmentForm(
+            data={
+                "appointment_type": "valuation",
+                "date": "2026-09-07",
+                "time": "10:30",
+                "notes": "",
+            },
+            user=self.agent,
+        )
+        call_form = CallForm(
+            data={
+                "date": "2026-09-07",
+                "time": "10:30",
+                "notes": "",
+            },
+            user=self.agent,
+        )
+
+        self.assertFalse(appointment_form.is_valid())
+        self.assertFalse(call_form.is_valid())
+        self.assertIn("cita, llamada o tarea", appointment_form.non_field_errors()[0])
+        self.assertIn("cita, llamada o tarea", call_form.non_field_errors()[0])
 
 
 class SaleAppointmentFlowTests(TestCase):

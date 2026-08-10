@@ -69,7 +69,13 @@
                 <dl class="mt-4 space-y-4 text-sm">
                     <div class="flex items-center justify-between gap-3"><dt class="text-gray-500">Estado</dt><dd class="rounded-full {% if task.status == 'pending' %}bg-yellow-100 text-yellow-700{% elif task.status == 'in_progress' %}bg-blue-100 text-blue-700{% elif task.status == 'done' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %} px-3 py-1 text-xs font-semibold">{{ task.get_status_display }}</dd></div>
                     <div class="flex items-center justify-between gap-3"><dt class="text-gray-500">Prioridad</dt><dd class="rounded-full {% if task.priority == 'high' %}bg-red-100 text-red-700{% elif task.priority == 'medium' %}bg-yellow-100 text-yellow-700{% else %}bg-green-100 text-green-700{% endif %} px-3 py-1 text-xs font-semibold">{{ task.get_priority_display }}</dd></div>
-                    <div class="border-t border-gray-100 pt-4"><dt class="text-gray-500">Fecha límite</dt><dd class="mt-1 font-semibold text-gray-900">{% if task.due_date %}{{ task.due_date|date:"d/m/Y H:i" }}{% else %}Sin fecha límite{% endif %}</dd></div>
+                    {% if task.task_type == "zone_sweep" %}
+                        <div class="border-t border-gray-100 pt-4"><dt class="text-gray-500">Periodo</dt><dd class="mt-1 font-semibold text-gray-900">{% if task.schedule_date %}{{ task.schedule_date|date:"d/m/Y" }}{% if task.repeat_days > 1 %}–{{ task.schedule_end_date|date:"d/m/Y" }}{% endif %}{% else %}Sin fecha{% endif %}</dd></div>
+                        <div><dt class="text-gray-500">Tramo horario</dt><dd class="mt-1 font-semibold text-gray-900">{% if task.start_time %}{{ task.start_time|time:"H:i" }}–{{ task.end_time|time:"H:i" }}{% else %}Sin horario{% endif %}</dd></div>
+                        <div><dt class="text-gray-500">Repetición</dt><dd class="mt-1 font-semibold text-gray-900">{{ task.repeat_days|default:"—" }} día{{ task.repeat_days|pluralize }}</dd></div>
+                    {% else %}
+                        <div class="border-t border-gray-100 pt-4"><dt class="text-gray-500">Fecha límite</dt><dd class="mt-1 font-semibold text-gray-900">{% if task.due_date %}{{ task.due_date|date:"d/m/Y H:i" }}{% else %}Sin fecha límite{% endif %}</dd></div>
+                    {% endif %}
                     <div><dt class="text-gray-500">Creada</dt><dd class="mt-1 font-semibold text-gray-900">{{ task.created_at|date:"d/m/Y H:i" }}</dd></div>
                 </dl>
             </div>

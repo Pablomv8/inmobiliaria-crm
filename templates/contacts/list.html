@@ -59,8 +59,7 @@
                 <div class="mt-5 grid grid-cols-2 gap-3 text-sm">
                     <div class="rounded-xl bg-gray-50 p-3"><p class="text-xs text-gray-500">Teléfono</p><p class="mt-1 font-semibold text-gray-900">{{ contact.phone|default:"—" }}</p></div>
                     <div class="rounded-xl bg-gray-50 p-3"><p class="text-xs text-gray-500">Documento</p><p class="mt-1 font-semibold text-gray-900">{{ contact.identification_number|default:"—" }}</p></div>
-                    <div class="rounded-xl bg-gray-50 p-3"><p class="text-xs text-gray-500">Ciudad</p><p class="mt-1 font-semibold text-gray-900">{{ contact.city|default:"—" }}</p></div>
-                    <div class="rounded-xl bg-gray-50 p-3"><p class="text-xs text-gray-500">Responsable</p><p class="mt-1 truncate font-semibold text-gray-900">{{ contact.assigned_agent.get_full_name|default:contact.assigned_agent.username|default:"Sin asignar" }}</p></div>
+                    <div class="rounded-xl bg-gray-50 p-3"><p class="text-xs text-gray-500">Responsable</p><p class="mt-1 truncate font-semibold text-gray-900">{% if contact.assigned_agent %}{{ contact.assigned_agent.get_full_name|default:contact.assigned_agent.username }}{% else %}Sin asignar{% endif %}</p></div>
                 </div>
 
                 {% if contact.properties.all %}
@@ -89,7 +88,6 @@
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Contacto</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Tipo de contacto</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Teléfono y documento</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Ubicación</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Inmuebles</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Responsable</th>
                         <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">Acciones</th>
@@ -104,7 +102,6 @@
                             </td>
                             <td class="px-6 py-4"><span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {% if contact.contact_type == 'owner' %}bg-blue-100 text-blue-700{% else %}bg-green-100 text-green-700{% endif %}">{{ contact.get_contact_type_display }}</span></td>
                             <td class="px-6 py-4 text-sm"><p class="font-medium text-gray-800">{{ contact.phone|default:"—" }}</p><p class="mt-1 text-xs text-gray-500">{{ contact.identification_number|default:"Sin documento" }}</p></td>
-                            <td class="px-6 py-4 text-sm"><p class="font-medium text-gray-800">{{ contact.city|default:"—" }}</p>{% if contact.province %}<p class="mt-1 text-xs text-gray-500">{{ contact.province }}</p>{% endif %}</td>
                             <td class="px-6 py-4 text-sm">
                                 <div class="max-w-64 space-y-1">{% for property in contact.properties.all|slice:":2" %}<a href="{% url 'property_detail' property.id %}" class="block truncate text-gray-700 hover:text-indigo-700">{{ property.full_address }}</a>{% empty %}<span class="text-gray-400">Sin inmuebles</span>{% endfor %}</div>
                             </td>
@@ -115,7 +112,7 @@
                                         {% for agent in agents %}<option value="{{ agent.id }}" {% if contact.assigned_agent_id == agent.id %}selected{% endif %}>{{ agent.get_full_name|default:agent.username }}</option>{% endfor %}
                                     </select>
                                 {% else %}
-                                    <span class="text-sm font-medium text-gray-700">{{ contact.assigned_agent.get_full_name|default:contact.assigned_agent.username|default:"Sin asignar" }}</span>
+                                    <span class="text-sm font-medium text-gray-700">{% if contact.assigned_agent %}{{ contact.assigned_agent.get_full_name|default:contact.assigned_agent.username }}{% else %}Sin asignar{% endif %}</span>
                                 {% endif %}
                             </td>
                             <td class="px-6 py-4">

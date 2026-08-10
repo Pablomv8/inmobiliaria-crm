@@ -109,6 +109,25 @@ class ContactRelatedWorkflowTests(TestCase):
         self.assertContains(response, "Propietario")
         self.assertContains(response, "Comprador")
 
+    def test_manager_can_list_a_contact_without_assigned_agent(self):
+        manager = get_user_model().objects.create_user(
+            username="contact-list-manager",
+            password="test-password",
+            role="manager",
+        )
+        contact = Contact.objects.create(
+            name="Contacto sin responsable",
+            phone="600555333",
+            contact_type="owner",
+        )
+        self.client.force_login(manager)
+
+        response = self.client.get(reverse("contact_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, contact.name)
+        self.assertContains(response, "Sin asignar")
+
     def test_contact_list_can_filter_by_contact_type(self):
         owner = Contact.objects.create(
             name="Propietario filtrado",
@@ -169,3 +188,13 @@ class ContactRelatedWorkflowTests(TestCase):
             city_response.context["contacts"],
             [matching_contact],
         )
+
+    def test_contact_form_uses_the_grouped_recent_style(self):
+        response = self.client.get(reverse("contact_create"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "1. Información personal")
+        self.assertContains(response, "2. Datos de contacto")
+        self.assertContains(response, "3. Gestión comercial")
+        self.assertContains(response, "4. Información adicional")
+        self.assertContains(response, "rounded-3xl")

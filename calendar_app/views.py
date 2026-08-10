@@ -25,6 +25,12 @@ from datetime import date, timedelta
 from itertools import chain, groupby
 from users.models import User
 from orders.models import Order
+from tasks.models import Task
+from tasks.scheduling import (
+    ACTIVE_TASK_STATUSES,
+    occupied_task_slots,
+    task_occurrences,
+)
 from calendar_app.models import (
     Appointment,
     Call
@@ -57,6 +63,23 @@ def get_user_calls(user):
 
 def user_can_manage_all(user):
     return user.is_superuser or user.role in ["admin", "manager"]
+
+
+def build_task_events(tasks):
+    events = []
+    for task in tasks:
+        for occurrence_index, (start, end) in enumerate(task_occurrences(task)):
+            events.append({
+                "type": "task",
+                "date": start.date(),
+                "time": start.time(),
+                "end_time": end.time(),
+                "start": start,
+                "end": end,
+                "occurrence_index": occurrence_index,
+                "object": task,
+            })
+    return events
 
 
 def get_user_order_or_404(user, order_id):
@@ -940,6 +963,9 @@ def calendar_view(request):
     selected_agent_ids = request.GET.getlist("agents")
     calls = Call.objects.all()
     appointments = Appointment.objects.all()
+    tasks = Task.objects.filter(
+        status__in=ACTIVE_TASK_STATUSES,
+    ).select_related("zone", "assigned_to")
     calls = calls.exclude(status="cancelled")
     appointments = appointments.exclude(status="cancelled")
 
@@ -947,46 +973,12 @@ def calendar_view(request):
         if selected_agent_ids:
             calls = calls.filter(agent_id__in=selected_agent_ids)
             appointments = appointments.filter(agent_id__in=selected_agent_ids)
+            tasks = tasks.filter(assigned_to_id__in=selected_agent_ids)
     else:
         selected_agent_ids = [str(request.user.pk)]
         calls = calls.filter(agent=request.user)
         appointments = appointments.filter(agent=request.user)
-
-    today_calls = calls.filter(date=today)
-
-    for item in today_calls:
-        item.event_type = "call"
-
-    today_appointments = appointments.filter(date=today)
-
-    for item in today_appointments:
-        item.event_type = "appointment"
-
-    today_events = sorted(
-        chain(
-            today_calls,
-            today_appointments
-        ),
-        key=lambda x: x.time
-    )
-
-    tomorrow_calls = calls.filter(date=tomorrow)
-
-    for item in tomorrow_calls:
-        item.event_type = "call"
-
-    tomorrow_appointments = appointments.filter(date=tomorrow)
-
-    for item in tomorrow_appointments:
-        item.event_type = "appointment"
-
-    tomorrow_events = sorted(
-        chain(
-            tomorrow_calls,
-            tomorrow_appointments
-        ),
-        key=lambda x: x.time
-    )
+        tasks = tasks.filter(assigned_to=request.user)
     agents = User.objects.filter(
         role="agent"
     )
@@ -1016,10 +1008,13 @@ def calendar_view(request):
             "object": appt
         })
 
-    # 🔥 ORDEN ÚNICO (IMPORTANTE)
+    events.extend(build_task_events(tasks))
+
     events = sorted(events, key=lambda e: (e["date"], e["time"]))
 
-    # 🔥 GROUPBY CORRECTO
+    today_events = [event for event in events if event["date"] == today]
+    tomorrow_events = [event for event in events if event["date"] == tomorrow]
+
     agenda_by_day = [
         (day, list(group))
         for day, group in groupby(events, key=lambda e: e["date"])
@@ -1046,18 +1041,23 @@ def calendar_events(request):
     # BASE QUERYSET
     appointments = Appointment.objects.exclude(status="cancelled")
     calls = Call.objects.exclude(status="cancelled")
+    tasks = Task.objects.filter(
+        status__in=ACTIVE_TASK_STATUSES,
+    ).select_related("zone", "assigned_to")
 
     # SI NO ES MANAGER → solo sus eventos
     if not user_can_manage_all(request.user):
 
         appointments = appointments.filter(agent=request.user)
         calls = calls.filter(agent=request.user)
+        tasks = tasks.filter(assigned_to=request.user)
 
     # SI ES MANAGER Y HAY FILTRO DE AGENTES
     elif agent_ids:
 
         appointments = appointments.filter(agent_id__in=agent_ids)
         calls = calls.filter(agent_id__in=agent_ids)
+        tasks = tasks.filter(assigned_to_id__in=agent_ids)
 
 
     events = []
@@ -1103,6 +1103,21 @@ def calendar_events(request):
             )
         })
 
+    for task_event in build_task_events(tasks):
+        task = task_event["object"]
+        events.append({
+            "id": f"task-{task.id}-{task_event['occurrence_index']}",
+            "title": (
+                f"📍 {task.title}"
+                if task.task_type == "zone_sweep"
+                else f"✅ Tarea: {task.title}"
+            ),
+            "start": task_event["start"].isoformat(),
+            "end": task_event["end"].isoformat(),
+            "color": "#ea580c" if task.task_type == "zone_sweep" else "#7c3aed",
+            "url": reverse("task_detail", args=[task.id]),
+        })
+
     return JsonResponse(
         events,
         safe=False
@@ -1118,6 +1133,11 @@ def agenda(request):
     calls = Call.objects.filter(
         agent=request.user
     ).exclude(status="cancelled")
+
+    tasks = Task.objects.filter(
+        assigned_to=request.user,
+        status__in=ACTIVE_TASK_STATUSES,
+    ).select_related("zone")
 
     events = []
 
@@ -1138,6 +1158,8 @@ def agenda(request):
             "time": call.time,
             "object": call,
         })
+
+    events.extend(build_task_events(tasks))
 
     events.sort(
         key=lambda x: (
@@ -1184,14 +1206,17 @@ def available_slots(request):
         flat=True
     )
 
-    occupied = [
+    occupied = {
         t.strftime("%H:%M")
         for t in chain(
             appointments,
             calls
         )
-    ]
+    }
+
+    if selected_date:
+        occupied.update(occupied_task_slots(selected_agent, selected_date))
 
     return JsonResponse({
-        "occupied": occupied
+        "occupied": sorted(occupied)
     })

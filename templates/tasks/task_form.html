@@ -51,13 +51,44 @@
                     {{ form.description }}
                     {% if form.description.errors %}<p class="mt-1 text-sm text-red-600">{{ form.description.errors.0 }}</p>{% endif %}
                 </div>
+                <div>
+                    <label for="{{ form.due_date.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Fecha límite</label>
+                    {{ form.due_date }}
+                    {% if form.due_date.errors %}<p class="mt-1 text-sm text-red-600">{{ form.due_date.errors.0 }}</p>{% endif %}
+                    <p class="mt-2 text-xs text-gray-500">La tarea aparecerá durante una hora en la agenda, comenzando en este momento.</p>
+                </div>
             </div>
 
-            <div id="zone-task-fields" class="mt-7 hidden">
-                <label for="{{ form.zone.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Zona que se debe peinar</label>
-                {{ form.zone }}
-                {% if form.zone.errors %}<p class="mt-1 text-sm text-red-600">{{ form.zone.errors.0 }}</p>{% endif %}
-                <p class="mt-2 text-xs text-gray-500">El nombre de la tarea se generará automáticamente con la zona elegida.</p>
+            <div id="zone-task-fields" class="mt-7 hidden space-y-5">
+                <div>
+                    <label for="{{ form.zone.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Zona que se debe peinar</label>
+                    {{ form.zone }}
+                    {% if form.zone.errors %}<p class="mt-1 text-sm text-red-600">{{ form.zone.errors.0 }}</p>{% endif %}
+                    <p class="mt-2 text-xs text-gray-500">El nombre de la tarea se generará automáticamente con la zona elegida.</p>
+                </div>
+                <div class="grid gap-5 md:grid-cols-2">
+                    <div class="md:col-span-2">
+                        <label for="{{ form.schedule_date.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Fecha de inicio</label>
+                        {{ form.schedule_date }}
+                        {% if form.schedule_date.errors %}<p class="mt-1 text-sm text-red-600">{{ form.schedule_date.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.start_time.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Hora de inicio</label>
+                        {{ form.start_time }}
+                        {% if form.start_time.errors %}<p class="mt-1 text-sm text-red-600">{{ form.start_time.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.end_time.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Hora de fin</label>
+                        {{ form.end_time }}
+                        {% if form.end_time.errors %}<p class="mt-1 text-sm text-red-600">{{ form.end_time.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="{{ form.repeat_days.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">¿Durante cuántos días se repite?</label>
+                        {{ form.repeat_days }}
+                        {% if form.repeat_days.errors %}<p class="mt-1 text-sm text-red-600">{{ form.repeat_days.errors.0 }}</p>{% endif %}
+                        <p class="mt-2 text-xs text-gray-500">Se creará un bloque en la agenda por cada día consecutivo, incluida la fecha de inicio.</p>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -83,11 +114,6 @@
                     {{ form.status }}
                     {% if form.status.errors %}<p class="mt-1 text-sm text-red-600">{{ form.status.errors.0 }}</p>{% endif %}
                 </div>
-                <div class="md:col-span-2">
-                    <label for="{{ form.due_date.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Fecha límite <span class="font-normal text-gray-400">(opcional)</span></label>
-                    {{ form.due_date }}
-                    {% if form.due_date.errors %}<p class="mt-1 text-sm text-red-600">{{ form.due_date.errors.0 }}</p>{% endif %}
-                </div>
             </div>
         </section>
 
@@ -106,7 +132,12 @@
     const zoneFields = document.getElementById('zone-task-fields');
     const titleInput = document.getElementById('id_title');
     const descriptionInput = document.getElementById('id_description');
+    const dueDateInput = document.getElementById('id_due_date');
     const zoneInput = document.getElementById('id_zone');
+    const scheduleDateInput = document.getElementById('id_schedule_date');
+    const startTimeInput = document.getElementById('id_start_time');
+    const endTimeInput = document.getElementById('id_end_time');
+    const repeatDaysInput = document.getElementById('id_repeat_days');
 
     function updateTaskFields() {
         const selected = document.querySelector('input[name="task_type"]:checked');
@@ -116,7 +147,12 @@
         zoneFields.classList.toggle('hidden', !isZoneSweep);
         titleInput.required = !isZoneSweep;
         descriptionInput.required = !isZoneSweep;
+        dueDateInput.required = !isZoneSweep;
         zoneInput.required = isZoneSweep;
+        scheduleDateInput.required = isZoneSweep;
+        startTimeInput.required = isZoneSweep;
+        endTimeInput.required = isZoneSweep;
+        repeatDaysInput.required = isZoneSweep;
 
         document.querySelectorAll('.task-type-card').forEach(card => {
             const radio = card.querySelector('input[type="radio"]');

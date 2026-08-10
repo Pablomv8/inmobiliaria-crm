@@ -4,6 +4,11 @@ from django.contrib.auth import get_user_model
 from properties.models import Zone
 
 from .models import Task
+from .scheduling import (
+    ACTIVE_TASK_STATUSES,
+    build_occurrences,
+    schedule_has_conflict,
+)
 
 
 INPUT_CLASS = (
@@ -24,6 +29,10 @@ class TaskForm(forms.ModelForm):
             "assigned_to",
             "priority",
             "due_date",
+            "schedule_date",
+            "start_time",
+            "end_time",
+            "repeat_days",
             "status",
         ]
         labels = {
@@ -34,6 +43,10 @@ class TaskForm(forms.ModelForm):
             "assigned_to": "Persona asignada",
             "priority": "Prioridad",
             "due_date": "Fecha límite",
+            "schedule_date": "Fecha de inicio",
+            "start_time": "Hora de inicio",
+            "end_time": "Hora de fin",
+            "repeat_days": "Número de días consecutivos",
             "status": "Estado",
         }
         widgets = {
@@ -54,6 +67,16 @@ class TaskForm(forms.ModelForm):
                 format="%Y-%m-%dT%H:%M",
                 attrs={"class": INPUT_CLASS, "type": "datetime-local"},
             ),
+            "schedule_date": forms.DateInput(
+                attrs={"class": INPUT_CLASS, "type": "date"},
+            ),
+            "start_time": forms.TimeInput(
+                attrs={"class": INPUT_CLASS, "type": "time", "step": "1800"},
+            ),
+            "end_time": forms.TimeInput(
+                attrs={"class": INPUT_CLASS, "type": "time", "step": "1800"},
+            ),
+            "repeat_days": forms.Select(attrs={"class": INPUT_CLASS}),
             "status": forms.Select(attrs={"class": INPUT_CLASS}),
         }
 
@@ -75,6 +98,17 @@ class TaskForm(forms.ModelForm):
         )
         self.fields["zone"].queryset = Zone.objects.all().order_by("name")
         self.fields["due_date"].input_formats = ["%Y-%m-%dT%H:%M"]
+        self.fields["schedule_date"].required = False
+        self.fields["start_time"].required = False
+        self.fields["end_time"].required = False
+        self.fields["repeat_days"].required = False
+        self.fields["repeat_days"].widget.choices = [
+            ("", "Selecciona la duración"),
+            *[
+                (days, "1 día" if days == 1 else f"{days} días")
+                for days in range(1, 31)
+            ],
+        ]
 
     def clean(self):
         cleaned_data = super().clean()
@@ -83,9 +117,34 @@ class TaskForm(forms.ModelForm):
 
         if task_type == "custom":
             cleaned_data["zone"] = None
+            cleaned_data["schedule_date"] = None
+            cleaned_data["start_time"] = None
+            cleaned_data["end_time"] = None
+            cleaned_data["repeat_days"] = None
         elif task_type == "zone_sweep":
             if zone is not None:
                 cleaned_data["title"] = f"Peinar zona {zone.name}"
             cleaned_data["description"] = ""
+            cleaned_data["due_date"] = None
+
+        occurrences = build_occurrences(
+            task_type,
+            due_date=cleaned_data.get("due_date"),
+            schedule_date=cleaned_data.get("schedule_date"),
+            start_time=cleaned_data.get("start_time"),
+            end_time=cleaned_data.get("end_time"),
+            repeat_days=cleaned_data.get("repeat_days"),
+        )
+        if (
+            cleaned_data.get("status") in ACTIVE_TASK_STATUSES
+            and schedule_has_conflict(
+                cleaned_data.get("assigned_to"),
+                occurrences,
+                exclude_task_id=self.instance.pk,
+            )
+        ):
+            raise forms.ValidationError(
+                "La persona asignada ya tiene otra cita, llamada o tarea en ese tramo horario."
+            )
 
         return cleaned_data

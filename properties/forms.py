@@ -1,5 +1,5 @@
 from django import forms
-from .models import Property
+from .models import Property, Zone
 
 
 INPUT_CLASS = """
@@ -28,6 +28,11 @@ SELECT_CLASS = INPUT_CLASS
 
 class PropertyForm(forms.ModelForm):
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["zone"].queryset = Zone.objects.order_by("name")
+        self.fields["zone"].empty_label = "Selecciona una zona"
+
     class Meta:
         model = Property
 
@@ -47,6 +52,29 @@ class PropertyForm(forms.ModelForm):
             'description',
             'status',
         ]
+
+        labels = {
+            "street": "Calle",
+            "number": "Número",
+            "postal_code": "Código postal",
+            "city": "Ciudad",
+            "province": "Provincia",
+            "zone": "Zona",
+            "bedrooms": "Habitaciones",
+            "bathrooms": "Baños",
+            "area": "Superficie útil",
+            "built_area": "Superficie construida",
+            "property_type": "Tipo de inmueble",
+            "image": "Imagen principal",
+            "description": "Descripción",
+            "status": "Estado",
+        }
+
+        help_texts = {
+            "zone": "Área comercial en la que se encuentra el inmueble.",
+            "area": "Superficie útil expresada en metros cuadrados.",
+            "built_area": "Superficie construida expresada en metros cuadrados.",
+        }
 
         widgets = {
 
@@ -116,7 +144,14 @@ class PropertyForm(forms.ModelForm):
 
             # IMAGE
             'image': forms.ClearableFileInput(attrs={
-                'class': 'w-full text-sm'
+                'class': (
+                    'block w-full rounded-xl border border-gray-300 bg-white '
+                    'px-4 py-3 text-sm text-gray-700 shadow-sm '
+                    'file:mr-4 file:rounded-lg file:border-0 file:bg-gray-100 '
+                    'file:px-4 file:py-2 file:font-semibold file:text-gray-700 '
+                    'hover:file:bg-gray-200'
+                ),
+                'accept': 'image/*',
             }),
 
             # DESCRIPTION

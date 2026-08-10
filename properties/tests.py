@@ -5,7 +5,7 @@ from django.urls import reverse
 from contacts.models import Contact
 
 from .forms import OwnerContactForm, PropertyForm
-from .models import Property
+from .models import Property, Zone
 
 
 class PropertyModelTests(TestCase):
@@ -36,6 +36,22 @@ class PropertyModelTests(TestCase):
         self.assertNotIn("title", form.fields)
         self.assertNotIn("price", form.fields)
 
+    def test_property_form_exposes_zone_ordered_by_name(self):
+        second_zone = Zone.objects.create(name="Zona Sur")
+        first_zone = Zone.objects.create(name="Zona Centro")
+
+        form = PropertyForm()
+
+        self.assertIn("zone", form.fields)
+        self.assertEqual(
+            list(form.fields["zone"].queryset),
+            [first_zone, second_zone],
+        )
+        self.assertEqual(
+            form.fields["zone"].empty_label,
+            "Selecciona una zona",
+        )
+
     def test_property_form_accepts_previous_and_new_types(self):
         for property_type in ("flat", "local", "solar", "terreno"):
             with self.subTest(property_type=property_type):
@@ -48,6 +64,68 @@ class PropertyModelTests(TestCase):
                 })
 
                 self.assertTrue(form.is_valid(), form.errors)
+
+
+class PropertyFormViewTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="property-form-user",
+            password="test-password",
+            role="agent",
+        )
+        self.first_zone = Zone.objects.create(name="Centro inmueble")
+        self.second_zone = Zone.objects.create(name="Norte inmueble")
+        self.property = Property.objects.create(
+            street="Calle Antigua",
+            number="5",
+            city="Madrid",
+            property_type="flat",
+            zone=self.first_zone,
+        )
+        self.client.force_login(self.user)
+
+    def test_create_form_displays_and_saves_zone(self):
+        form_response = self.client.get(reverse("property_create"))
+
+        self.assertEqual(form_response.status_code, 200)
+        self.assertContains(form_response, "1. Ubicación y clasificación")
+        self.assertContains(form_response, 'name="zone"', html=False)
+
+        response = self.client.post(
+            reverse("property_create"),
+            {
+                "street": "Calle Nueva",
+                "number": "12",
+                "city": "Madrid",
+                "zone": self.second_zone.pk,
+                "property_type": "local",
+                "status": "prospect",
+            },
+        )
+
+        created_property = Property.objects.get(street="Calle Nueva")
+        self.assertRedirects(response, reverse("properties"))
+        self.assertEqual(created_property.zone, self.second_zone)
+
+    def test_edit_form_changes_property_zone(self):
+        response = self.client.post(
+            reverse("property_update", args=[self.property.pk]),
+            {
+                "street": self.property.street,
+                "number": self.property.number,
+                "city": self.property.city,
+                "zone": self.second_zone.pk,
+                "property_type": self.property.property_type,
+                "status": self.property.status,
+            },
+        )
+
+        self.property.refresh_from_db()
+        self.assertRedirects(
+            response,
+            reverse("property_detail", args=[self.property.pk]),
+        )
+        self.assertEqual(self.property.zone, self.second_zone)
 
 
 class OwnerContactFormTests(TestCase):
