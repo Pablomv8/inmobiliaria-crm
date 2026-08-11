@@ -1,11 +1,14 @@
 from django.contrib.auth import get_user_model
-from datetime import datetime
+from datetime import date, datetime, time
 
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
 from properties.models import Zone
+from properties.models import Property
+from contacts.models import Contact
+from calendar_app.models import Appointment
 
 from .forms import TaskForm
 from .models import Task
@@ -225,6 +228,44 @@ class TaskTypeFlowTests(TestCase):
             "La persona asignada ya tiene otra cita, llamada o tarea en ese tramo horario.",
         )
         self.assertEqual(Task.objects.count(), 1)
+
+    def test_task_form_respects_the_full_appointment_interval(self):
+        property_obj = Property.objects.create(
+            street="Calle Intervalo",
+            number="3",
+            city="Madrid",
+            property_type="flat",
+        )
+        contact = Contact.objects.create(
+            name="Contacto intervalo",
+            phone="600555222",
+            contact_type="buyer",
+        )
+        Appointment.objects.create(
+            related_property=property_obj,
+            contact=contact,
+            agent=self.agent,
+            appointment_type="valuation",
+            date=date(2026, 8, 29),
+            time=time(10, 0),
+            end_time=time(12, 0),
+        )
+
+        form = TaskForm(data={
+            "task_type": "custom",
+            "title": "Preparar visita",
+            "description": "No debe solaparse con la cita larga.",
+            "assigned_to": self.agent.pk,
+            "priority": "medium",
+            "status": "pending",
+            "due_date": "2026-08-29T11:30",
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "otra cita, llamada o tarea",
+            form.non_field_errors()[0],
+        )
 
     def test_manager_can_filter_tasks_by_type_and_zone(self):
         custom_task = Task.objects.create(

@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 
 # Create your models here.
 from django.db import models
@@ -54,6 +55,10 @@ class Appointment(models.Model):
     date = models.DateField()
 
     time = models.TimeField()
+
+    end_time = models.TimeField(
+        verbose_name="Hora de fin",
+    )
 
     notes = models.TextField(
         blank=True
@@ -129,6 +134,22 @@ class Appointment(models.Model):
         related_name="resulting_appointments",
         verbose_name="Cita de aceptación origen",
     )
+
+    source_counteroffer = models.ForeignKey(
+        "calendar_app.CounterOffer",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="response_appointments",
+        verbose_name="Contraoferta a la que responde",
+    )
+
+    def clean(self):
+        super().clean()
+        if self.time and self.end_time and self.end_time <= self.time:
+            raise ValidationError({
+                "end_time": "La hora de fin debe ser posterior a la hora de inicio.",
+            })
 
     def __str__(self):
         return (

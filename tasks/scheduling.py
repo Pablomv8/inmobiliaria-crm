@@ -87,7 +87,8 @@ def schedule_has_conflict(assigned_to, occurrences, exclude_task_id=None):
     occupied_intervals = []
     for appointment in appointments:
         start = _aware_datetime(appointment.date, appointment.time)
-        occupied_intervals.append((start, start + timedelta(minutes=30)))
+        end = _aware_datetime(appointment.date, appointment.end_time)
+        occupied_intervals.append((start, end))
     for call in calls:
         start = _aware_datetime(call.date, call.time)
         occupied_intervals.append((start, start + timedelta(minutes=30)))

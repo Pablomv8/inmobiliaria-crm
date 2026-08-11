@@ -55,6 +55,7 @@ class AppointmentResultFlowTests(TestCase):
             appointment_type="acquisition",
             date=date(2026, 8, 10),
             time=time(10, 0),
+            end_time=time(11, 0),
             news=self.news,
         )
         self.client.force_login(self.user)
@@ -75,6 +76,7 @@ class AppointmentResultFlowTests(TestCase):
             {
                 "date": "2026-08-11",
                 "time": "11:00",
+                "end_time": "12:00",
                 "notes": "Primera reunión con la propiedad.",
             },
         )
@@ -184,6 +186,125 @@ class AppointmentResultFlowTests(TestCase):
         self.assertEqual(self.property.status, "active")
         self.news.refresh_from_db()
         self.assertEqual(self.news.status, "closed")
+
+
+class AppointmentEditTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.agent = user_model.objects.create_user(
+            username="edit-appointment-agent",
+            password="test-password",
+            role="agent",
+        )
+        self.new_agent = user_model.objects.create_user(
+            username="edit-appointment-new-agent",
+            password="test-password",
+            role="agent",
+        )
+        self.property = Property.objects.create(
+            street="Calle Edición",
+            number="4",
+            city="Madrid",
+            property_type="office",
+        )
+        self.contact = Contact.objects.create(
+            name="Contacto edición",
+            phone="600444555",
+            contact_type="buyer",
+            assigned_agent=self.agent,
+        )
+        self.appointment = Appointment.objects.create(
+            related_property=self.property,
+            contact=self.contact,
+            agent=self.agent,
+            appointment_type="valuation",
+            date=date(2026, 10, 5),
+            time=time(10, 0),
+            end_time=time(11, 0),
+            notes="Notas iniciales.",
+        )
+        self.client.force_login(self.agent)
+
+    def test_detail_and_edit_form_allow_editing_the_appointment(self):
+        detail_response = self.client.get(
+            reverse("appointment_detail", args=[self.appointment.pk])
+        )
+        form_response = self.client.get(
+            reverse("appointment_update", args=[self.appointment.pk])
+        )
+
+        self.assertContains(detail_response, "Editar cita")
+        self.assertEqual(form_response.status_code, 200)
+        self.assertContains(form_response, "Agente asignado")
+        self.assertContains(form_response, 'name="agent"', html=False)
+        self.assertContains(form_response, self.new_agent.username)
+        self.assertNotContains(form_response, 'name="appointment_type"', html=False)
+
+    def test_owner_can_reassign_and_reschedule_the_appointment(self):
+        response = self.client.post(
+            reverse("appointment_update", args=[self.appointment.pk]),
+            {
+                "agent": self.new_agent.pk,
+                "date": "2026-10-06",
+                "time": "11:30",
+                "end_time": "12:30",
+                "notes": "La atenderá el nuevo responsable.",
+            },
+        )
+
+        self.appointment.refresh_from_db()
+        self.assertRedirects(
+            response,
+            f"{reverse('calendar')}?agents={self.new_agent.pk}",
+        )
+        self.assertEqual(self.appointment.agent, self.new_agent)
+        self.assertEqual(self.appointment.date, date(2026, 10, 6))
+        self.assertEqual(self.appointment.time, time(11, 30))
+        self.assertEqual(self.appointment.end_time, time(12, 30))
+        self.assertEqual(
+            self.appointment.notes,
+            "La atenderá el nuevo responsable.",
+        )
+
+    def test_reassignment_rejects_the_new_agents_occupied_time(self):
+        Appointment.objects.create(
+            related_property=self.property,
+            contact=self.contact,
+            agent=self.new_agent,
+            appointment_type="sale",
+            date=date(2026, 10, 6),
+            time=time(11, 30),
+            end_time=time(12, 30),
+        )
+
+        response = self.client.post(
+            reverse("appointment_update", args=[self.appointment.pk]),
+            {
+                "agent": self.new_agent.pk,
+                "date": "2026-10-06",
+                "time": "11:30",
+                "end_time": "12:30",
+                "notes": "Horario ocupado.",
+            },
+        )
+
+        self.appointment.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "El agente seleccionado ya tiene otra cita, llamada o tarea en ese intervalo.",
+        )
+        self.assertEqual(self.appointment.agent, self.agent)
+        self.assertEqual(self.appointment.date, date(2026, 10, 5))
+
+    def test_an_agent_cannot_edit_another_agents_appointment(self):
+        self.client.force_login(self.new_agent)
+
+        response = self.client.get(
+            reverse("appointment_update", args=[self.appointment.pk])
+        )
+
+        self.assertEqual(response.status_code, 404)
 
 
 class TaskCalendarIntegrationTests(TestCase):
@@ -321,6 +442,7 @@ class TaskCalendarIntegrationTests(TestCase):
                 "appointment_type": "valuation",
                 "date": "2026-09-07",
                 "time": "10:30",
+                "end_time": "11:30",
                 "notes": "",
             },
             user=self.agent,
@@ -395,6 +517,7 @@ class SaleAppointmentFlowTests(TestCase):
                 "listing": self.listing.pk,
                 "date": "2026-08-22",
                 "time": "12:00",
+                "end_time": "13:00",
                 "notes": "Visita comercial.",
             },
         )
@@ -408,6 +531,7 @@ class SaleAppointmentFlowTests(TestCase):
             appointment_type="proposal",
             date=date(2026, 8, 24),
             time=time(13, 0),
+            end_time=time(14, 0),
             listing=self.listing,
             order=self.order,
             status="completed",
@@ -467,6 +591,7 @@ class SaleAppointmentFlowTests(TestCase):
             {
                 "date": "2026-08-24",
                 "time": "13:00",
+                "end_time": "14:00",
                 "notes": "Reunión para concretar la oferta.",
             },
         )
@@ -504,6 +629,7 @@ class SaleAppointmentFlowTests(TestCase):
             appointment_type="proposal",
             date=date(2026, 8, 24),
             time=time(13, 0),
+            end_time=time(14, 0),
             listing=self.listing,
             order=self.order,
             source_sale_appointment=sale_appointment,
@@ -577,6 +703,7 @@ class SaleAppointmentFlowTests(TestCase):
             {
                 "date": "2026-08-26",
                 "time": "11:00",
+                "end_time": "12:00",
                 "notes": "Reunión con la propietaria.",
             },
         )
@@ -603,7 +730,7 @@ class SaleAppointmentFlowTests(TestCase):
         proposal = self.create_registered_proposal()
         self.client.post(
             reverse("create_acceptance_appointment", args=[proposal.pk]),
-            {"date": "2026-08-26", "time": "11:00", "notes": "Aceptación."},
+            {"date": "2026-08-26", "time": "11:00", "end_time": "12:00", "notes": "Aceptación."},
         )
         acceptance = Appointment.objects.get(
             appointment_type="proposal_acceptance"
@@ -618,14 +745,14 @@ class SaleAppointmentFlowTests(TestCase):
                 "create_post_acceptance_appointment",
                 args=[acceptance.pk, "contract"],
             ),
-            {"date": "2026-08-27", "time": "12:00", "notes": "Contrato."},
+            {"date": "2026-08-27", "time": "12:00", "end_time": "13:00", "notes": "Contrato."},
         )
         signing_response = self.client.post(
             reverse(
                 "create_post_acceptance_appointment",
                 args=[acceptance.pk, "signing"],
             ),
-            {"date": "2026-08-28", "time": "13:00", "notes": "Notaría."},
+            {"date": "2026-08-28", "time": "13:00", "end_time": "14:00", "notes": "Notaría."},
         )
 
         contract = Appointment.objects.get(appointment_type="contract")
@@ -660,7 +787,7 @@ class SaleAppointmentFlowTests(TestCase):
         proposal = self.create_registered_proposal()
         self.client.post(
             reverse("create_acceptance_appointment", args=[proposal.pk]),
-            {"date": "2026-08-26", "time": "11:00", "notes": "Aceptación."},
+            {"date": "2026-08-26", "time": "11:00", "end_time": "12:00", "notes": "Aceptación."},
         )
         acceptance = Appointment.objects.get(
             appointment_type="proposal_acceptance"
@@ -712,6 +839,91 @@ class SaleAppointmentFlowTests(TestCase):
             listing_response,
             reverse("counteroffer_detail", args=[counteroffer.pk]),
         )
+
+        counteroffer_response = self.client.get(
+            reverse("counteroffer_detail", args=[counteroffer.pk])
+        )
+        self.assertContains(counteroffer_response, "Preparar nueva oferta")
+        self.assertContains(
+            counteroffer_response,
+            reverse(
+                "create_counteroffer_response_appointment",
+                args=[counteroffer.pk],
+            ),
+        )
+
+        response = self.client.post(
+            reverse(
+                "create_counteroffer_response_appointment",
+                args=[counteroffer.pk],
+            ),
+            {
+                "date": "2026-08-27",
+                "time": "14:00",
+                "end_time": "15:00",
+                "notes": "Revisión de la oferta tras la contraoferta.",
+            },
+        )
+        response_appointment = Appointment.objects.get(
+            source_counteroffer=counteroffer,
+        )
+        self.assertRedirects(
+            response,
+            reverse("appointment_detail", args=[response_appointment.pk]),
+        )
+        self.assertEqual(response_appointment.appointment_type, "proposal")
+        self.assertEqual(response_appointment.order, self.order)
+        self.assertEqual(response_appointment.listing, self.listing)
+        self.assertEqual(response_appointment.contact, self.buyer)
+        self.order.refresh_from_db()
+        self.listing.refresh_from_db()
+        self.assertEqual(self.order.status, "proposal_appointment")
+        self.assertEqual(self.listing.workflow_status, "proposal_appointment")
+
+        self.client.post(
+            reverse("appointment_add_result", args=[response_appointment.pk]),
+            {"result_comment": "El comprador mejora su oferta."},
+        )
+        response = self.client.post(
+            reverse("create_purchase_proposal", args=[response_appointment.pk]),
+            {
+                "offered_price": "245000",
+                "deposit_amount": "6000",
+                "proposal_date": "2026-08-27",
+                "end_date": "2026-09-01",
+            },
+        )
+        new_proposal = ProposalAppointment.objects.exclude(pk=proposal.pk).get()
+        self.assertRedirects(
+            response,
+            reverse("proposal_appointment_detail", args=[new_proposal.pk]),
+        )
+        self.assertEqual(
+            new_proposal.source_sale_appointment,
+            response_appointment,
+        )
+        self.assertEqual(
+            new_proposal.source_sale_appointment.source_counteroffer,
+            counteroffer,
+        )
+        self.assertEqual(str(new_proposal.offered_price), "245000.00")
+        self.order.refresh_from_db()
+        self.listing.refresh_from_db()
+        self.assertEqual(self.order.status, "proposal")
+        self.assertEqual(self.listing.workflow_status, "proposal")
+
+        counteroffer_response = self.client.get(
+            reverse("counteroffer_detail", args=[counteroffer.pk])
+        )
+        listing_response = self.client.get(
+            reverse("listing_detail", args=[self.listing.pk])
+        )
+        self.assertContains(counteroffer_response, "Ver nueva oferta")
+        self.assertContains(
+            counteroffer_response,
+            reverse("proposal_appointment_detail", args=[new_proposal.pk]),
+        )
+        self.assertContains(listing_response, "Respuesta a la contraoferta")
 
 
 class CallFlowTests(TestCase):
@@ -796,6 +1008,7 @@ class CallFlowTests(TestCase):
             appointment_type="valuation",
             date=date(2026, 9, 2),
             time=time(10, 0),
+            end_time=time(11, 0),
             status="scheduled",
         )
         cancelled_appointment = Appointment.objects.create(
@@ -805,6 +1018,7 @@ class CallFlowTests(TestCase):
             appointment_type="valuation",
             date=date(2026, 9, 2),
             time=time(11, 0),
+            end_time=time(12, 0),
             status="cancelled",
         )
 
@@ -877,6 +1091,7 @@ class AvailableSlotsTests(TestCase):
             appointment_type="acquisition",
             date=date(2026, 8, 25),
             time=time(10, 30),
+            end_time=time(12, 0),
         )
 
     def test_manager_sees_assigned_agents_acquisition_as_occupied(self):
@@ -887,7 +1102,104 @@ class AvailableSlotsTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn("10:30", response.json()["occupied"])
+        payload = response.json()
+        self.assertEqual(payload["occupied"], ["10:30", "11:00", "11:30"])
+        self.assertEqual(
+            payload["intervals"],
+            [{
+                "start": "10:30",
+                "end": "12:00",
+                "type": "appointment",
+                "label": "Cita de Adquisición",
+            }],
+        )
+
+    def test_appointment_form_rejects_overlap_and_accepts_exact_boundary(self):
+        overlapping_form = AppointmentForm(
+            data={
+                "appointment_type": "valuation",
+                "date": "2026-08-25",
+                "time": "11:30",
+                "end_time": "12:30",
+                "notes": "Se solapa.",
+            },
+            user=self.agent,
+        )
+        boundary_form = AppointmentForm(
+            data={
+                "appointment_type": "valuation",
+                "date": "2026-08-25",
+                "time": "12:00",
+                "end_time": "13:00",
+                "notes": "Empieza al terminar la anterior.",
+            },
+            user=self.agent,
+        )
+
+        self.assertFalse(overlapping_form.is_valid())
+        self.assertIn("se solapa", overlapping_form.non_field_errors()[0])
+        self.assertTrue(boundary_form.is_valid(), boundary_form.errors)
+
+    def test_appointment_form_rejects_end_before_start(self):
+        form = AppointmentForm(
+            data={
+                "appointment_type": "valuation",
+                "date": "2026-08-26",
+                "time": "12:00",
+                "end_time": "11:00",
+                "notes": "Intervalo incorrecto.",
+            },
+            user=self.agent,
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "posterior a la hora de inicio",
+            form.errors["end_time"][0],
+        )
+
+    def test_completed_and_cancelled_events_leave_the_interval_free(self):
+        existing = Appointment.objects.first()
+        Appointment.objects.create(
+            related_property=existing.related_property,
+            contact=existing.contact,
+            agent=self.agent,
+            appointment_type="valuation",
+            date=date(2026, 8, 26),
+            time=time(9, 0),
+            end_time=time(10, 0),
+            status="completed",
+        )
+        Appointment.objects.create(
+            related_property=existing.related_property,
+            contact=existing.contact,
+            agent=self.agent,
+            appointment_type="valuation",
+            date=date(2026, 8, 26),
+            time=time(10, 0),
+            end_time=time(11, 0),
+            status="cancelled",
+        )
+        self.client.force_login(self.agent)
+
+        response = self.client.get(
+            reverse("available_slots"),
+            {"date": "2026-08-26", "agent_id": self.agent.pk},
+        )
+        free_form = AppointmentForm(
+            data={
+                "appointment_type": "valuation",
+                "date": "2026-08-26",
+                "time": "09:30",
+                "end_time": "10:30",
+                "notes": "Coincide con eventos ya inactivos.",
+            },
+            user=self.agent,
+        )
+
+        self.assertEqual(response.json()["occupied"], [])
+        self.assertEqual(response.json()["intervals"], [])
+        self.assertTrue(free_form.is_valid(), free_form.errors)
 
     def test_agent_can_inspect_another_agents_calendar_and_slots(self):
         another_agent = get_user_model().objects.create_user(
@@ -908,6 +1220,12 @@ class AvailableSlotsTests(TestCase):
         }
         appointment = Appointment.objects.get(agent=self.agent)
         self.assertIn(f"appointment-{appointment.pk}", calendar_event_ids)
+        calendar_event = next(
+            event
+            for event in self.client.get(reverse("calendar_events")).json()
+            if event["id"] == f"appointment-{appointment.pk}"
+        )
+        self.assertEqual(calendar_event["end"], "2026-08-25T12:00:00")
 
         agenda_objects = {
             (event["type"], event["object"].pk)
@@ -923,6 +1241,7 @@ class AvailableSlotsTests(TestCase):
             appointment_type="proposal",
             date=date(2026, 8, 25),
             time=time(11, 0),
+            end_time=time(11, 30),
             status="scheduled",
         )
         self.client.force_login(self.manager)

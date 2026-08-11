@@ -50,6 +50,11 @@ urlpatterns = [
         name="appointment_detail"
     ),
     path(
+        "appointments/<int:pk>/edit/",
+        views.appointment_update,
+        name="appointment_update",
+    ),
+    path(
         "appointments/<int:pk>/result/",
         views.add_appointment_result,
         name="appointment_add_result"
@@ -98,6 +103,11 @@ urlpatterns = [
         "counteroffers/<int:pk>/",
         views.counteroffer_detail,
         name="counteroffer_detail",
+    ),
+    path(
+        "counteroffers/<int:pk>/proposal-appointment/create/",
+        views.create_counteroffer_response_appointment,
+        name="create_counteroffer_response_appointment",
     ),
     path(
         "available-slots/",

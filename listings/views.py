@@ -147,7 +147,7 @@ def listing_detail(request, listing_id):
         "buyer",
         "agent",
         "order",
-        "source_sale_appointment",
+        "source_sale_appointment__source_counteroffer",
     ).prefetch_related("counteroffers")
     timeline = [
         {

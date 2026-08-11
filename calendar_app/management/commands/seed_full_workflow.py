@@ -513,6 +513,17 @@ class Command(BaseCommand):
             "appointment_type": appointment_type,
             "date": appointment_date,
             "time": appointment_time,
+            "end_time": time(
+                *divmod(
+                    min(
+                        appointment_time.hour * 60
+                        + appointment_time.minute
+                        + 60,
+                        23 * 60 + 59,
+                    ),
+                    60,
+                )
+            ),
             "notes": notes,
             "status": status,
             "result_comment": result_comment,

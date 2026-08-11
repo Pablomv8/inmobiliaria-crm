@@ -1,18 +1,11 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block content %}
 <div class="mx-auto max-w-4xl space-y-6">
     <div>
-        <h1 class="text-3xl font-bold text-gray-900">{{ page_title|default:"Nueva cita" }}</h1>
-        <p class="mt-2 text-sm text-gray-500">
-            {% if order %}
-                Pedido de {{ order.buyer }} · {{ order.get_property_type_display }}
-            {% elif listing %}
-                {{ listing.property.full_address }}
-            {% elif news %}
-                {{ news.related_property.full_address }}
-            {% endif %}
-        </p>
+        <a href="{% url 'appointment_detail' appointment.id %}" class="text-sm font-medium text-gray-500 hover:text-gray-900">← Volver a la cita</a>
+        <h1 class="mt-3 text-3xl font-bold text-gray-900">Editar cita</h1>
+        <p class="mt-2 text-sm text-gray-500">Actualiza la planificación o asigna la cita a otro agente.</p>
     </div>
 
     <form method="post" class="space-y-6">
@@ -24,30 +17,41 @@
 
         <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
             <div class="mb-6">
-                <p class="text-sm font-semibold text-indigo-700">1. Datos de la cita</p>
-                <h2 class="mt-1 text-xl font-bold text-gray-900">Planificación</h2>
-                <p class="mt-2 text-sm text-gray-500">Indica una hora de inicio y una hora de fin. El sistema impedirá cualquier solapamiento.</p>
+                <p class="text-sm font-semibold text-indigo-700">1. Contexto de la cita</p>
+                <h2 class="mt-1 text-xl font-bold text-gray-900">Información relacionada</h2>
+                <p class="mt-2 text-sm text-gray-500">El tipo, contacto e inmueble se mantienen para conservar el flujo de trabajo.</p>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-3">
+                <div class="rounded-2xl bg-gray-50 p-4">
+                    <p class="text-xs font-medium uppercase tracking-wide text-gray-400">Tipo</p>
+                    <p class="mt-2 font-semibold text-gray-900">{{ appointment.get_appointment_type_display }}</p>
+                </div>
+                <div class="rounded-2xl bg-gray-50 p-4">
+                    <p class="text-xs font-medium uppercase tracking-wide text-gray-400">Contacto</p>
+                    <p class="mt-2 font-semibold text-gray-900">{{ appointment.contact }}</p>
+                </div>
+                <div class="rounded-2xl bg-gray-50 p-4">
+                    <p class="text-xs font-medium uppercase tracking-wide text-gray-400">Inmueble</p>
+                    <p class="mt-2 font-semibold text-gray-900">{{ appointment.related_property }}</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+            <div class="mb-6">
+                <p class="text-sm font-semibold text-indigo-700">2. Planificación</p>
+                <h2 class="mt-1 text-xl font-bold text-gray-900">Responsable, fecha y hora</h2>
+                <p class="mt-2 text-sm text-gray-500">Los cambios se comprobarán contra las citas, llamadas y tareas existentes.</p>
             </div>
 
             <div class="grid gap-5 md:grid-cols-2">
-                {% if form.listing %}
-                    <div class="md:col-span-2">
-                        <label for="{{ form.listing.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Encargo a visitar</label>
-                        {{ form.listing }}
-                        {% if form.listing.errors %}<p class="mt-1 text-sm text-red-600">{{ form.listing.errors.0 }}</p>{% endif %}
-                        <p class="mt-1 text-xs text-gray-500">Solo aparecen encargos de venta activos.</p>
-                    </div>
-                {% endif %}
-
-                {% if form.appointment_type %}
-                    <div class="md:col-span-2">
-                        <label for="{{ form.appointment_type.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Tipo de cita</label>
-                        {{ form.appointment_type }}
-                        {% if form.appointment_type.errors %}<p class="mt-1 text-sm text-red-600">{{ form.appointment_type.errors.0 }}</p>{% endif %}
-                    </div>
-                {% endif %}
-
                 <div class="md:col-span-2">
+                    <label for="{{ form.agent.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Agente asignado</label>
+                    {{ form.agent }}
+                    {% if form.agent.errors %}<p class="mt-1 text-sm text-red-600">{{ form.agent.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
                     <label for="{{ form.date.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Fecha</label>
                     {{ form.date }}
                     {% if form.date.errors %}<p class="mt-1 text-sm text-red-600">{{ form.date.errors.0 }}</p>{% endif %}
@@ -62,40 +66,38 @@
                     {{ form.end_time }}
                     {% if form.end_time.errors %}<p class="mt-1 text-sm text-red-600">{{ form.end_time.errors.0 }}</p>{% endif %}
                 </div>
+                <div class="md:col-span-2">
+                    <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-900">Horario ocupado del agente</h3>
+                            <p class="mt-1 text-xs text-gray-500">La cita actual se excluye para que puedas moverla libremente.</p>
+                        </div>
+                        <div class="flex gap-3 text-xs font-medium text-gray-600">
+                            <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-emerald-400"></span>Libre</span>
+                            <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-red-400"></span>Ocupado</span>
+                        </div>
+                    </div>
+                    <div id="availability-placeholder" class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-5 text-center text-sm text-gray-500">Selecciona agente y fecha para consultar la disponibilidad.</div>
+                    <div id="slots-container" class="hidden grid-cols-4 gap-2 sm:grid-cols-7 md:grid-cols-14"></div>
+                    <div id="occupied-intervals" class="mt-4 space-y-2"></div>
+                </div>
+                <div class="md:col-span-2">
+                    <label for="{{ form.notes.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Notas</label>
+                    {{ form.notes }}
+                    {% if form.notes.errors %}<p class="mt-1 text-sm text-red-600">{{ form.notes.errors.0 }}</p>{% endif %}
+                </div>
             </div>
         </section>
 
-        <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-            <div class="mb-5 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                    <p class="text-sm font-semibold text-indigo-700">2. Disponibilidad</p>
-                    <h2 class="mt-1 text-xl font-bold text-gray-900">Horario ocupado del agente</h2>
-                    <p class="mt-2 text-sm text-gray-500">Vista informativa de 06:00 a 20:00. Rojo indica que parte de esa media hora ya está ocupada.</p>
-                </div>
-                <div class="flex shrink-0 gap-3 text-xs font-medium text-gray-600">
-                    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-emerald-400"></span>Libre</span>
-                    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-red-400"></span>Ocupado</span>
-                </div>
-            </div>
-
-            <div id="availability-placeholder" class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-5 text-center text-sm text-gray-500">Selecciona una fecha para consultar la disponibilidad.</div>
-            <div id="slots-container" class="hidden grid-cols-4 gap-2 sm:grid-cols-7 md:grid-cols-14"></div>
-            <div id="occupied-intervals" class="mt-5 space-y-2"></div>
-        </section>
-
-        <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
-            <label for="{{ form.notes.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Notas</label>
-            {{ form.notes }}
-            {% if form.notes.errors %}<p class="mt-1 text-sm text-red-600">{{ form.notes.errors.0 }}</p>{% endif %}
-        </section>
-
-        <div class="flex justify-end">
-            <button type="submit" class="rounded-xl bg-gray-900 px-6 py-3 font-semibold text-white shadow-sm hover:bg-black">Guardar cita</button>
+        <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <a href="{% url 'appointment_detail' appointment.id %}" class="rounded-xl border border-gray-300 px-5 py-3 text-center font-semibold text-gray-700 hover:bg-gray-50">Cancelar</a>
+            <button type="submit" class="rounded-xl bg-gray-900 px-6 py-3 font-semibold text-white shadow-sm hover:bg-black">Guardar cambios</button>
         </div>
     </form>
 </div>
 
 <script>
+const agentInput = document.getElementById("id_agent");
 const dateInput = document.getElementById("id_date");
 const startInput = document.getElementById("id_time");
 const endInput = document.getElementById("id_end_time");
@@ -124,10 +126,9 @@ function renderAvailability(data) {
     slotsContainer.classList.remove("hidden");
     slotsContainer.classList.add("grid");
     slotsContainer.innerHTML = "";
-
     generateHours().forEach((slot) => {
-        const occupied = data.occupied.includes(slot);
         const cell = document.createElement("div");
+        const occupied = data.occupied.includes(slot);
         cell.className = occupied
             ? "rounded-lg bg-red-100 px-1 py-2 text-center text-xs font-semibold text-red-700"
             : "rounded-lg bg-emerald-50 px-1 py-2 text-center text-xs font-semibold text-emerald-700";
@@ -140,11 +141,6 @@ function renderAvailability(data) {
         intervalContainer.innerHTML = '<div class="rounded-xl bg-emerald-50 p-3 text-sm font-medium text-emerald-700">El agente no tiene ningún intervalo ocupado en esta fecha.</div>';
         return;
     }
-
-    const heading = document.createElement("p");
-    heading.className = "text-xs font-semibold uppercase tracking-wide text-gray-400";
-    heading.textContent = "Intervalos ocupados";
-    intervalContainer.appendChild(heading);
     data.intervals.forEach((interval) => {
         const row = document.createElement("div");
         row.className = "flex items-center justify-between gap-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm";
@@ -160,13 +156,17 @@ function renderAvailability(data) {
 }
 
 async function loadAvailability() {
-    if (!dateInput.value) {
+    if (!dateInput.value || !agentInput.value) {
         slotsContainer.classList.add("hidden");
         intervalContainer.innerHTML = "";
         placeholder.classList.remove("hidden");
         return;
     }
-    const params = new URLSearchParams({date: dateInput.value, agent_id: "{{ schedule_agent.id }}"});
+    const params = new URLSearchParams({
+        date: dateInput.value,
+        agent_id: agentInput.value,
+        appointment_id: "{{ appointment.id }}",
+    });
     try {
         const response = await fetch(`/calendar/available-slots/?${params.toString()}`, {cache: "no-store"});
         if (!response.ok) throw new Error("No se pudo consultar la disponibilidad.");
@@ -180,6 +180,7 @@ async function loadAvailability() {
     }
 }
 
+agentInput.addEventListener("change", loadAvailability);
 dateInput.addEventListener("change", loadAvailability);
 startInput.addEventListener("change", validateInterval);
 endInput.addEventListener("change", validateInterval);

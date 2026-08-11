@@ -60,6 +60,24 @@ class OrderCrudTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(Order.objects.exists())
 
+    def test_order_forms_use_grouped_recent_style(self):
+        general_response = self.client.get(reverse("order_create"))
+        buyer_response = self.client.get(
+            reverse("order_create_for_buyer", args=[self.buyer.pk])
+        )
+
+        for response in (general_response, buyer_response):
+            with self.subTest(path=response.request["PATH_INFO"]):
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, "1. Persona compradora")
+                self.assertContains(response, "2. Criterios de búsqueda")
+                self.assertContains(response, "3. Preferencias adicionales")
+                self.assertContains(response, "rounded-3xl")
+
+        self.assertContains(general_response, 'name="buyer"', html=False)
+        self.assertNotContains(buyer_response, 'name="buyer"', html=False)
+        self.assertContains(buyer_response, self.buyer.name)
+
     def test_update_and_delete_order(self):
         order = Order.objects.create(
             buyer=self.buyer,

@@ -1,6 +1,8 @@
 from django import forms
+from django.contrib.auth import get_user_model
 from listings.models import Listing
-from tasks.scheduling import task_has_conflict_with_slot
+
+from .scheduling import schedule_has_conflict, slot_has_conflict
 
 from .models import (
     Appointment,
@@ -58,6 +60,92 @@ class AppointmentResultForm(forms.ModelForm):
 
         return comment
 
+
+class AppointmentEditForm(forms.ModelForm):
+    class Meta:
+        model = Appointment
+        fields = ["agent", "date", "time", "end_time", "notes"]
+        labels = {
+            "agent": "Agente asignado",
+            "date": "Fecha",
+            "time": "Hora",
+            "end_time": "Hora de fin",
+            "notes": "Notas",
+        }
+        widgets = {
+            "agent": forms.Select(attrs={
+                "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100",
+            }),
+            "date": forms.DateInput(attrs={
+                "type": "date",
+                "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100",
+            }),
+            "time": forms.TimeInput(attrs={
+                "type": "time",
+                "step": "1800",
+                "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100",
+            }),
+            "end_time": forms.TimeInput(attrs={
+                "type": "time",
+                "step": "1800",
+                "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100",
+            }),
+            "notes": forms.Textarea(attrs={
+                "rows": 4,
+                "placeholder": "Indicaciones o información relevante para la cita...",
+                "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100",
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["agent"].queryset = (
+            get_user_model().objects.filter(is_active=True).order_by(
+                "first_name",
+                "last_name",
+                "username",
+            )
+        )
+        self.fields["agent"].empty_label = None
+
+    def clean(self):
+        cleaned_data = super().clean()
+        agent = cleaned_data.get("agent")
+        selected_date = cleaned_data.get("date")
+        selected_time = cleaned_data.get("time")
+        end_time = cleaned_data.get("end_time")
+
+        if selected_time and end_time and end_time <= selected_time:
+            self.add_error(
+                "end_time",
+                "La hora de fin debe ser posterior a la hora de inicio.",
+            )
+            return cleaned_data
+
+        if (
+            self.instance.status != "scheduled"
+            or agent is None
+            or selected_date is None
+            or selected_time is None
+            or end_time is None
+        ):
+            return cleaned_data
+
+        occupied = schedule_has_conflict(
+            agent,
+            selected_date,
+            selected_time,
+            end_time,
+            exclude_appointment_id=self.instance.pk,
+        )
+
+        if occupied:
+            raise forms.ValidationError(
+                "El agente seleccionado ya tiene otra cita, llamada o tarea en ese intervalo."
+            )
+
+        return cleaned_data
+
 class AppointmentForm(forms.ModelForm):
 
     class Meta:
@@ -68,6 +156,7 @@ class AppointmentForm(forms.ModelForm):
             "appointment_type",
             "date",
             "time",
+            "end_time",
             "notes"
         ]
 
@@ -90,7 +179,17 @@ class AppointmentForm(forms.ModelForm):
                 attrs={
                     "type": "time",
                     "id": "id_time",
-                    "class": "hidden"
+                    "step": "1800",
+                    "class": "w-full border rounded-lg p-2"
+                }
+            ),
+
+            "end_time": forms.TimeInput(
+                attrs={
+                    "type": "time",
+                    "id": "id_end_time",
+                    "step": "1800",
+                    "class": "w-full border rounded-lg p-2"
                 }
             ),
 
@@ -116,42 +215,31 @@ class AppointmentForm(forms.ModelForm):
         cleaned_data = super().clean()
 
         date = cleaned_data.get("date")
-        time = cleaned_data.get("time")
+        start_time = cleaned_data.get("time")
+        end_time = cleaned_data.get("end_time")
 
-        if not date or not time:
+        if start_time and end_time and end_time <= start_time:
+            self.add_error(
+                "end_time",
+                "La hora de fin debe ser posterior a la hora de inicio.",
+            )
             return cleaned_data
 
-        occupied = (
-            Appointment.objects.filter(
-                agent=self.user,
-                date=date,
-                time=time,
-                status="scheduled"
-            )
-            .exclude(pk=self.instance.pk)
-            .exists()
-        )
+        if not date or not start_time or not end_time:
+            return cleaned_data
 
-        occupied = occupied or (
-            Call.objects.filter(
-                agent=self.user,
-                date=date,
-                time=time,
-                status="pending"
-            )
-            .exists()
-        )
-
-        occupied = occupied or task_has_conflict_with_slot(
+        occupied = schedule_has_conflict(
             self.user,
             date,
-            time,
+            start_time,
+            end_time,
+            exclude_appointment_id=self.instance.pk,
         )
 
         if occupied:
 
             raise forms.ValidationError(
-                "Ya existe una cita, llamada o tarea en esa hora."
+                "Ya existe una cita, llamada o tarea que se solapa con ese intervalo."
             )
 
         return cleaned_data
@@ -209,28 +297,7 @@ class CallForm(forms.ModelForm):
         if not date or not time:
             return cleaned_data
 
-        occupied = (
-            Appointment.objects.filter(
-                agent=self.user,
-                date=date,
-                time=time,
-                status="scheduled"
-            )
-            .exclude(pk=self.instance.pk)
-            .exists()
-        )
-
-        occupied = occupied or (
-            Call.objects.filter(
-                agent=self.user,
-                date=date,
-                time=time,
-                status="pending"
-            )
-            .exists()
-        )
-
-        occupied = occupied or task_has_conflict_with_slot(
+        occupied = slot_has_conflict(
             self.user,
             date,
             time,
@@ -248,7 +315,7 @@ class CallForm(forms.ModelForm):
 class SaleAppointmentForm(forms.ModelForm):
     class Meta:
         model = Appointment
-        fields = ["listing", "date", "time", "notes"]
+        fields = ["listing", "date", "time", "end_time", "notes"]
         widgets = {
             "listing": forms.Select(attrs={
                 "class": "w-full border rounded-lg p-2",
@@ -260,7 +327,14 @@ class SaleAppointmentForm(forms.ModelForm):
             "time": forms.TimeInput(attrs={
                 "type": "time",
                 "id": "id_time",
-                "class": "hidden",
+                "step": "1800",
+                "class": "w-full border rounded-lg p-2",
+            }),
+            "end_time": forms.TimeInput(attrs={
+                "type": "time",
+                "id": "id_end_time",
+                "step": "1800",
+                "class": "w-full border rounded-lg p-2",
             }),
             "notes": forms.Textarea(attrs={
                 "class": "w-full border rounded-lg p-2",
@@ -282,32 +356,29 @@ class SaleAppointmentForm(forms.ModelForm):
         cleaned_data = super().clean()
         selected_date = cleaned_data.get("date")
         selected_time = cleaned_data.get("time")
+        end_time = cleaned_data.get("end_time")
 
-        if not selected_date or not selected_time:
+        if selected_time and end_time and end_time <= selected_time:
+            self.add_error(
+                "end_time",
+                "La hora de fin debe ser posterior a la hora de inicio.",
+            )
             return cleaned_data
 
-        occupied = Appointment.objects.filter(
-            agent=self.user,
-            date=selected_date,
-            time=selected_time,
-            status="scheduled",
-        ).exists()
-        occupied = occupied or Call.objects.filter(
-            agent=self.user,
-            date=selected_date,
-            time=selected_time,
-            status="pending",
-        ).exists()
+        if not selected_date or not selected_time or not end_time:
+            return cleaned_data
 
-        occupied = occupied or task_has_conflict_with_slot(
+        occupied = schedule_has_conflict(
             self.user,
             selected_date,
             selected_time,
+            end_time,
+            exclude_appointment_id=self.instance.pk,
         )
 
         if occupied:
             raise forms.ValidationError(
-                "Ya existe una cita, llamada o tarea en esa hora."
+                "Ya existe una cita, llamada o tarea que se solapa con ese intervalo."
             )
 
         return cleaned_data

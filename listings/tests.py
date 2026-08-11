@@ -63,6 +63,7 @@ class ListingFollowUpTests(TestCase):
             {
                 "date": "2026-08-20",
                 "time": "10:00",
+                "end_time": "11:00",
                 "notes": "Revisar evolución del encargo.",
             },
         )
@@ -90,6 +91,7 @@ class ListingFollowUpTests(TestCase):
             appointment_type="follow_up",
             date="2026-08-20",
             time="10:00",
+            end_time="11:00",
             listing=self.listing,
         )
 

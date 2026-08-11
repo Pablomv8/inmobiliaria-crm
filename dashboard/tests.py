@@ -96,6 +96,7 @@ class DashboardScopeTests(TestCase):
             appointment_type="sale",
             date=date(2026, 8, 20),
             time=time(10, 0),
+            end_time=time(11, 0),
             listing=self.agent_listing,
         )
         News.objects.create(

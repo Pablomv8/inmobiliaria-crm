@@ -1,6 +1,7 @@
 from django import forms
 
 from contacts.models import Contact
+from properties.models import Property
 
 from .models import Order, OrderComment
 
@@ -29,7 +30,7 @@ class OrderForm(forms.ModelForm):
             "buyer": forms.Select(attrs={"class": INPUT_CLASS}),
             "zone": forms.Select(attrs={"class": INPUT_CLASS}),
             "max_price": forms.NumberInput(attrs={
-                "class": INPUT_CLASS,
+                "class": f"{INPUT_CLASS} pr-12",
                 "min": 0,
                 "step": "0.01",
                 "placeholder": "Ej: 250000",
@@ -59,6 +60,16 @@ class OrderForm(forms.ModelForm):
             "name", "last_name"
         )
         self.fields["buyer"].queryset = buyers
+        self.fields["buyer"].empty_label = "Selecciona un comprador"
+        self.fields["zone"].empty_label = "Cualquier zona"
+        self.fields["payment_type"].choices = [
+            ("", "Selecciona el tipo de pago"),
+            *Order.PAYMENT_TYPE_CHOICES,
+        ]
+        self.fields["property_type"].choices = [
+            ("", "Selecciona el tipo de inmueble"),
+            *Property.PROPERTY_TYPE_CHOICES,
+        ]
 
         if buyer_obj is not None:
             self.fields.pop("buyer")

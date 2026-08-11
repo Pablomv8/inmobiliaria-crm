@@ -4,6 +4,7 @@ from django.urls import reverse
 
 from .models import Appointment, Call, CounterOffer, ProposalAppointment
 from .forms import (
+    AppointmentEditForm,
     AppointmentForm,
     AppointmentResultForm,
     CallForm,
@@ -22,15 +23,15 @@ from collections import defaultdict
 
 
 from datetime import date, timedelta
-from itertools import chain, groupby
+from itertools import groupby
 from users.models import User
 from orders.models import Order
 from tasks.models import Task
 from tasks.scheduling import (
     ACTIVE_TASK_STATUSES,
-    occupied_task_slots,
     task_occurrences,
 )
+from .scheduling import occupied_half_hour_slots, occupied_intervals
 from calendar_app.models import (
     Appointment,
     Call
@@ -392,6 +393,42 @@ def appointment_detail(request, pk):
 
 
 @login_required
+def appointment_update(request, pk):
+    appointment = get_object_or_404(
+        get_user_appointments(request.user).select_related(
+            "related_property",
+            "contact",
+            "agent",
+        ),
+        pk=pk,
+    )
+    form = AppointmentEditForm(
+        request.POST or None,
+        instance=appointment,
+    )
+
+    if request.method == "POST" and form.is_valid():
+        appointment = form.save()
+        messages.success(request, "La cita se ha actualizado correctamente.")
+
+        if can_open_calendar_item(request.user, appointment.agent):
+            return redirect("appointment_detail", pk=appointment.pk)
+
+        return redirect(
+            f"{reverse('calendar')}?agents={appointment.agent_id}"
+        )
+
+    return render(
+        request,
+        "calendar_app/appointment_form.html",
+        {
+            "appointment": appointment,
+            "form": form,
+        },
+    )
+
+
+@login_required
 @require_POST
 def add_appointment_result(request, pk):
     appointment = get_object_or_404(
@@ -606,7 +643,7 @@ def decline_sale_proposal(request, pk):
 @login_required
 def proposal_appointment_detail(request, pk):
     proposals = ProposalAppointment.objects.select_related(
-        "source_sale_appointment",
+        "source_sale_appointment__source_counteroffer",
         "order",
         "listing__property",
         "buyer",
@@ -827,20 +864,96 @@ def create_counteroffer(request, pk):
 
 
 @login_required
+def create_counteroffer_response_appointment(request, pk):
+    counteroffers = CounterOffer.objects.select_related(
+        "proposal__listing__property",
+        "proposal__order",
+        "proposal__buyer",
+        "proposal__agent",
+    )
+    if not user_can_manage_all(request.user):
+        counteroffers = counteroffers.filter(proposal__agent=request.user)
+    counteroffer = get_object_or_404(counteroffers, pk=pk)
+
+    existing = counteroffer.response_appointments.exclude(
+        status="cancelled",
+    ).order_by("-created_at").first()
+    if existing is not None:
+        existing_proposal = getattr(existing, "proposal", None)
+        if existing_proposal is not None:
+            return redirect(
+                "proposal_appointment_detail",
+                pk=existing_proposal.pk,
+            )
+        return redirect("appointment_detail", pk=existing.pk)
+
+    proposal = counteroffer.proposal
+    assigned_agent = proposal.agent or request.user
+    form = AppointmentForm(
+        request.POST or None,
+        user=assigned_agent,
+        appointment_type="proposal",
+    )
+
+    if request.method == "POST" and form.is_valid():
+        appointment = form.save(commit=False)
+        appointment.appointment_type = "proposal"
+        appointment.source_counteroffer = counteroffer
+        appointment.order = proposal.order
+        appointment.listing = proposal.listing
+        appointment.contact = proposal.buyer
+        appointment.related_property = proposal.listing.property
+        appointment.agent = assigned_agent
+        appointment.save()
+        messages.success(
+            request,
+            "Nueva cita de propuesta programada para responder a la contraoferta.",
+        )
+        return redirect("appointment_detail", pk=appointment.pk)
+
+    return render(
+        request,
+        "appointments/form.html",
+        {
+            "form": form,
+            "order": proposal.order,
+            "listing": proposal.listing,
+            "proposal": proposal,
+            "counteroffer": counteroffer,
+            "page_title": "Nueva cita de propuesta tras contraoferta",
+            "schedule_agent": assigned_agent,
+        },
+    )
+
+
+@login_required
 def counteroffer_detail(request, pk):
     counteroffers = CounterOffer.objects.select_related(
         "proposal__listing__property",
         "proposal__order",
         "proposal__buyer",
+        "proposal__agent",
         "source_acceptance_appointment",
     )
     if not user_can_manage_all(request.user):
         counteroffers = counteroffers.filter(proposal__agent=request.user)
     counteroffer = get_object_or_404(counteroffers, pk=pk)
+    response_appointment = counteroffer.response_appointments.exclude(
+        status="cancelled",
+    ).select_related("agent").order_by("-created_at").first()
+    response_proposal = (
+        getattr(response_appointment, "proposal", None)
+        if response_appointment is not None
+        else None
+    )
     return render(
         request,
         "calendar_app/counteroffer_detail.html",
-        {"counteroffer": counteroffer},
+        {
+            "counteroffer": counteroffer,
+            "response_appointment": response_appointment,
+            "response_proposal": response_proposal,
+        },
     )
 
 
@@ -1030,6 +1143,7 @@ def calendar_view(request):
             "type": "appointment",
             "date": appt.date,
             "time": appt.time,
+            "end_time": appt.end_time,
             "object": appt,
             "agent_name": user_display_name(appt.agent),
             "detail_url": (
@@ -1102,6 +1216,11 @@ def calendar_events(request):
                 f"{appointment.date}"
                 f"T"
                 f"{appointment.time}"
+            ),
+            "end": (
+                f"{appointment.date}"
+                f"T"
+                f"{appointment.end_time}"
             ),
             "color": "#16a34a",
         }
@@ -1183,6 +1302,7 @@ def agenda(request):
             "type": "appointment",
             "date": appointment.date,
             "time": appointment.time,
+            "end_time": appointment.end_time,
             "object": appointment,
             "agent_name": user_display_name(appointment.agent),
             "detail_url": (
@@ -1229,42 +1349,47 @@ def agenda(request):
 @never_cache
 def available_slots(request):
 
-    selected_date = request.GET.get("date")
+    selected_date_value = request.GET.get("date")
     selected_agent = request.user
     requested_agent_id = request.GET.get("agent_id")
+    excluded_appointment_id = request.GET.get("appointment_id")
+
+    try:
+        selected_date = date.fromisoformat(selected_date_value)
+    except (TypeError, ValueError):
+        return JsonResponse({"occupied": [], "intervals": []})
 
     if requested_agent_id:
         selected_agent = get_object_or_404(User, pk=requested_agent_id)
 
-    appointments = Appointment.objects.filter(
-        agent=selected_agent,
-        date=selected_date,
-        status="scheduled"
-    ).values_list(
-        "time",
-        flat=True
+    if excluded_appointment_id:
+        owns_appointment = Appointment.objects.filter(
+            pk=excluded_appointment_id,
+            agent=selected_agent,
+        ).exists()
+        if not owns_appointment:
+            excluded_appointment_id = None
+
+    intervals = occupied_intervals(
+        selected_agent,
+        selected_date,
+        exclude_appointment_id=excluded_appointment_id,
     )
-
-    calls = Call.objects.filter(
-        agent=selected_agent,
-        date=selected_date,
-        status="pending"
-    ).values_list(
-        "time",
-        flat=True
+    occupied = occupied_half_hour_slots(
+        selected_agent,
+        selected_date,
+        exclude_appointment_id=excluded_appointment_id,
     )
-
-    occupied = {
-        t.strftime("%H:%M")
-        for t in chain(
-            appointments,
-            calls
-        )
-    }
-
-    if selected_date:
-        occupied.update(occupied_task_slots(selected_agent, selected_date))
 
     return JsonResponse({
-        "occupied": sorted(occupied)
+        "occupied": sorted(occupied),
+        "intervals": [
+            {
+                "start": interval["start"].strftime("%H:%M"),
+                "end": interval["end"].strftime("%H:%M"),
+                "type": interval["type"],
+                "label": interval["label"],
+            }
+            for interval in intervals
+        ],
     })

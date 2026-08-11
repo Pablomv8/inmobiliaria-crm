@@ -9,6 +9,46 @@ from news.models import News
 from orders.models import Order
 
 
+def _latest_negotiation_status(*, listing_id=None, order_id=None):
+    appointment_filters = {
+        "appointment_type": "proposal",
+        "status": "scheduled",
+    }
+    proposal_filters = {}
+    counteroffer_filters = {}
+
+    if listing_id is not None:
+        appointment_filters["listing_id"] = listing_id
+        proposal_filters["listing_id"] = listing_id
+        counteroffer_filters["proposal__listing_id"] = listing_id
+    elif order_id is not None:
+        appointment_filters["order_id"] = order_id
+        proposal_filters["order_id"] = order_id
+        counteroffer_filters["proposal__order_id"] = order_id
+    else:
+        return None
+
+    stages = []
+    proposal_appointment_date = Appointment.objects.filter(
+        **appointment_filters,
+    ).order_by("-created_at").values_list("created_at", flat=True).first()
+    proposal_date = ProposalAppointment.objects.filter(
+        **proposal_filters,
+    ).order_by("-created_at").values_list("created_at", flat=True).first()
+    counteroffer_date = CounterOffer.objects.filter(
+        **counteroffer_filters,
+    ).order_by("-created_at").values_list("created_at", flat=True).first()
+
+    if proposal_appointment_date:
+        stages.append((proposal_appointment_date, "proposal_appointment"))
+    if proposal_date:
+        stages.append((proposal_date, "proposal"))
+    if counteroffer_date:
+        stages.append((counteroffer_date, "counteroffer"))
+
+    return max(stages, default=(None, None), key=lambda item: item[0])[1]
+
+
 def sync_news_status(news_id):
     if not news_id:
         return
@@ -46,6 +86,8 @@ def sync_listing_workflow_status(listing_id):
     if listing is None:
         return
 
+    negotiation_status = _latest_negotiation_status(listing_id=listing_id)
+
     if listing.status in ["cancelled", "sold", "rented"]:
         workflow_status = "closed"
     elif Appointment.objects.filter(
@@ -66,16 +108,8 @@ def sync_listing_workflow_status(listing_id):
         status="scheduled",
     ).exists():
         workflow_status = "acceptance_appointment"
-    elif CounterOffer.objects.filter(proposal__listing_id=listing_id).exists():
-        workflow_status = "counteroffer"
-    elif ProposalAppointment.objects.filter(listing_id=listing_id).exists():
-        workflow_status = "proposal"
-    elif Appointment.objects.filter(
-        listing_id=listing_id,
-        appointment_type="proposal",
-        status="scheduled",
-    ).exists():
-        workflow_status = "proposal_appointment"
+    elif negotiation_status:
+        workflow_status = negotiation_status
     elif Appointment.objects.filter(
         listing_id=listing_id,
         appointment_type="sale",
@@ -104,6 +138,8 @@ def sync_order_status(order_id):
     if order is None or order.status in ["closed", "cancelled"]:
         return
 
+    negotiation_status = _latest_negotiation_status(order_id=order_id)
+
     if Appointment.objects.filter(
         order_id=order_id,
         appointment_type="signing",
@@ -122,16 +158,8 @@ def sync_order_status(order_id):
         status="scheduled",
     ).exists():
         status = "acceptance_appointment"
-    elif CounterOffer.objects.filter(proposal__order_id=order_id).exists():
-        status = "counteroffer"
-    elif ProposalAppointment.objects.filter(order_id=order_id).exists():
-        status = "proposal"
-    elif Appointment.objects.filter(
-        order_id=order_id,
-        appointment_type="proposal",
-        status="scheduled",
-    ).exists():
-        status = "proposal_appointment"
+    elif negotiation_status:
+        status = negotiation_status
     elif Appointment.objects.filter(
         order_id=order_id,
         appointment_type="sale",

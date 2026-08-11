@@ -226,6 +226,9 @@
                         <div>
                             <a href="{% url 'proposal_appointment_detail' proposal.id %}" class="font-semibold text-gray-900 hover:text-green-700">{{ proposal.buyer }}</a>
                             <p class="text-sm text-gray-500 mt-1">Creada el {{ proposal.proposal_date|date:"d/m/Y" }}</p>
+                            {% if proposal.source_sale_appointment.source_counteroffer %}
+                                <p class="mt-1 text-xs font-medium text-amber-700">Respuesta a la contraoferta de {{ proposal.source_sale_appointment.source_counteroffer.owner_price }} €</p>
+                            {% endif %}
                         </div>
                         <span class="rounded-full bg-green-100 text-green-800 px-3 py-1 text-xs">{{ proposal.get_status_display }}</span>
                     </div>

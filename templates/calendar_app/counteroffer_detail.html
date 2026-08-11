@@ -24,6 +24,22 @@
             <p class="text-gray-700 mt-2 whitespace-pre-line">{{ counteroffer.notes|default:"Sin notas adicionales." }}</p>
         </div>
 
+        <div class="mt-6 rounded-2xl border border-indigo-200 bg-indigo-50 p-5">
+            {% if response_proposal %}
+                <p class="text-sm font-semibold text-indigo-800">Nueva oferta registrada</p>
+                <p class="mt-1 text-sm text-indigo-700">El comprador ya respondió a esta contraoferta con una nueva propuesta.</p>
+                <a href="{% url 'proposal_appointment_detail' response_proposal.id %}" class="mt-4 inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Ver nueva oferta</a>
+            {% elif response_appointment %}
+                <p class="text-sm font-semibold text-indigo-800">Nueva oferta en preparación</p>
+                <p class="mt-1 text-sm text-indigo-700">La cita de propuesta ya está {{ response_appointment.get_status_display|lower }}.</p>
+                <a href="{% url 'appointment_detail' response_appointment.id %}" class="mt-4 inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Continuar desde la cita</a>
+            {% else %}
+                <p class="text-sm font-semibold text-indigo-800">¿El comprador quiere realizar otra oferta?</p>
+                <p class="mt-1 text-sm text-indigo-700">Programa una nueva cita de propuesta para registrar su respuesta y conservar todo el historial.</p>
+                <a href="{% url 'create_counteroffer_response_appointment' counteroffer.id %}" class="mt-4 inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">+ Preparar nueva oferta</a>
+            {% endif %}
+        </div>
+
         <div class="flex flex-wrap gap-3 mt-8 pt-6 border-t border-gray-200">
             <a href="{% url 'proposal_appointment_detail' counteroffer.proposal.id %}" class="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm">Ver propuesta</a>
             <a href="{% url 'listing_detail' counteroffer.proposal.listing.id %}" class="px-4 py-2 rounded-xl bg-blue-50 text-blue-700 text-sm">Ver encargo</a>

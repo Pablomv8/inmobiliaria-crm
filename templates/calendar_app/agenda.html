@@ -71,7 +71,7 @@
                         </div>
 
                         <div class="text-gray-500">
-                            {{ event.time }}{% if event.type == "task" %}–{{ event.end_time|time:"H:i" }}{% endif %}
+                            {{ event.time|time:"H:i" }}{% if event.type == "task" or event.type == "appointment" %}–{{ event.end_time|time:"H:i" }}{% endif %}
                         </div>
 
                     </div>

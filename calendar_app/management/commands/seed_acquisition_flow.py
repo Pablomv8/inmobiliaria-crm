@@ -207,6 +207,17 @@ class Command(BaseCommand):
                 appointment_type="acquisition",
                 date=appointment_date,
                 time=appointment_time,
+                end_time=time(
+                    *divmod(
+                        min(
+                            appointment_time.hour * 60
+                            + appointment_time.minute
+                            + 60,
+                            23 * 60 + 59,
+                        ),
+                        60,
+                    )
+                ),
                 notes=marker,
                 status=status,
                 news=news,

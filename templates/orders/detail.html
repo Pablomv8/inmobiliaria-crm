@@ -77,7 +77,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                         <div>
                             <p class="font-semibold text-gray-900">{{ appointment.get_appointment_type_display }} · {{ appointment.listing.property.full_address }}</p>
-                            <p class="text-sm text-gray-500 mt-1">{{ appointment.date|date:"d/m/Y" }} · {{ appointment.time|time:"H:i" }} · {{ appointment.agent }}</p>
+                            <p class="text-sm text-gray-500 mt-1">{{ appointment.date|date:"d/m/Y" }} · {{ appointment.time|time:"H:i" }}–{{ appointment.end_time|time:"H:i" }} · {{ appointment.agent }}</p>
                         </div>
                         <span class="text-sm {% if appointment.status == 'completed' %}text-green-700{% elif appointment.status == 'cancelled' %}text-red-700{% else %}text-blue-700{% endif %}">
                             {{ appointment.get_status_display }}

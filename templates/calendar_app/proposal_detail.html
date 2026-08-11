@@ -4,6 +4,10 @@
 <div class="max-w-4xl mx-auto px-4 sm:px-6 py-8">
     <a href="{% url 'appointment_detail' proposal.source_sale_appointment.id %}" class="text-sm text-gray-500 hover:text-gray-900">← Volver a la cita de propuesta</a>
 
+    {% if proposal.source_sale_appointment.source_counteroffer %}
+        <a href="{% url 'counteroffer_detail' proposal.source_sale_appointment.source_counteroffer.id %}" class="ml-4 text-sm font-medium text-amber-700 hover:text-amber-900">↳ Responde a una contraoferta</a>
+    {% endif %}
+
     <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8 mt-5">
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
@@ -27,6 +31,9 @@
             <a href="{% url 'order_detail' proposal.order.id %}" class="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm">Ver pedido</a>
             <a href="{% url 'listing_detail' proposal.listing.id %}" class="px-4 py-2 rounded-xl bg-blue-50 text-blue-700 text-sm">Ver encargo</a>
             <a href="{% url 'create_acceptance_appointment' proposal.id %}" class="px-4 py-2 rounded-xl bg-violet-600 text-white text-sm">Programar cita de aceptación</a>
+            {% if proposal.source_sale_appointment.source_counteroffer %}
+                <a href="{% url 'counteroffer_detail' proposal.source_sale_appointment.source_counteroffer.id %}" class="px-4 py-2 rounded-xl bg-amber-50 text-amber-800 text-sm">Ver contraoferta anterior</a>
+            {% endif %}
         </div>
     </div>
 
@@ -44,7 +51,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                         <div>
                             <p class="font-semibold text-gray-900">{{ appointment.get_appointment_type_display }}</p>
-                            <p class="text-sm text-gray-500 mt-1">{{ appointment.date|date:"d/m/Y" }} · {{ appointment.time|time:"H:i" }} · {{ appointment.agent }}</p>
+                            <p class="text-sm text-gray-500 mt-1">{{ appointment.date|date:"d/m/Y" }} · {{ appointment.time|time:"H:i" }}–{{ appointment.end_time|time:"H:i" }} · {{ appointment.agent }}</p>
                         </div>
                         <span class="text-sm {% if appointment.status == 'completed' %}text-green-700{% elif appointment.status == 'cancelled' %}text-red-700{% else %}text-blue-700{% endif %}">{{ appointment.get_status_display }}</span>
                     </div>
