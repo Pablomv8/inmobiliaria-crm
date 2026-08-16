@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, time, timedelta
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -6,12 +6,13 @@ from django.urls import reverse
 from django.utils import timezone
 
 from contacts.models import Contact
+from calendar_app.models import Appointment
 from listings.models import Listing
 from news.models import News
 from sales.models import Sale
 
 from .forms import OwnerContactForm, PropertyForm
-from .models import Property, PropertyComment, Zone
+from .models import Property, PropertyComment, PropertyStatusHistory, Zone
 
 
 class PropertyModelTests(TestCase):
@@ -212,6 +213,40 @@ class PropertyAutomaticStatusTests(TestCase):
             detail_response,
             "La propietaria pide que volvamos a llamar.",
         )
+        history = PropertyStatusHistory.objects.get()
+        self.assertEqual(history.old_status, "never_contacted")
+        self.assertEqual(history.new_status, "contacted")
+
+    def test_detail_timeline_combines_creation_contact_status_and_appointment(self):
+        PropertyComment.objects.create(
+            property=self.property,
+            user=self.agent,
+            text="Se realiza el primer contacto.",
+        )
+        Appointment.objects.create(
+            related_property=self.property,
+            contact=self.owner,
+            agent=self.agent,
+            appointment_type="valuation",
+            date=date(2026, 8, 20),
+            time=time(10, 0),
+            end_time=time(11, 0),
+        )
+
+        response = self.client.get(
+            reverse("property_detail", args=[self.property.pk])
+        )
+        event_types = {event["type"] for event in response.context["timeline"]}
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(
+            {"creation", "comment", "status", "appointment"}.issubset(
+                event_types
+            )
+        )
+        self.assertContains(response, "Timeline del inmueble")
+        self.assertContains(response, "Cita de Valoración")
+        self.assertContains(response, "10:00–11:00")
 
     def test_contact_older_than_30_days_is_refreshed_automatically(self):
         comment = PropertyComment.objects.create(

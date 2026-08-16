@@ -7,6 +7,7 @@ from django.shortcuts import (
 from .models import Property, Zone
 from contacts.models import Contact
 from .forms import PropertyCommentForm, PropertyForm, OwnerContactForm
+from .timeline import build_property_timeline
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
@@ -120,6 +121,7 @@ def property_detail(request, pk):
         'property': property,
         'comments': property.comments.select_related("user"),
         'comment_form': PropertyCommentForm(),
+        'timeline': build_property_timeline(property, request.user),
     })
 
 
@@ -232,6 +234,7 @@ def property_add_comment(request, pk):
             "property": property_obj,
             "comments": property_obj.comments.select_related("user"),
             "comment_form": form,
+            "timeline": build_property_timeline(property_obj, request.user),
         },
         status=400,
     )

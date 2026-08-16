@@ -184,24 +184,48 @@ class Property(models.Model):
     def sync_status(self):
         calculated_status = self.calculate_status()
         if self.status != calculated_status:
+            previous_status = self.status
             self.__class__.objects.filter(pk=self.pk).update(
                 status=calculated_status,
             )
             self.status = calculated_status
+            PropertyStatusHistory.objects.create(
+                property=self,
+                old_status=previous_status,
+                new_status=calculated_status,
+            )
         return calculated_status
 
     @classmethod
     def refresh_aged_contact_statuses(cls):
         threshold = timezone.now() - timedelta(days=30)
-        return cls.objects.filter(status="contacted").annotate(
+        properties = cls.objects.filter(status="contacted").annotate(
             latest_comment=Max("comments__created_at"),
         ).filter(
             latest_comment__lt=threshold,
-        ).update(status="contacted_30")
+        )
+        refreshed = 0
+        for property_obj in properties:
+            if property_obj.sync_status() == "contacted_30":
+                refreshed += 1
+        return refreshed
 
     def save(self, *args, **kwargs):
+        previous_status = None
+        if self.pk:
+            previous_status = self.__class__.objects.filter(pk=self.pk).values_list(
+                "status",
+                flat=True,
+            ).first()
         self.status = self.calculate_status()
-        return super().save(*args, **kwargs)
+        result = super().save(*args, **kwargs)
+        if previous_status is not None and previous_status != self.status:
+            PropertyStatusHistory.objects.create(
+                property=self,
+                old_status=previous_status,
+                new_status=self.status,
+            )
+        return result
 
     
     
@@ -251,4 +275,35 @@ class PropertyComment(models.Model):
 
     def __str__(self):
         return f"Comentario del inmueble {self.property_id}"
+
+
+class PropertyStatusHistory(models.Model):
+    property = models.ForeignKey(
+        Property,
+        on_delete=models.CASCADE,
+        related_name="status_history",
+    )
+    old_status = models.CharField(
+        max_length=30,
+        choices=Property.STATUS_CHOICES,
+        blank=True,
+        verbose_name="Estado anterior",
+    )
+    new_status = models.CharField(
+        max_length=30,
+        choices=Property.STATUS_CHOICES,
+        verbose_name="Estado nuevo",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Cambio de estado de inmueble"
+        verbose_name_plural = "Cambios de estado de inmuebles"
+
+    def __str__(self):
+        return (
+            f"{self.property}: {self.get_old_status_display()} → "
+            f"{self.get_new_status_display()}"
+        )
 
