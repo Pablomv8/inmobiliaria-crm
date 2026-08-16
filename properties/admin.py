@@ -18,9 +18,16 @@ class ZoneAdmin(admin.ModelAdmin):
 class PropertyAdmin(admin.ModelAdmin):
 
     list_display = (
-        "title",
+        "street",
+        "number",
         "city",
         "zone",
+        "property_type",
         "status",
-        "price",
+    )
+
+    search_fields = (
+        "street",
+        "number",
+        "city",
     )

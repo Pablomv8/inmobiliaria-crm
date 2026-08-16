@@ -1,9 +1,7 @@
 from django.db import models
-
-# Create your models here.
-from django.db import models
 from properties.models import Property
 from django.conf import settings
+
 
 class Contact(models.Model):
 
@@ -12,46 +10,116 @@ class Contact(models.Model):
         ("buyer", "Comprador"),
     ]
 
-    STATUS_CHOICES = (
-        ('new', 'Nuevo'),
-        ('interested', 'Interesado'),
-        ('visit', 'Visita agendada'),
-        ('negotiation', 'Negociación'),
-        ('closed', 'Cerrado'),
+    MARITAL_STATUS_CHOICES = [
+        ("single", "Soltero/a"),
+        ("married", "Casado/a"),
+        ("divorced", "Divorciado/a"),
+        ("widowed", "Viudo/a"),
+        ("partner", "Pareja de hecho"),
+        ("other", "Otro"),
+    ]
+
+    name = models.CharField(
+        max_length=100
     )
 
-
-    name = models.CharField(max_length=255)
-
-    phone = models.CharField(max_length=20)
-
-    email = models.EmailField(blank=True, null=True)
-
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='new'
+    last_name = models.CharField(
+        max_length=150,
+        blank=True
     )
 
-    notes = models.TextField(blank=True)
+    phone = models.CharField(
+        max_length=20
+    )
 
-    properties = models.ManyToManyField(
-        Property,
-        related_name='contacts',
+    email = models.EmailField(
         blank=True,
         null=True
     )
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    street = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Calle"
+    )
+
+    number = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="Número"
+    )
+
+    floor = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="Piso / Puerta"
+    )
+
+    postal_code = models.CharField(
+        max_length=10,
+        blank=True,
+        verbose_name="Código postal"
+    )
+
+    city = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Ciudad"
+    )
+
+    province = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Provincia"
+    )
+
+    birth_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de nacimiento"
+    )
+
+    occupation = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Profesión"
+    )
+        
+
+    identification_number = models.CharField(
+        max_length=30,
+        blank=True,
+        verbose_name="DNI / NIE / Pasaporte"
+    )
+
+    marital_status = models.CharField(
+        max_length=20,
+        choices=MARITAL_STATUS_CHOICES,
+        blank=True
+    )
+
+    notes = models.TextField(
+        blank=True
+    )
+
+    properties = models.ManyToManyField(
+        Property,
+        related_name="contacts",
+        blank=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
 
     assigned_agent = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='contacts'
+        related_name="contacts"
     )
-
+    
     contact_type = models.CharField(
         max_length=20,
         choices=CONTACT_TYPE_CHOICES,
@@ -59,13 +127,4 @@ class Contact(models.Model):
     )
 
     def __str__(self):
-        return self.name
-    
-    def status_color(self):
-        return {
-            'new': 'bg-blue-100 text-blue-700',
-            'interested': 'bg-green-100 text-green-700',
-            'visit': 'bg-yellow-100 text-yellow-700',
-            'negotiation': 'bg-orange-100 text-orange-700',
-            'closed': 'bg-gray-200 text-gray-700',
-        }.get(self.status, '')
+        return f"{self.name} {self.last_name}".strip()

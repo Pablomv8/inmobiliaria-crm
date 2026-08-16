@@ -7,11 +7,11 @@
     <div class="mb-8">
 
         <h1 class="text-3xl font-bold">
-            Agenda
+            Agenda del equipo
         </h1>
 
         <p class="text-gray-500">
-            Próximas llamadas y citas
+            Llamadas, citas y tareas de todos los usuarios
         </p>
 
     </div>
@@ -36,6 +36,16 @@
                                 {{ event.object.contact }}
                             </p>
 
+                        {% elif event.type == "task" %}
+
+                            {% if event.detail_url %}<a href="{{ event.detail_url }}" class="text-sm font-semibold text-purple-700 hover:underline">{% else %}<span class="text-sm font-semibold text-purple-700">{% endif %}
+                                {% if event.object.task_type == "zone_sweep" %}📍{% else %}✅{% endif %} {{ event.object.get_task_type_display }}
+                            {% if event.detail_url %}</a>{% else %}</span>{% endif %}
+
+                            <p class="mt-1">
+                                {{ event.object.title }}
+                            </p>
+
                         {% else %}
 
                             <span class="text-sm font-semibold text-green-600">
@@ -48,6 +58,10 @@
 
                         {% endif %}
 
+                        <p class="mt-2 text-xs font-medium text-indigo-600">
+                            👤 {{ event.agent_name }}
+                        </p>
+
                     </div>
 
                     <div class="text-right">
@@ -57,7 +71,7 @@
                         </div>
 
                         <div class="text-gray-500">
-                            {{ event.time }}
+                            {{ event.time|time:"H:i" }}{% if event.type == "task" or event.type == "appointment" %}–{{ event.end_time|time:"H:i" }}{% endif %}
                         </div>
 
                     </div>
@@ -70,7 +84,7 @@
 
             <div class="p-10 text-center text-gray-400">
 
-                No tienes eventos programados.
+                No hay eventos programados.
 
             </div>
 

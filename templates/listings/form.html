@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm">
+        <div class="px-6 sm:px-8 py-6 border-b border-gray-200">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Crear encargo</h1>
+            <p class="text-gray-500 mt-1">Completa las condiciones acordadas con el propietario.</p>
+        </div>
+
+        <div class="p-6 sm:p-8">
+            <div class="grid sm:grid-cols-2 gap-4 mb-8">
+                <div class="rounded-xl bg-gray-50 p-4 sm:col-span-2">
+                    <p class="text-xs font-semibold text-gray-500 uppercase">Inmueble</p>
+                    <p class="font-semibold text-gray-900 mt-1">{{ property.full_address }}</p>
+                </div>
+                <div class="rounded-xl bg-gray-50 p-4">
+                    <p class="text-xs font-semibold text-gray-500 uppercase">Agente asignado</p>
+                    <p class="font-semibold text-gray-900 mt-1">{{ agent.get_full_name|default:agent.username }}</p>
+                </div>
+                <div class="rounded-xl bg-gray-50 p-4">
+                    <p class="text-xs font-semibold text-gray-500 uppercase">Tipo de encargo</p>
+                    <p class="font-semibold text-gray-900 mt-1">{{ news.get_motivation_display }}</p>
+                </div>
+                <div class="rounded-xl bg-gray-50 p-4">
+                    <p class="text-xs font-semibold text-gray-500 uppercase">Precio propietario</p>
+                    <p class="font-semibold text-gray-900 mt-1">{{ news.client_price }} €</p>
+                </div>
+                <div class="rounded-xl bg-gray-50 p-4">
+                    <p class="text-xs font-semibold text-gray-500 uppercase">Valoración agencia</p>
+                    <p class="font-semibold text-gray-900 mt-1">{{ news.estimated_price }} €</p>
+                </div>
+            </div>
+
+            {% if not has_owners %}
+                <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800">
+                    Este inmueble no tiene un propietario asociado. Añádelo antes de crear el encargo.
+                    <a href="{% url 'property_detail' property.id %}" class="font-semibold underline">Ir al inmueble</a>
+                </div>
+            {% endif %}
+
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="rounded-xl bg-red-50 border border-red-200 p-4 text-red-700">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.owner.label }}</label>
+                    {{ form.owner }}
+                    {% if form.owner.errors %}<p class="text-sm text-red-600 mt-1">{{ form.owner.errors.0 }}</p>{% endif %}
+                </div>
+
+                <div class="grid sm:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.start_date.label }}</label>
+                        {{ form.start_date }}
+                        {% if form.start_date.errors %}<p class="text-sm text-red-600 mt-1">{{ form.start_date.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.end_date.label }}</label>
+                        {{ form.end_date }}
+                        {% if form.end_date.errors %}<p class="text-sm text-red-600 mt-1">{{ form.end_date.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ form.commission_percent.label }}</label>
+                    {{ form.commission_percent }}
+                    {% if form.commission_percent.errors %}<p class="text-sm text-red-600 mt-1">{{ form.commission_percent.errors.0 }}</p>{% endif %}
+                </div>
+
+                <label class="flex items-center gap-3 rounded-xl bg-gray-50 p-4 cursor-pointer">
+                    {{ form.is_exclusive }}
+                    <span class="text-sm font-medium text-gray-800">{{ form.is_exclusive.label }}</span>
+                </label>
+
+                <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-6 border-t border-gray-200">
+                    <a href="{% url 'appointment_detail' appointment.id %}"
+                       class="px-5 py-3 rounded-xl border border-gray-300 text-gray-700 text-center hover:bg-gray-50">
+                        Cancelar
+                    </a>
+                    <button type="submit"
+                            {% if not has_owners %}disabled{% endif %}
+                            class="px-5 py-3 rounded-xl bg-gray-900 text-white hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed">
+                        Crear encargo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

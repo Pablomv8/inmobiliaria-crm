@@ -1,162 +1,696 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block content %}
 
-<div class="max-w-7xl mx-auto ml-1 p-6 flex flex-col lg:flex-row gap-6">
+<div class="w-full px-4 sm:px-6 py-6">
 
-    <div class="bg-white rounded-2xl shadow-sm p-8 lg:w-2/3">
+    <!-- VOLVER -->
+    <div class="mb-6">
 
-        <div class="flex items-start justify-between mb-8">
+        <a
+            href="{% url 'contact_list' %}"
+            class="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition"
+        >
+            <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M15 19l-7-7 7-7"
+                />
+            </svg>
 
-            <div>
-
-                <h1 class="text-4xl font-bold text-gray-800">
-                    {{ contact.name }}
-                </h1>
-
-                <p class="text-gray-500 mt-2">
-                    {{ contact.phone }}
-                </p>
-
-            </div>
-
-            <div class="flex gap-3">
-
-                <a
-                    href="{% url 'contact_update' contact.id %}"
-                    class="px-5 py-3 rounded-xl bg-gray-900 text-white hover:bg-gray-800 transition">
-
-                    Editar
-                </a>
-
-                <a
-                    href="{% url 'contact_delete' contact.id %}"
-                    class="px-5 py-3 rounded-xl bg-red-600 text-white hover:bg-red-700 transition">
-
-                    Eliminar
-                </a>
-
-            </div>
-
-        </div>
-
-        <!-- Info -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-
-            <div class="bg-gray-50 rounded-xl p-5">
-
-                <p class="text-sm text-gray-500 mb-2">
-                    Email
-                </p>
-
-                <p class="font-medium">
-                    {{ contact.email|default:"—" }}
-                </p>
-
-            </div>
-
-            <div class="bg-gray-50 rounded-xl p-5">
-
-                <p class="text-sm text-gray-500 mb-2">
-                    Estado
-                </p>
-
-                <p class="font-medium">
-                    {{ contact.get_status_display }}
-                </p>
-
-            </div>
-
-        </div>
-
-        <!-- Properties -->
-        <div class="mb-8">
-
-            <h2 class="text-2xl font-semibold mb-4">
-                Inmuebles relacionados
-            </h2>
-
-            <div class="flex flex-wrap gap-3">
-
-                {% for property in contact.properties.all %}
-
-                    <a
-                        href="{% url 'property_detail' property.id %}"
-                        class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
-                    >
-                        {{ property.title }}
-                    </a>
-
-                {% empty %}
-
-                    <p class="text-gray-400">
-                        No hay inmuebles asociados.
-                    </p>
-
-                {% endfor %}
-
-            </div>
-
-        </div>
-
-        <!-- Notes -->
-        <div>
-
-            <h2 class="text-2xl font-semibold mb-4">
-                Notas
-            </h2>
-
-            <p class="text-gray-600 leading-relaxed">
-                {{ contact.notes|default:"Sin notas." }}
-            </p>
-
-        </div>
+            Volver a contactos
+        </a>
 
     </div>
-    <div class="bg-white rounded-2xl shadow-sm p-6 lg:w-1/3">
 
-        <h3 class="text-lg font-semibold mb-4">
-            Actividad reciente
-        </h3>
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
-        <div class="space-y-4">
+        <!-- CONTENIDO PRINCIPAL -->
+        <div class="xl:col-span-2 space-y-6">
 
-            {% for activity in activities %}
+            <!-- CABECERA -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
 
-                <div class="border-l-4 border-blue-500 pl-4">
+                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
 
-                    <p class="text-gray-800">
+                    <div class="flex items-start gap-4">
 
-                        {{ activity.description }}
+                        <!-- AVATAR -->
+                        <div class="shrink-0 w-14 h-14 rounded-2xl bg-gray-900 text-white flex items-center justify-center text-xl font-bold">
 
-                    </p>
+                            {{ contact.name|first|upper }}
+                            {{ contact.last_name|first|upper }}
 
-                    <p class="text-xs text-gray-400 mt-1">
+                        </div>
 
-                        {{ activity.user.username }}
-                        ·
-                        {{ activity.created_at|timesince }}
+                        <div>
 
+                            <div class="flex flex-wrap items-center gap-3">
+
+                                <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">
+                                    {{ contact.name }} {{ contact.last_name }}
+                                </h1>
+
+                                <span class="
+                                    px-3 py-1 rounded-full text-xs font-semibold
+
+                                    {% if contact.contact_type == 'owner' %}
+                                        bg-blue-100 text-blue-700
+                                    {% elif contact.contact_type == 'buyer' %}
+                                        bg-green-100 text-green-700
+                                    {% else %}
+                                        bg-gray-100 text-gray-700
+                                    {% endif %}
+                                ">
+                                    {{ contact.get_contact_type_display }}
+                                </span>
+
+                            </div>
+
+                            <div class="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-gray-500">
+
+                                {% if contact.phone %}
+                                    <span class="inline-flex items-center gap-2">
+
+                                        <svg
+                                            class="w-4 h-4"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M3 5a2 2 0 012-2h3l2 5-2 1a16 16 0 007 7l1-2 5 2v3a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                                            />
+                                        </svg>
+
+                                        {{ contact.phone }}
+                                    </span>
+                                {% endif %}
+
+                                {% if contact.email %}
+                                    <span class="inline-flex items-center gap-2">
+
+                                        <svg
+                                            class="w-4 h-4"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M3 8l9 6 9-6M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z"
+                                            />
+                                        </svg>
+
+                                        {{ contact.email }}
+                                    </span>
+                                {% endif %}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- ACCIONES -->
+                    <div class="flex items-center gap-2">
+
+                        <a
+                            href="{% url 'contact_update' contact.id %}"
+                            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-black transition"
+                        >
+                            <svg
+                                class="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M16.862 3.487a2.25 2.25 0 013.182 3.182L7.5 19.213 3 21l1.787-4.5L16.862 3.487z"
+                                />
+                            </svg>
+
+                            Editar
+                        </a>
+
+                        <a
+                            href="{% url 'contact_delete' contact.id %}"
+                            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm font-medium hover:bg-red-100 transition"
+                        >
+                            <svg
+                                class="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M6 7h12m-10 0l1 12h6l1-12M9 7V4h6v3"
+                                />
+                            </svg>
+
+                            Eliminar
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- INFORMACIÓN PERSONAL -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
+
+                <div class="mb-6">
+
+                    <h2 class="text-xl font-semibold text-gray-900">
+                        Información personal
+                    </h2>
+
+                    <p class="text-sm text-gray-500 mt-1">
+                        Datos identificativos del contacto.
                     </p>
 
                 </div>
 
-            {% empty %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
-                <p class="text-gray-400">
+                    <div class="bg-gray-50 rounded-xl p-4">
 
-                    No hay actividad registrada.
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                            Documento
+                        </p>
 
-                </p>
+                        <p class="mt-2 font-medium text-gray-900">
+                            {{ contact.identification_number|default:"—" }}
+                        </p>
 
-            {% endfor %}
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-4">
+
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                            Estado civil
+                        </p>
+
+                        <p class="mt-2 font-medium text-gray-900">
+                            {{ contact.get_marital_status_display|default:"—" }}
+                        </p>
+
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-4">
+
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                            Fecha de nacimiento
+                        </p>
+
+                        <p class="mt-2 font-medium text-gray-900">
+                            {% if contact.birth_date %}
+                                {{ contact.birth_date|date:"d/m/Y" }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </p>
+
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-4">
+
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                            Profesión
+                        </p>
+
+                        <p class="mt-2 font-medium text-gray-900">
+                            {{ contact.occupation|default:"—" }}
+                        </p>
+
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-4">
+
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                            Responsable
+                        </p>
+
+                        <p class="mt-2 font-medium text-gray-900">
+
+                            {% if contact.assigned_agent %}
+                                {{ contact.assigned_agent.get_full_name|default:contact.assigned_agent.username }}
+                            {% else %}
+                                Sin asignar
+                            {% endif %}
+
+                        </p>
+
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-4">
+
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                            Fecha de alta
+                        </p>
+
+                        <p class="mt-2 font-medium text-gray-900">
+                            {{ contact.created_at|date:"d/m/Y" }}
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- DATOS DE CONTACTO Y DIRECCIÓN -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
+
+                <div class="mb-6">
+
+                    <h2 class="text-xl font-semibold text-gray-900">
+                        Contacto y dirección
+                    </h2>
+
+                    <p class="text-sm text-gray-500 mt-1">
+                        Información de contacto y domicilio.
+                    </p>
+
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+
+                    <div class="bg-gray-50 rounded-xl p-4">
+
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                            Teléfono
+                        </p>
+
+                        <p class="mt-2 font-medium text-gray-900">
+                            {{ contact.phone|default:"—" }}
+                        </p>
+
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-4">
+
+                        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                            Correo electrónico
+                        </p>
+
+                        <p class="mt-2 font-medium text-gray-900 break-all">
+                            {{ contact.email|default:"—" }}
+                        </p>
+
+                    </div>
+
+                </div>
+
+                <div class="bg-gray-50 rounded-xl p-5">
+
+                    <div class="flex items-start gap-3">
+
+                        <div class="shrink-0 w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-gray-600">
+
+                            <svg
+                                class="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 21s6-5.686 6-11a6 6 0 10-12 0c0 5.314 6 11 6 11z"
+                                />
+                                <circle cx="12" cy="10" r="2" stroke-width="2"></circle>
+                            </svg>
+
+                        </div>
+
+                        <div>
+
+                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                                Dirección
+                            </p>
+
+                            <p class="mt-2 font-medium text-gray-900">
+
+                                {% if contact.street %}
+                                    {{ contact.street }}
+                                    {{ contact.number|default:"" }}
+
+                                    {% if contact.floor %}
+                                        · {{ contact.floor }}
+                                    {% endif %}
+                                {% else %}
+                                    Sin dirección registrada
+                                {% endif %}
+
+                            </p>
+
+                            {% if contact.postal_code or contact.city or contact.province %}
+
+                                <p class="mt-1 text-sm text-gray-500">
+
+                                    {{ contact.postal_code|default:"" }}
+                                    {{ contact.city|default:"" }}
+
+                                    {% if contact.province %}
+                                        · {{ contact.province }}
+                                    {% endif %}
+
+                                </p>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- INMUEBLES -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
+
+                <div class="flex items-center justify-between mb-6">
+
+                    <div>
+
+                        <h2 class="text-xl font-semibold text-gray-900">
+                            Inmuebles relacionados
+                        </h2>
+
+                        <p class="text-sm text-gray-500 mt-1">
+                            Propiedades vinculadas a este contacto.
+                        </p>
+
+                    </div>
+
+                    <span class="px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-sm font-medium">
+                        {{ contact.properties.count }}
+                    </span>
+
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    {% for property in contact.properties.all %}
+
+                        <a
+                            href="{% url 'property_detail' property.id %}"
+                            class="group flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 hover:border-gray-300 hover:bg-gray-50 transition"
+                        >
+
+                            <div class="min-w-0">
+
+                                <p class="font-semibold text-gray-900 truncate">
+                                    {{ property.full_address }}
+                                </p>
+
+                                <p class="text-sm text-gray-500 mt-1 truncate">
+                                    {{ property.get_property_type_display }}
+                                </p>
+
+                            </div>
+
+                            <svg
+                                class="w-5 h-5 text-gray-400 group-hover:text-gray-700 shrink-0"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 5l7 7-7 7"
+                                />
+                            </svg>
+
+                        </a>
+
+                    {% empty %}
+
+                        <div class="md:col-span-2 rounded-xl border border-dashed border-gray-300 p-8 text-center">
+
+                            <p class="text-gray-500">
+                                No hay inmuebles asociados.
+                            </p>
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+            {% if contact.contact_type == "owner" %}
+                <section class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
+                    <div class="flex items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-900">Noticias relacionadas</h2>
+                            <p class="text-sm text-gray-500 mt-1">Oportunidades registradas sobre los inmuebles de este propietario.</p>
+                        </div>
+                        <span class="shrink-0 px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-sm font-medium">{{ news_items|length }}</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for news in news_items %}
+                            <a href="{% url 'news_detail' news.id %}"
+                               class="group rounded-xl border border-gray-200 p-4 hover:border-amber-300 hover:bg-amber-50/40 transition">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="font-semibold text-gray-900 truncate">{{ news.related_property.full_address }}</p>
+                                        <p class="text-sm text-gray-500 mt-1">{{ news.get_motivation_display }} · {{ news.created_at|date:"d/m/Y" }}</p>
+                                    </div>
+                                    <span class="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-700">{{ news.get_status_display }}</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3 mt-4 text-sm">
+                                    <div class="rounded-lg bg-gray-50 p-3"><p class="text-xs text-gray-500">Precio cliente</p><p class="font-medium mt-1">{{ news.client_price }} €</p></div>
+                                    <div class="rounded-lg bg-gray-50 p-3"><p class="text-xs text-gray-500">Valoración</p><p class="font-medium mt-1">{{ news.estimated_price }} €</p></div>
+                                </div>
+                            </a>
+                        {% empty %}
+                            <div class="md:col-span-2 rounded-xl border border-dashed border-gray-300 p-8 text-center text-gray-500">Este propietario todavía no tiene noticias relacionadas.</div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
+                    <div class="flex items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-900">Encargos relacionados</h2>
+                            <p class="text-sm text-gray-500 mt-1">Encargos asociados al propietario o a sus inmuebles.</p>
+                        </div>
+                        <span class="shrink-0 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-sm font-medium">{{ listings|length }}</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% for listing in listings %}
+                            <a href="{% url 'listing_detail' listing.id %}"
+                               class="group rounded-xl border border-gray-200 p-4 hover:border-blue-300 hover:bg-blue-50/40 transition">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="font-semibold text-gray-900 truncate">{{ listing.property.full_address }}</p>
+                                        <p class="text-sm text-gray-500 mt-1">{{ listing.get_listing_type_display }} · {{ listing.start_date|date:"d/m/Y" }}</p>
+                                    </div>
+                                    <span class="shrink-0 rounded-full bg-blue-50 px-2.5 py-1 text-xs text-blue-700">{{ listing.get_workflow_status_display }}</span>
+                                </div>
+                                <div class="flex items-center justify-between gap-3 mt-4 pt-3 border-t border-gray-100 text-sm">
+                                    <span class="text-gray-500">{{ listing.get_status_display }}</span>
+                                    <span class="font-semibold text-gray-900">{{ listing.agency_price }} €</span>
+                                </div>
+                            </a>
+                        {% empty %}
+                            <div class="md:col-span-2 rounded-xl border border-dashed border-gray-300 p-8 text-center text-gray-500">Este propietario todavía no tiene encargos relacionados.</div>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+
+            {% if contact.contact_type == "buyer" %}
+                <!-- PEDIDOS -->
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
+                    <div class="flex items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-900">Pedidos de búsqueda</h2>
+                            <p class="text-sm text-gray-500 mt-1">Necesidades inmobiliarias de esta persona compradora.</p>
+                        </div>
+                        <a href="{% url 'order_create_for_buyer' contact.id %}"
+                           class="shrink-0 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm hover:bg-black">
+                            + Nuevo pedido
+                        </a>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-4">
+                        {% for order in orders %}
+                            <a href="{% url 'order_detail' order.id %}"
+                               class="rounded-xl border border-gray-200 p-4 hover:bg-gray-50 transition">
+                                <div class="flex justify-between gap-3">
+                                    <p class="font-semibold text-gray-900">{{ order.get_property_type_display }}</p>
+                                    <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs text-blue-700">{{ order.get_status_display }}</span>
+                                </div>
+                                <p class="text-sm text-gray-500 mt-2">{{ order.zone|default:"Cualquier zona" }} · {{ order.get_payment_type_display }}</p>
+                                <p class="font-semibold text-gray-900 mt-3">Hasta {{ order.max_price }} €</p>
+                            </a>
+                        {% empty %}
+                            <div class="md:col-span-2 rounded-xl border border-dashed border-gray-300 p-8 text-center text-gray-500">No hay pedidos registrados.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- NOTAS -->
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
+
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">
+                    Notas internas
+                </h2>
+
+                <div class="rounded-xl bg-gray-50 p-5">
+
+                    <p class="text-gray-700 leading-relaxed whitespace-pre-line">
+                        {{ contact.notes|default:"Sin notas registradas." }}
+                    </p>
+
+                </div>
+
+            </div>
 
         </div>
+
+        <!-- ACTIVIDAD -->
+        <aside class="xl:col-span-1">
+
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sticky top-6">
+
+                <div class="flex items-center justify-between mb-6">
+
+                    <div>
+
+                        <h2 class="text-lg font-semibold text-gray-900">
+                            Actividad reciente
+                        </h2>
+
+                        <p class="text-sm text-gray-500 mt-1">
+                            Últimos movimientos del contacto.
+                        </p>
+
+                    </div>
+
+                    <div class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+
+                        <svg
+                            class="w-5 h-5 text-gray-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                        </svg>
+
+                    </div>
+
+                </div>
+
+                <div class="space-y-1">
+
+                    {% for activity in activities %}
+
+                        <div class="flex gap-3">
+
+                            <div class="flex flex-col items-center">
+
+                                <div class="w-9 h-9 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
+
+                                    <svg
+                                        class="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                        />
+                                    </svg>
+
+                                </div>
+
+                                {% if not forloop.last %}
+                                    <div class="w-px flex-1 bg-gray-200 my-2"></div>
+                                {% endif %}
+
+                            </div>
+
+                            <div class="pb-6 min-w-0">
+
+                                <p class="text-sm font-medium text-gray-800">
+                                    {{ activity.description }}
+                                </p>
+
+                                <p class="text-xs text-gray-400 mt-2">
+
+                                    {% if activity.user %}
+                                        {{ activity.user.get_full_name|default:activity.user.username }}
+                                        ·
+                                    {% endif %}
+
+                                    hace {{ activity.created_at|timesince }}
+
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    {% empty %}
+
+                        <div class="rounded-xl bg-gray-50 p-6 text-center">
+
+                            <p class="text-sm text-gray-500">
+                                No hay actividad registrada.
+                            </p>
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            </div>
+
+        </aside>
 
     </div>
 
 </div>
-
-
 
 {% endblock %}

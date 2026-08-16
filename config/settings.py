@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'news',
     'calendar_app',
     'listings',
+    'orders',
     'django_select2',
 ]
 

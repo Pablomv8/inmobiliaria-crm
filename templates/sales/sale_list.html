@@ -72,7 +72,7 @@
             </select>
 
             <!-- AGENTE -->
-            <select
+            {% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" %}<select
                 name="agent"
                 class="px-3 py-2 rounded-xl text-sm
                     bg-green-50 text-green-700">
@@ -95,7 +95,7 @@
 
                 {% endfor %}
 
-            </select>
+            </select>{% endif %}
 
             <!-- ORDEN -->
             <select
@@ -183,7 +183,7 @@
                     <!-- INMUEBLE -->
                     <div class="font-medium text-gray-900">
 
-                        {{ sale.related_property.title }}
+                        {{ sale.related_property.full_address }}
 
                     </div>
 

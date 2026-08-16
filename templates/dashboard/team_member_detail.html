@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mx-auto max-w-7xl space-y-10">
+    <div>
+        <a href="{% url 'team_overview' %}" class="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900">← Volver al equipo</a>
+    </div>
+
+    <section class="overflow-hidden rounded-3xl bg-gray-900 p-6 text-white shadow-lg sm:p-8">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex items-center gap-4 sm:gap-5">
+                <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-indigo-500 text-2xl font-bold">
+                    {{ worker.get_full_name|default:worker.username|slice:":1"|upper }}
+                </div>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-indigo-300">Ficha de seguimiento</p>
+                    <h1 class="mt-1 truncate text-2xl font-bold sm:text-3xl">{{ worker.get_full_name|default:worker.username }}</h1>
+                    <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-300">
+                        <span>@{{ worker.username }}</span>
+                        <span>{{ worker.email|default:"Sin correo" }}</span>
+                        <span>{{ worker.phone|default:"Sin teléfono" }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[32rem]">
+                <a href="{% url 'contact_list' %}?agent={{ worker.id }}" class="rounded-2xl bg-white/10 p-4 hover:bg-white/20"><p class="text-xs text-gray-300">Contactos</p><p class="mt-1 text-2xl font-bold">{{ contacts_total }}</p><p class="mt-1 text-xs text-gray-400">{{ owners_total }} propietarios · {{ buyers_total }} compradores</p></a>
+                <a href="{% url 'news_list' %}?agent={{ worker.id }}" class="rounded-2xl bg-white/10 p-4 hover:bg-white/20"><p class="text-xs text-gray-300">Noticias</p><p class="mt-1 text-2xl font-bold">{{ news_total }}</p><p class="mt-1 text-xs text-gray-400">{{ open_news }} abiertas</p></a>
+                <a href="{% url 'listing_list' %}?agent={{ worker.id }}" class="rounded-2xl bg-white/10 p-4 hover:bg-white/20"><p class="text-xs text-gray-300">Encargos</p><p class="mt-1 text-2xl font-bold">{{ listings_total }}</p><p class="mt-1 text-xs text-gray-400">{{ active_listings }} activos</p></a>
+                <a href="{% url 'order_list' %}?agent={{ worker.id }}" class="rounded-2xl bg-white/10 p-4 hover:bg-white/20"><p class="text-xs text-gray-300">Pedidos</p><p class="mt-1 text-2xl font-bold">{{ orders_total }}</p><p class="mt-1 text-xs text-gray-400">{{ open_orders }} abiertos</p></a>
+            </div>
+        </div>
+    </section>
+
+    <section class="grid gap-6 xl:grid-cols-4">
+        <a href="{% url 'calendar' %}?agents={{ worker.id }}" class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md">
+            <div class="flex items-center justify-between"><span class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700"><i class="fa-regular fa-calendar"></i></span><span class="text-xs font-medium text-gray-500">Agenda</span></div>
+            <p class="mt-4 text-2xl font-bold text-gray-900">{{ scheduled_appointments }}</p><p class="mt-1 text-sm text-gray-500">citas programadas · {{ pending_calls }} llamadas</p>
+        </a>
+        <a href="{% url 'task_list' %}?agent={{ worker.id }}" class="rounded-2xl border {% if overdue_tasks %}border-red-200{% else %}border-gray-200{% endif %} bg-white p-5 shadow-sm hover:shadow-md">
+            <div class="flex items-center justify-between"><span class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700"><i class="fa-regular fa-clipboard"></i></span><span class="text-xs font-medium {% if overdue_tasks %}text-red-600{% else %}text-gray-500{% endif %}">{{ overdue_tasks }} vencidas</span></div>
+            <p class="mt-4 text-2xl font-bold text-gray-900">{{ pending_tasks }}</p><p class="mt-1 text-sm text-gray-500">tareas pendientes</p>
+        </a>
+        <a href="{% url 'listing_list' %}?agent={{ worker.id }}&has_proposals=1" class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md">
+            <div class="flex items-center justify-between"><span class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700"><i class="fa-regular fa-handshake"></i></span><span class="text-xs font-medium text-gray-500">Negociación</span></div>
+            <p class="mt-4 text-2xl font-bold text-gray-900">{{ proposals_total }}</p><p class="mt-1 text-sm text-gray-500">propuestas registradas</p>
+        </a>
+        <a href="{% url 'sale_list' %}?agent={{ worker.id }}&status=signed" class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md">
+            <div class="flex items-center justify-between"><span class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><i class="fa-solid fa-euro-sign"></i></span><span class="text-xs font-medium text-gray-500">{{ signed_sales }} ventas</span></div>
+            <p class="mt-4 text-2xl font-bold text-gray-900">{{ sales_revenue|floatformat:0 }} €</p><p class="mt-1 text-sm text-gray-500">{{ sales_commission|floatformat:0 }} € de comisión</p>
+        </a>
+    </section>
+
+    <section class="grid gap-8 xl:grid-cols-3">
+        <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm xl:col-span-2">
+            <div class="mb-6"><h2 class="text-lg font-bold text-gray-900">Indicadores de seguimiento</h2><p class="mt-1 text-sm text-gray-500">Porcentaje calculado sobre registros no cancelados.</p></div>
+            <div class="space-y-6">
+                <div>
+                    <div class="mb-2 flex items-center justify-between text-sm"><span class="font-medium text-gray-700">Citas completadas</span><span class="font-bold text-gray-900">{{ appointment_completion_rate }}%</span></div>
+                    <div class="h-2 overflow-hidden rounded-full bg-gray-100"><div class="h-full rounded-full bg-indigo-500" style="width: {{ appointment_completion_rate }}%"></div></div>
+                    <p class="mt-2 text-xs text-gray-500">{{ completed_appointments }} completadas</p>
+                </div>
+                <div>
+                    <div class="mb-2 flex items-center justify-between text-sm"><span class="font-medium text-gray-700">Tareas completadas</span><span class="font-bold text-gray-900">{{ task_completion_rate }}%</span></div>
+                    <div class="h-2 overflow-hidden rounded-full bg-gray-100"><div class="h-full rounded-full bg-emerald-500" style="width: {{ task_completion_rate }}%"></div></div>
+                    <p class="mt-2 text-xs text-gray-500">{{ completed_tasks }} completadas · {{ pending_tasks }} pendientes</p>
+                </div>
+                <div>
+                    <div class="mb-2 flex items-center justify-between text-sm"><span class="font-medium text-gray-700">Noticias cerradas</span><span class="font-bold text-gray-900">{{ news_completion_rate }}%</span></div>
+                    <div class="h-2 overflow-hidden rounded-full bg-gray-100"><div class="h-full rounded-full bg-blue-500" style="width: {{ news_completion_rate }}%"></div></div>
+                    <p class="mt-2 text-xs text-gray-500">{{ closed_news }} cerradas · {{ open_news }} en proceso</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div class="flex items-center justify-between"><div><h2 class="text-lg font-bold text-gray-900">Próximos eventos</h2><p class="mt-1 text-sm text-gray-500">Agenda activa del agente.</p></div><a href="{% url 'calendar' %}?agents={{ worker.id }}" class="text-sm font-medium text-indigo-700 hover:underline">Ver agenda</a></div>
+            <div class="mt-5 space-y-3">
+                {% for event in upcoming_events %}
+                    {% if event.team_event_type == "appointment" %}<a href="{% url 'appointment_detail' event.id %}" class="flex items-center gap-3 rounded-xl border border-gray-100 p-3 hover:bg-gray-50">{% else %}<a href="{% url 'call_detail' event.id %}" class="flex items-center gap-3 rounded-xl border border-gray-100 p-3 hover:bg-gray-50">{% endif %}
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl {% if event.team_event_type == 'appointment' %}bg-indigo-50 text-indigo-700{% else %}bg-blue-50 text-blue-700{% endif %}">{% if event.team_event_type == "appointment" %}<i class="fa-regular fa-calendar"></i>{% else %}<i class="fa-solid fa-phone"></i>{% endif %}</span>
+                        <span class="min-w-0 flex-1"><span class="block truncate text-sm font-medium text-gray-900">{% if event.team_event_type == "appointment" %}{{ event.get_appointment_type_display }}{% else %}Llamada{% endif %} · {{ event.contact }}</span><span class="mt-1 block text-xs text-gray-500">{{ event.date|date:"d/m/Y" }} · {{ event.time|time:"H:i" }}{% if event.team_event_type == "appointment" %}–{{ event.end_time|time:"H:i" }}{% endif %}</span></span>
+                    </a>
+                {% empty %}
+                    <div class="rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">No hay próximos eventos.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="mb-6"><h2 class="text-xl font-bold text-gray-900">Cartera reciente</h2><p class="mt-1 text-sm text-gray-500">Últimos registros que tiene asignados este trabajador.</p></div>
+        <div class="grid gap-7 lg:grid-cols-2">
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div class="flex items-center justify-between"><h3 class="font-bold text-gray-900">Contactos</h3><a href="{% url 'contact_list' %}?agent={{ worker.id }}" class="text-sm text-indigo-700 hover:underline">Ver todos</a></div>
+                <div class="mt-4 divide-y divide-gray-100">{% for contact in recent_contacts %}<a href="{% url 'contact_detail' contact.id %}" class="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"><span class="min-w-0"><span class="block truncate text-sm font-medium text-gray-900">{{ contact }}</span><span class="mt-1 block text-xs text-gray-500">{{ contact.get_contact_type_display }} · {{ contact.phone }}</span></span><span class="text-gray-400">→</span></a>{% empty %}<p class="py-6 text-center text-sm text-gray-500">Sin contactos asignados.</p>{% endfor %}</div>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div class="flex items-center justify-between"><h3 class="font-bold text-gray-900">Noticias</h3><a href="{% url 'news_list' %}?agent={{ worker.id }}" class="text-sm text-indigo-700 hover:underline">Ver todas</a></div>
+                <div class="mt-4 divide-y divide-gray-100">{% for item in recent_news %}<a href="{% url 'news_detail' item.id %}" class="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"><span class="min-w-0"><span class="block truncate text-sm font-medium text-gray-900">{{ item.related_property.full_address }}</span><span class="mt-1 block text-xs text-gray-500">{{ item.get_motivation_display }} · {{ item.get_status_display }}</span></span><span class="text-gray-400">→</span></a>{% empty %}<p class="py-6 text-center text-sm text-gray-500">Sin noticias asignadas.</p>{% endfor %}</div>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div class="flex items-center justify-between"><h3 class="font-bold text-gray-900">Encargos</h3><a href="{% url 'listing_list' %}?agent={{ worker.id }}" class="text-sm text-indigo-700 hover:underline">Ver todos</a></div>
+                <div class="mt-4 divide-y divide-gray-100">{% for listing in recent_listings %}<a href="{% url 'listing_detail' listing.id %}" class="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"><span class="min-w-0"><span class="block truncate text-sm font-medium text-gray-900">{{ listing.property.full_address }}</span><span class="mt-1 block text-xs text-gray-500">{{ listing.get_listing_type_display }} · {{ listing.get_status_display }}</span></span><span class="text-gray-400">→</span></a>{% empty %}<p class="py-6 text-center text-sm text-gray-500">Sin encargos asignados.</p>{% endfor %}</div>
+            </div>
+            <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div class="flex items-center justify-between"><h3 class="font-bold text-gray-900">Pedidos</h3><a href="{% url 'order_list' %}?agent={{ worker.id }}" class="text-sm text-indigo-700 hover:underline">Ver todos</a></div>
+                <div class="mt-4 divide-y divide-gray-100">{% for order in recent_orders %}<a href="{% url 'order_detail' order.id %}" class="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"><span class="min-w-0"><span class="block truncate text-sm font-medium text-gray-900">{{ order.buyer }}</span><span class="mt-1 block text-xs text-gray-500">{{ order.get_property_type_display }} · {{ order.get_status_display }}</span></span><span class="shrink-0 text-sm font-semibold text-gray-900">{{ order.max_price|floatformat:0 }} €</span></a>{% empty %}<p class="py-6 text-center text-sm text-gray-500">Sin pedidos asignados.</p>{% endfor %}</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h2 class="text-lg font-bold text-gray-900">Actividad realizada</h2>
+        <p class="mt-1 text-sm text-gray-500">Últimas acciones registradas por el trabajador.</p>
+        <div class="mt-6 grid gap-5 md:grid-cols-2">
+            {% for activity in recent_activities %}
+                <div class="flex gap-3 rounded-xl bg-gray-50 p-4"><span class="text-lg">{{ activity.icon }}</span><div><p class="text-sm text-gray-800">{{ activity.description }}</p><p class="mt-1 text-xs text-gray-500">{{ activity.created_at|date:"d/m/Y H:i" }}</p></div></div>
+            {% empty %}
+                <div class="rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500 md:col-span-2">Todavía no hay actividad registrada.</div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

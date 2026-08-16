@@ -1,5 +1,5 @@
 from django import forms
-from .models import Property
+from .models import Property, Zone
 
 
 INPUT_CLASS = """
@@ -28,11 +28,15 @@ SELECT_CLASS = INPUT_CLASS
 
 class PropertyForm(forms.ModelForm):
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["zone"].queryset = Zone.objects.order_by("name")
+        self.fields["zone"].empty_label = "Selecciona una zona"
+
     class Meta:
         model = Property
 
         fields = [
-            'title',
             'street',
             'number',
             'postal_code',
@@ -43,21 +47,38 @@ class PropertyForm(forms.ModelForm):
             "bathrooms",
             "area",
             "built_area",
-            'price',
             'property_type',
             'image',
             'description',
             'status',
         ]
 
+        labels = {
+            "street": "Calle",
+            "number": "Número",
+            "postal_code": "Código postal",
+            "city": "Ciudad",
+            "province": "Provincia",
+            "zone": "Zona",
+            "bedrooms": "Habitaciones",
+            "bathrooms": "Baños",
+            "area": "Superficie útil",
+            "built_area": "Superficie construida",
+            "property_type": "Tipo de inmueble",
+            "image": "Imagen principal",
+            "description": "Descripción",
+            "status": "Estado",
+        }
+
+        help_texts = {
+            "zone": "Área comercial en la que se encuentra el inmueble.",
+            "area": "Superficie útil expresada en metros cuadrados.",
+            "built_area": "Superficie construida expresada en metros cuadrados.",
+        }
+
         widgets = {
 
             # BASIC INFO
-            'title': forms.TextInput(attrs={
-                'class': INPUT_CLASS,
-                'placeholder': 'Ej: Piso luminoso en Salamanca'
-            }),
-
             'street': forms.TextInput(attrs={
                 'class': INPUT_CLASS,
                 'placeholder': 'Calle Alcalá'
@@ -112,12 +133,6 @@ class PropertyForm(forms.ModelForm):
                 'placeholder': '95'
             }),
 
-            # PRICE
-            'price': forms.NumberInput(attrs={
-                'class': INPUT_CLASS,
-                'placeholder': '250000'
-            }),
-
             # TYPE / STATUS
             'property_type': forms.Select(attrs={
                 'class': SELECT_CLASS,
@@ -129,7 +144,14 @@ class PropertyForm(forms.ModelForm):
 
             # IMAGE
             'image': forms.ClearableFileInput(attrs={
-                'class': 'w-full text-sm'
+                'class': (
+                    'block w-full rounded-xl border border-gray-300 bg-white '
+                    'px-4 py-3 text-sm text-gray-700 shadow-sm '
+                    'file:mr-4 file:rounded-lg file:border-0 file:bg-gray-100 '
+                    'file:px-4 file:py-2 file:font-semibold file:text-gray-700 '
+                    'hover:file:bg-gray-200'
+                ),
+                'accept': 'image/*',
             }),
 
             # DESCRIPTION
@@ -148,14 +170,21 @@ class OwnerContactForm(forms.ModelForm):
 
         self.property_obj = property_obj
 
-        # 👇 forzamos tipo propietario
-        self.fields["contact_type"].initial = "owner"
-        self.fields["contact_type"].disabled = True
+        self.fields["marital_status"].choices = [
+            ("", "Selecciona el estado civil"),
+            *Contact.MARITAL_STATUS_CHOICES,
+        ]
+        self.fields["assigned_agent"].empty_label = "Sin agente asignado"
 
-        # 👇 preseleccionamos inmueble
-        if property_obj:
-            self.fields["properties"].initial = [property_obj]
-            self.fields["properties"].disabled = True
+        for field in self.fields.values():
+            field.error_messages["required"] = "Este campo es obligatorio."
+
+        self.fields["email"].error_messages["invalid"] = (
+            "Introduce un correo electrónico válido."
+        )
+        self.fields["birth_date"].error_messages["invalid"] = (
+            "Introduce una fecha válida."
+        )
 
     class Meta:
 
@@ -163,25 +192,116 @@ class OwnerContactForm(forms.ModelForm):
 
         fields = [
             "name",
+            "last_name",
+            "identification_number",
+            "marital_status",
+            "birth_date",
+            "occupation",
+
+            "street",
+            "number",
+            "floor",
+            "postal_code",
+            "city",
+            "province",
+
             "phone",
             "email",
-            "contact_type",
-            "status",
             "notes",
-            "properties",
             "assigned_agent",
         ]
+
+        labels = {
+            "name": "Nombre",
+            "last_name": "Apellidos",
+            "identification_number": "DNI, NIE o pasaporte",
+            "marital_status": "Estado civil",
+            "birth_date": "Fecha de nacimiento",
+            "occupation": "Profesión",
+            "street": "Calle",
+            "number": "Número",
+            "floor": "Piso o puerta",
+            "postal_code": "Código postal",
+            "city": "Localidad",
+            "province": "Provincia",
+            "phone": "Teléfono",
+            "email": "Correo electrónico",
+            "assigned_agent": "Agente asignado",
+            "notes": "Notas internas",
+        }
+
+        help_texts = {
+            "identification_number": "Documento identificativo del propietario.",
+            "phone": "Número de contacto principal.",
+            "assigned_agent": "Persona responsable de gestionar este propietario.",
+            "notes": "Información interna visible para el equipo.",
+        }
 
         widgets = {
 
             "name": forms.TextInput(attrs={
                 "class": INPUT_CLASS,
-                "placeholder": "Nombre del propietario",
+                "placeholder": "Nombre",
+            }),
+
+            "last_name": forms.TextInput(attrs={
+                "class": INPUT_CLASS,
+                "placeholder": "Apellidos",
+            }),
+
+            "identification_number": forms.TextInput(attrs={
+                "class": INPUT_CLASS,
+                "placeholder": "12345678A",
+            }),
+
+            "marital_status": forms.Select(attrs={
+                "class": SELECT_CLASS,
+            }),
+
+            "birth_date": forms.DateInput(attrs={
+                "type": "date",
+                "class": INPUT_CLASS,
+            }),
+
+            "occupation": forms.TextInput(attrs={
+                "class": INPUT_CLASS,
+                "placeholder": "Profesión",
+            }),
+
+            "street": forms.TextInput(attrs={
+                "class": INPUT_CLASS,
+                "placeholder": "Calle",
+            }),
+
+            "number": forms.TextInput(attrs={
+                "class": INPUT_CLASS,
+                "placeholder": "Número",
+            }),
+
+            "floor": forms.TextInput(attrs={
+                "class": INPUT_CLASS,
+                "placeholder": "Piso / Puerta",
+            }),
+
+            "postal_code": forms.TextInput(attrs={
+                "class": INPUT_CLASS,
+                "placeholder": "41001",
+            }),
+
+            "city": forms.TextInput(attrs={
+                "class": INPUT_CLASS,
+                "placeholder": "Ciudad",
+            }),
+
+            "province": forms.TextInput(attrs={
+                "class": INPUT_CLASS,
+                "placeholder": "Provincia",
             }),
 
             "phone": forms.TextInput(attrs={
                 "class": INPUT_CLASS,
                 "placeholder": "612 345 678",
+                "autocomplete": "tel",
             }),
 
             "email": forms.EmailInput(attrs={
@@ -189,22 +309,10 @@ class OwnerContactForm(forms.ModelForm):
                 "placeholder": "correo@email.com",
             }),
 
-            "contact_type": forms.Select(attrs={
-                "class": SELECT_CLASS,
-            }),
-
-            "status": forms.Select(attrs={
-                "class": SELECT_CLASS,
-            }),
-
             "notes": forms.Textarea(attrs={
                 "class": TEXTAREA_CLASS,
                 "rows": 4,
                 "placeholder": "Notas del propietario...",
-            }),
-
-            "properties": forms.SelectMultiple(attrs={
-                "class": "tom-select",
             }),
 
             "assigned_agent": forms.Select(attrs={

@@ -8,6 +8,9 @@ from django.contrib.auth import get_user_model
 from .models import Contact
 from .forms import ContactForm
 from activities.models import Activity
+from listings.models import Listing
+from news.models import News
+from orders.models import Order
 
 from activities.utils import log_activity
 
@@ -17,48 +20,48 @@ User = get_user_model()
 @login_required
 def contact_list(request):
 
-    contacts = Contact.objects.select_related('assigned_agent') \
-        .prefetch_related('properties')
+    contacts = Contact.objects.select_related(
+        "assigned_agent",
+    ).prefetch_related("properties")
 
-    search = request.GET.get("search")
-    status = request.GET.get("status")
-    agent = request.GET.get("agent")
-    ordering = request.GET.get("ordering")
+    search = request.GET.get("search", "").strip()
+    contact_type = request.GET.get("contact_type", "")
+    agent = request.GET.get("agent", "")
+    ordering = request.GET.get("ordering", "")
 
-    # 🔍 SEARCH
     if search:
         contacts = contacts.filter(
-            Q(name__icontains=search) |
-            Q(phone__icontains=search) |
-            Q(email__icontains=search)
+            Q(name__icontains=search)
+            | Q(last_name__icontains=search)
+            | Q(phone__icontains=search)
+            | Q(email__icontains=search)
+            | Q(identification_number__icontains=search)
+            | Q(city__icontains=search)
         )
 
-    # 🎯 STATUS
-    if status:
-        contacts = contacts.filter(status=status)
+    if contact_type in dict(Contact.CONTACT_TYPE_CHOICES):
+        contacts = contacts.filter(contact_type=contact_type)
 
-    # 👤 AGENTE
-    if agent:
-        contacts = contacts.filter(assigned_agent_id=agent)
-
-    # ↕ ORDENACIÓN
-    if ordering:
-        contacts = contacts.order_by(ordering)
+    if request.user.is_superuser or request.user.role in ["admin", "manager"]:
+        if agent:
+            contacts = contacts.filter(assigned_agent_id=agent)
     else:
-        contacts = contacts.order_by("-created_at")
+        contacts = contacts.filter(assigned_agent=request.user)
+
+    ordering_options = {
+        "oldest": "created_at",
+        "name": "name",
+        "city": "city",
+    }
+    contacts = contacts.order_by(ordering_options.get(ordering, "-created_at"))
 
     return render(request, "contacts/list.html", {
         "contacts": contacts,
-        "agents": User.objects.filter(role="agent")
-    })
-
-@login_required
-def contact_detail(request, pk):
-
-    contact = get_object_or_404(Contact, pk=pk)
-
-    return render(request, 'contacts/detail.html', {
-        'contact': contact
+        "agents": User.objects.filter(
+            role="agent",
+            is_active=True,
+        ).order_by("first_name", "last_name", "username"),
+        "contact_type_choices": Contact.CONTACT_TYPE_CHOICES,
     })
 
 @login_required
@@ -209,6 +212,7 @@ def contact_assign_agent(request, pk):
     })
 
 
+@login_required
 def contact_detail(request, pk):
 
     contact = get_object_or_404(
@@ -222,11 +226,38 @@ def contact_detail(request, pk):
         "user"
     )[:20]
 
+    news_items = News.objects.none()
+    listings = Listing.objects.none()
+    orders = Order.objects.none()
+
+    if contact.contact_type == "owner":
+        news_items = News.objects.filter(
+            related_property__contacts=contact,
+        ).select_related(
+            "related_property",
+            "agent",
+        ).distinct().order_by("-created_at")
+        listings = Listing.objects.filter(
+            Q(owner=contact) | Q(property__contacts=contact),
+        ).select_related(
+            "property",
+            "owner",
+            "agent",
+        ).distinct().order_by("-created_at")
+    elif contact.contact_type == "buyer":
+        orders = Order.objects.filter(buyer=contact).select_related(
+            "zone",
+            "buyer__assigned_agent",
+        ).order_by("-created_at")
+
     return render(
         request,
         "contacts/detail.html",
         {
             "contact": contact,
-            "activities": activities
+            "activities": activities,
+            "news_items": news_items,
+            "listings": listings,
+            "orders": orders,
         }
     )

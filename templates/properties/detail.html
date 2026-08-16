@@ -16,12 +16,11 @@
             <div>
 
                 <h1 class="text-4xl font-bold text-gray-800">
-                    {{ property.title }}
+                    {{ property.full_address }}
                 </h1>
 
                 <p class="text-gray-500 mt-2">
 
-                    {{ property.street }} {{ property.number }},
                     {{ property.postal_code }}
                     {{ property.city }},
                     {{ property.province }}
@@ -29,10 +28,6 @@
                 </p>
 
             </div>
-
-            <p class="text-4xl font-bold text-gray-900">
-                €{{ property.price }}
-            </p>
 
         </div>
 

@@ -1,0 +1,142 @@
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.urls import reverse
+
+from contacts.models import Contact
+from properties.models import Zone
+
+from .models import Order, OrderComment
+
+
+class OrderCrudTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username="orders-agent",
+            password="test-password",
+        )
+        self.buyer = Contact.objects.create(
+            name="Compradora",
+            phone="600000001",
+            contact_type="buyer",
+            assigned_agent=self.user,
+        )
+        self.owner = Contact.objects.create(
+            name="Propietario",
+            phone="600000002",
+            contact_type="owner",
+        )
+        self.zone = Zone.objects.create(name="Centro")
+        self.client.force_login(self.user)
+
+    def order_data(self):
+        return {
+            "buyer": self.buyer.pk,
+            "zone": self.zone.pk,
+            "max_price": "275000",
+            "payment_type": "financing",
+            "property_type": "flat",
+            "bedrooms": 3,
+            "bathrooms": 2,
+            "notes": "Con terraza.",
+        }
+
+    def test_create_order_for_buyer(self):
+        data = self.order_data()
+        data.pop("buyer")
+        response = self.client.post(
+            reverse("order_create_for_buyer", args=[self.buyer.pk]),
+            data,
+        )
+
+        order = Order.objects.get()
+        self.assertRedirects(response, reverse("order_detail", args=[order.pk]))
+        self.assertEqual(order.buyer, self.buyer)
+
+    def test_general_form_rejects_owner_as_buyer(self):
+        data = self.order_data()
+        data["buyer"] = self.owner.pk
+        response = self.client.post(reverse("order_create"), data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Order.objects.exists())
+
+    def test_order_forms_use_grouped_recent_style(self):
+        general_response = self.client.get(reverse("order_create"))
+        buyer_response = self.client.get(
+            reverse("order_create_for_buyer", args=[self.buyer.pk])
+        )
+
+        for response in (general_response, buyer_response):
+            with self.subTest(path=response.request["PATH_INFO"]):
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, "1. Persona compradora")
+                self.assertContains(response, "2. Criterios de búsqueda")
+                self.assertContains(response, "3. Preferencias adicionales")
+                self.assertContains(response, "rounded-3xl")
+
+        self.assertContains(general_response, 'name="buyer"', html=False)
+        self.assertNotContains(buyer_response, 'name="buyer"', html=False)
+        self.assertContains(buyer_response, self.buyer.name)
+
+    def test_update_and_delete_order(self):
+        order = Order.objects.create(
+            buyer=self.buyer,
+            max_price="200000",
+            payment_type="cash",
+            property_type="local",
+        )
+        data = self.order_data()
+        response = self.client.post(reverse("order_update", args=[order.pk]), data)
+        order.refresh_from_db()
+
+        self.assertRedirects(response, reverse("order_detail", args=[order.pk]))
+        self.assertEqual(order.property_type, "flat")
+
+        response = self.client.post(reverse("order_delete", args=[order.pk]))
+        self.assertRedirects(response, reverse("order_list"))
+        self.assertFalse(Order.objects.exists())
+
+    def test_add_comment_to_order(self):
+        order = Order.objects.create(
+            buyer=self.buyer,
+            max_price="250000",
+            payment_type="financing",
+            property_type="flat",
+        )
+
+        response = self.client.post(
+            reverse("order_add_comment", args=[order.pk]),
+            {"text": "Busca una vivienda con terraza y buena iluminación."},
+            follow=True,
+        )
+
+        comment = OrderComment.objects.get()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(comment.order, order)
+        self.assertEqual(comment.user, self.user)
+        self.assertEqual(
+            comment.text,
+            "Busca una vivienda con terraza y buena iluminación.",
+        )
+        self.assertContains(response, comment.text)
+
+    def test_empty_order_comment_is_rejected(self):
+        order = Order.objects.create(
+            buyer=self.buyer,
+            max_price="250000",
+            payment_type="cash",
+            property_type="house",
+        )
+
+        response = self.client.post(
+            reverse("order_add_comment", args=[order.pk]),
+            {"text": "   "},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(OrderComment.objects.exists())
+        self.assertContains(
+            response,
+            "El comentario no puede estar vacío.",
+            status_code=400,
+        )

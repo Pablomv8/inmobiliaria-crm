@@ -32,12 +32,21 @@ def sale_list(request):
     agent = request.GET.get("agent")
     ordering = request.GET.get("ordering")
 
+    if not (
+        request.user.is_superuser
+        or request.user.role in ["admin", "manager"]
+    ):
+        sales = sales.filter(agent=request.user)
+        agent = str(request.user.pk)
+
     # BUSCADOR
     if search:
 
         sales = sales.filter(
 
-            Q(related_property__title__icontains=search) |
+            Q(related_property__street__icontains=search) |
+            Q(related_property__number__icontains=search) |
+            Q(related_property__city__icontains=search) |
             Q(buyer__name__icontains=search) |
             Q(agent__username__icontains=search)
 
@@ -49,7 +58,10 @@ def sale_list(request):
         sales = sales.filter(status=status)
 
     # AGENTE
-    if agent:
+    if agent and (
+        request.user.is_superuser
+        or request.user.role in ["admin", "manager"]
+    ):
 
         sales = sales.filter(agent_id=agent)
 
@@ -126,7 +138,7 @@ class SaleCreateView(CreateView):
         log_activity(
             self.request.user,
             "sale_created",
-            f"Registró la venta de '{sale.related_property.title}'"
+            f"Registró la venta de '{sale.related_property.full_address}'"
         )
 
         return response

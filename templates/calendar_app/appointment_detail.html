@@ -15,7 +15,7 @@
 
     <div class="bg-white rounded-2xl shadow-sm border p-8">
 
-        <div class="flex justify-between items-start mb-8">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-8">
 
             <div>
 
@@ -29,18 +29,23 @@
 
             </div>
 
-            <span class="
-                px-3 py-1 rounded-full text-sm
-                {% if appointment.status == 'scheduled' %}
-                    bg-blue-100 text-blue-700
-                {% elif appointment.status == 'completed' %}
-                    bg-green-100 text-green-700
-                {% else %}
-                    bg-red-100 text-red-700
-                {% endif %}
-            ">
-                {{ appointment.get_status_display }}
-            </span>
+            <div class="flex flex-wrap items-center gap-3">
+                <a href="{% url 'appointment_update' appointment.id %}" class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                    ✏️ Editar cita
+                </a>
+                <span class="
+                    px-3 py-1 rounded-full text-sm
+                    {% if appointment.status == 'scheduled' %}
+                        bg-blue-100 text-blue-700
+                    {% elif appointment.status == 'completed' %}
+                        bg-green-100 text-green-700
+                    {% else %}
+                        bg-red-100 text-red-700
+                    {% endif %}
+                ">
+                    {{ appointment.get_status_display }}
+                </span>
+            </div>
 
         </div>
     
@@ -54,9 +59,9 @@
             </div>
 
             <div class="bg-gray-50 rounded-xl p-4">
-                <p class="text-gray-500 text-sm">Hora</p>
+                <p class="text-gray-500 text-sm">Horario</p>
                 <p class="font-semibold">
-                    {{ appointment.time }}
+                    {{ appointment.time|time:"H:i" }}–{{ appointment.end_time|time:"H:i" }}
                 </p>
             </div>
 
@@ -98,13 +103,6 @@
 
                 {% if appointment.status == "scheduled" %}
 
-                    <a href="{% url 'appointment_update_status' appointment.id 'completed' %}"
-                    class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition">
-
-                        ✔ Marcar como completada
-
-                    </a>
-
                     <a href="{% url 'appointment_update_status' appointment.id 'cancelled' %}"
                     class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition">
 
@@ -117,15 +115,8 @@
                 {% if appointment.status == "completed" %}
 
                     <div class="text-sm text-green-700 font-medium bg-green-50 px-4 py-2 rounded-lg">
-                        ✔ Cita completada con éxito
+                        ✔ Cita completada
                     </div>
-
-                    <a href="{% url 'create_listing' appointment.id %}"
-                    class="px-4 py-2 bg-black text-white rounded-lg text-sm hover:bg-gray-800 transition">
-
-                        🏠 Crear encargo
-
-                    </a>
 
                 {% endif %}
 
@@ -139,14 +130,268 @@
 
             </div>
 
+            {% if appointment.status != "cancelled" and appointment.appointment_type == "acquisition" or appointment.status != "cancelled" and appointment.appointment_type == "follow_up" or appointment.status != "cancelled" and appointment.appointment_type == "sale" or appointment.status != "cancelled" and appointment.appointment_type == "proposal" or appointment.status != "cancelled" and appointment.appointment_type == "proposal_acceptance" or appointment.status != "cancelled" and appointment.appointment_type == "contract" or appointment.status != "cancelled" and appointment.appointment_type == "signing" %}
+                <div class="mt-8 rounded-2xl border border-gray-200 bg-gray-50 p-6">
+                    <div class="flex items-start justify-between gap-4 mb-4">
+                        <div>
+                            <h3 class="font-semibold text-gray-900">
+                                {% if appointment.result_comment %}
+                                    Comentario de la cita
+                                {% else %}
+                                    Añadir comentario de la cita
+                                {% endif %}
+                            </h3>
+                            <p class="text-sm text-gray-500 mt-1">
+                                Al guardar el comentario, la cita se marcará como completada.
+                            </p>
+                        </div>
+                    </div>
+
+                    {% if appointment.result_comment %}
+                        <div class="rounded-xl bg-white border border-gray-200 p-4 mb-4">
+                            <p class="text-gray-700 whitespace-pre-line">{{ appointment.result_comment }}</p>
+                        </div>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'appointment_add_result' appointment.id %}" class="space-y-3">
+                        {% csrf_token %}
+                        {{ result_form.result_comment }}
+                        {% if result_form.result_comment.errors %}
+                            <p class="text-sm text-red-600">{{ result_form.result_comment.errors.0 }}</p>
+                        {% endif %}
+                        <div class="flex justify-end">
+                            <button type="submit"
+                                    class="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm hover:bg-black transition">
+                                {% if appointment.result_comment %}
+                                    Actualizar comentario
+                                {% else %}
+                                    Guardar comentario y completar cita
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            {% endif %}
+
+            {% if appointment.appointment_type == "follow_up" and appointment.status == "completed" and appointment.result_comment %}
+                <div class="mt-6 rounded-2xl border border-green-200 bg-green-50 p-6">
+                    <h3 class="font-semibold text-green-800">Seguimiento completado</h3>
+                    <p class="text-sm text-green-700 mt-1">
+                        El comentario ha quedado registrado en el historial del encargo.
+                    </p>
+                </div>
+            {% endif %}
+
+            {% if appointment.appointment_type == "sale" and appointment.status == "completed" and appointment.result_comment %}
+                <div class="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-6">
+                    {% if appointment.result_success is None %}
+                        <h3 class="text-lg font-semibold text-gray-900">
+                            ¿El comprador quiere hacer una propuesta de compra?
+                        </h3>
+                        <p class="text-sm text-gray-600 mt-1 mb-5">
+                            Registra la decisión tomada después de visitar el inmueble.
+                        </p>
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <a href="{% url 'create_proposal_appointment' appointment.id %}"
+                               class="flex-1 px-5 py-3 rounded-xl bg-green-600 text-white text-center font-medium hover:bg-green-700 transition">
+                                Sí, crear cita de propuesta
+                            </a>
+                            <form method="post" action="{% url 'decline_sale_proposal' appointment.id %}" class="flex-1">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="w-full px-5 py-3 rounded-xl bg-gray-900 text-white font-medium hover:bg-black transition">
+                                    No, sin propuesta
+                                </button>
+                            </form>
+                        </div>
+                    {% elif appointment.result_success %}
+                        {% if proposal_appointment %}
+                            <h3 class="font-semibold text-green-800">Cita de propuesta programada</h3>
+                            <p class="text-sm text-green-700 mt-1">
+                                El comprador ha decidido continuar con una cita de propuesta.
+                            </p>
+                            <a href="{% url 'appointment_detail' proposal_appointment.id %}"
+                               class="inline-flex mt-4 px-4 py-2 rounded-xl bg-green-600 text-white text-sm hover:bg-green-700 transition">
+                                Ver cita de propuesta
+                            </a>
+                        {% elif proposal %}
+                            <h3 class="font-semibold text-green-800">Propuesta de compra registrada</h3>
+                            <p class="text-sm text-green-700 mt-1">Esta propuesta procede del flujo anterior.</p>
+                            <a href="{% url 'proposal_appointment_detail' proposal.id %}"
+                               class="inline-flex mt-4 px-4 py-2 rounded-xl bg-green-600 text-white text-sm hover:bg-green-700 transition">
+                                Ver propuesta
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <h3 class="font-semibold text-gray-900">Visita sin propuesta</h3>
+                        <p class="text-sm text-gray-600 mt-1">
+                            Se ha registrado que el comprador no realizará una propuesta.
+                        </p>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            {% if appointment.appointment_type == "proposal" and appointment.status == "completed" and appointment.result_comment %}
+                <div class="mt-6 rounded-2xl border border-green-200 bg-green-50 p-6">
+                    {% if proposal %}
+                        <h3 class="font-semibold text-green-800">Propuesta de compra registrada</h3>
+                        <p class="text-sm text-green-700 mt-1">
+                            La oferta económica ya está vinculada a este encargo.
+                        </p>
+                        <a href="{% url 'proposal_appointment_detail' proposal.id %}"
+                           class="inline-flex mt-4 px-4 py-2 rounded-xl bg-green-600 text-white text-sm hover:bg-green-700 transition">
+                            Ver propuesta
+                        </a>
+                    {% else %}
+                        <h3 class="text-lg font-semibold text-gray-900">Cita de propuesta completada</h3>
+                        <p class="text-sm text-gray-600 mt-1 mb-5">
+                            Registra ahora las condiciones económicas ofrecidas por el comprador.
+                        </p>
+                        <a href="{% url 'create_purchase_proposal' appointment.id %}"
+                           class="inline-flex px-5 py-3 rounded-xl bg-green-600 text-white text-center font-medium hover:bg-green-700 transition">
+                            Crear propuesta de compra
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            {% if appointment.appointment_type == "proposal_acceptance" and appointment.status == "completed" and appointment.result_comment %}
+                <div class="mt-6 rounded-2xl border border-violet-200 bg-violet-50 p-6">
+                    {% if appointment.result_success is None %}
+                        <h3 class="text-lg font-semibold text-gray-900">¿El propietario acepta la propuesta?</h3>
+                        <p class="text-sm text-gray-600 mt-1 mb-5">
+                            Si la acepta, programa la cita de contrato, la de escrituración o ambas. Si no, registra la contraoferta del propietario.
+                        </p>
+                        <div class="grid sm:grid-cols-3 gap-3">
+                            <a href="{% url 'create_post_acceptance_appointment' appointment.id 'contract' %}"
+                               class="px-5 py-3 rounded-xl bg-green-600 text-white text-center font-medium hover:bg-green-700 transition">
+                                Sí, cita de contrato
+                            </a>
+                            <a href="{% url 'create_post_acceptance_appointment' appointment.id 'signing' %}"
+                               class="px-5 py-3 rounded-xl bg-blue-600 text-white text-center font-medium hover:bg-blue-700 transition">
+                                Sí, cita de escrituración
+                            </a>
+                            <a href="{% url 'create_counteroffer' appointment.id %}"
+                               class="px-5 py-3 rounded-xl bg-gray-900 text-white text-center font-medium hover:bg-black transition">
+                                No, crear contraoferta
+                            </a>
+                        </div>
+                    {% elif appointment.result_success %}
+                        <h3 class="font-semibold text-green-800">Propuesta aceptada</h3>
+                        <p class="text-sm text-green-700 mt-1">Continúa el proceso con las citas finales.</p>
+                        <div class="flex flex-wrap gap-3 mt-4">
+                            {% if contract_appointment %}
+                                <a href="{% url 'appointment_detail' contract_appointment.id %}" class="px-4 py-2 rounded-xl bg-green-600 text-white text-sm">Ver cita de contrato</a>
+                            {% else %}
+                                <a href="{% url 'create_post_acceptance_appointment' appointment.id 'contract' %}" class="px-4 py-2 rounded-xl border border-green-300 text-green-800 text-sm">+ Programar contrato</a>
+                            {% endif %}
+                            {% if signing_appointment %}
+                                <a href="{% url 'appointment_detail' signing_appointment.id %}" class="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm">Ver cita de escrituración</a>
+                            {% else %}
+                                <a href="{% url 'create_post_acceptance_appointment' appointment.id 'signing' %}" class="px-4 py-2 rounded-xl border border-blue-300 text-blue-800 text-sm">+ Programar escrituración</a>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <h3 class="font-semibold text-gray-900">Propuesta no aceptada</h3>
+                        {% if counteroffer %}
+                            <p class="text-sm text-gray-600 mt-1">El propietario ha realizado una contraoferta.</p>
+                            <a href="{% url 'counteroffer_detail' counteroffer.id %}" class="inline-flex mt-4 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm">Ver contraoferta</a>
+                        {% else %}
+                            <a href="{% url 'create_counteroffer' appointment.id %}" class="inline-flex mt-4 px-4 py-2 rounded-xl bg-gray-900 text-white text-sm">Crear contraoferta</a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            {% if appointment.appointment_type == "acquisition" and appointment.status == "completed" and appointment.result_comment %}
+                <div class="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-6">
+                    {% if appointment.result_success is None %}
+                        <h3 class="text-lg font-semibold text-gray-900">¿Cita con éxito?</h3>
+                        <p class="text-sm text-gray-600 mt-1 mb-5">
+                            Elige el siguiente paso para esta oportunidad.
+                        </p>
+
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <div class="flex-1">
+                                <a href="{% url 'create_listing' appointment.id %}"
+                                   class="block w-full px-5 py-3 rounded-xl bg-green-600 text-white text-center font-medium hover:bg-green-700 transition">
+                                    Sí, crear encargo
+                                </a>
+                            </div>
+
+                            <form method="post" action="{% url 'appointment_schedule_call' appointment.id %}" class="flex-1">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="w-full px-5 py-3 rounded-xl bg-gray-900 text-white font-medium hover:bg-black transition">
+                                    No, programar llamada
+                                </button>
+                            </form>
+                        </div>
+                    {% elif appointment.result_success %}
+                        <h3 class="font-semibold text-green-800">Cita con éxito</h3>
+                        <p class="text-sm text-green-700 mt-1">
+                            Se ha iniciado el proceso de encargo para este inmueble.
+                        </p>
+                        {% if listing %}
+                            <a href="{% url 'listing_detail' listing.id %}"
+                               class="inline-flex mt-4 px-4 py-2 rounded-xl bg-green-600 text-white text-sm hover:bg-green-700 transition">
+                                Ver encargo
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <h3 class="font-semibold text-gray-900">Cita sin encargo</h3>
+                        <p class="text-sm text-gray-600 mt-1">
+                            Se ha elegido continuar el seguimiento mediante una llamada.
+                        </p>
+                    {% endif %}
+                </div>
+            {% endif %}
+
             <div class="mt-6">
 
+                {% if appointment.news %}
                     <a
                         href="{% url 'news_detail' appointment.news.id %}"
                         class="inline-flex items-center text-sm text-blue-600 hover:underline"
                     >
                         📰 Ver historial completo de la noticia
                     </a>
+                {% endif %}
+
+                {% if appointment.listing %}
+                    <a href="{% url 'listing_detail' appointment.listing.id %}"
+                       class="ml-4 inline-flex items-center text-sm text-blue-600 hover:underline">
+                        🏠 Ver encargo relacionado
+                    </a>
+                {% endif %}
+
+                {% if appointment.order %}
+                    <a href="{% url 'order_detail' appointment.order.id %}"
+                       class="ml-4 inline-flex items-center text-sm text-blue-600 hover:underline">
+                        📋 Ver pedido relacionado
+                    </a>
+                {% endif %}
+
+                {% if appointment.source_sale_appointment %}
+                    <a href="{% url 'appointment_detail' appointment.source_sale_appointment.id %}"
+                       class="ml-4 inline-flex items-center text-sm text-blue-600 hover:underline">
+                        📅 Ver cita de venta origen
+                    </a>
+                {% endif %}
+
+                {% if appointment.purchase_proposal %}
+                    <a href="{% url 'proposal_appointment_detail' appointment.purchase_proposal.id %}"
+                       class="ml-4 inline-flex items-center text-sm text-blue-600 hover:underline">
+                        🤝 Ver propuesta relacionada
+                    </a>
+                {% endif %}
+
+                {% if appointment.source_acceptance_appointment %}
+                    <a href="{% url 'appointment_detail' appointment.source_acceptance_appointment.id %}"
+                       class="ml-4 inline-flex items-center text-sm text-blue-600 hover:underline">
+                        📅 Ver cita de aceptación origen
+                    </a>
+                {% endif %}
 
             </div>
 
@@ -167,6 +412,7 @@
 
     </div>
     {% endif %}
-    
+
+</div>
 
 {% endblock %}

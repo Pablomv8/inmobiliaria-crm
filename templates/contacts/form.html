@@ -1,291 +1,208 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
-<style>
-
-.ts-wrapper .ts-control {
-    border-radius: 0.75rem;
-    min-height: 48px;
-    border: 1px solid rgb(209 213 219);
-    box-shadow: none;
-}
-
-.ts-wrapper.focus .ts-control {
-    border-color: rgb(99 102 241);
-    box-shadow: 0 0 0 4px rgb(224 231 255);
-}
-
-.ts-wrapper.multi .ts-control > div {
-    border-radius: 9999px;
-    padding: 4px 10px;
-}
-
-</style>
 {% block content %}
-
-<div class="max-w-5xl mx-auto px-6 py-8">
-
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-200">
-
-        <!-- Header -->
-        <div class="px-8 py-6 border-b border-gray-200">
-
-            <h1 class="text-3xl font-bold text-gray-900">
-                {{ title }}
-            </h1>
-
-            <p class="mt-2 text-gray-500">
-                Completa la información del contacto.
-            </p>
-
-        </div>
-
-        <form method="POST" class="p-8 space-y-8">
-
-            {% csrf_token %}
-            {{ form.media }}
-
-            {% if form.non_field_errors %}
-                <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4">
-                    {{ form.non_field_errors }}
-                </div>
-            {% endif %}
-
-            <!-- Información personal -->
-            <section>
-
-                <h2 class="text-lg font-semibold text-gray-900 mb-5">
-                    Información personal
-                </h2>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                    <div>
-                        <label class="block mb-2 text-sm font-medium text-gray-700">
-                            Nombre
-                        </label>
-
-                        {{ form.name }}
-
-                        {% if form.name.errors %}
-                            <p class="mt-1 text-sm text-red-600">
-                                {{ form.name.errors.0 }}
-                            </p>
-                        {% endif %}
-                    </div>
-
-                    <div>
-
-                        <label class="block mb-2 text-sm font-medium text-gray-700">
-                            Teléfono
-                        </label>
-
-                        <div class="flex">
-
-                            <div
-                                class="flex items-center px-4 rounded-l-xl border border-r-0 border-gray-300 bg-gray-50 text-gray-600 font-medium">
-
-                                +34
-
-                            </div>
-
-                            {{ form.phone }}
-
-                        </div>
-
-                        {% if form.phone.errors %}
-                            <p class="mt-1 text-sm text-red-600">
-                                {{ form.phone.errors.0 }}
-                            </p>
-                        {% endif %}
-
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label class="block mb-2 text-sm font-medium text-gray-700">
-                            Email
-                        </label>
-
-                        {{ form.email }}
-
-                        {% if form.email.errors %}
-                            <p class="mt-1 text-sm text-red-600">
-                                {{ form.email.errors.0 }}
-                            </p>
-                        {% endif %}
-                    </div>
-
-                </div>
-
-            </section>
-
-            <!-- Gestión comercial -->
-            <section class="border-t border-gray-200 pt-8">
-
-                <h2 class="text-lg font-semibold text-gray-900 mb-5">
-                    Gestión comercial
-                </h2>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-                    <div>
-                        <label class="block mb-2 text-sm font-medium text-gray-700">
-                            Tipo de contacto
-                        </label>
-
-                        {{ form.contact_type }}
-                    </div>
-
-                    <div>
-                        <label class="block mb-2 text-sm font-medium text-gray-700">
-                            Estado
-                        </label>
-
-                        {{ form.status }}
-                    </div>
-
-                    <div>
-                        <label class="block mb-2 text-sm font-medium text-gray-700">
-                            Encargado
-                        </label>
-
-                        {{ form.assigned_agent }}
-                    </div>
-
-                </div>
-
-            </section>
-
-            <!-- Inmuebles -->
-            <section class="border-t border-gray-200 pt-8 mt-3">
-
-                <h2 class="text-lg font-semibold text-gray-900 mb-5">
-                    Inmuebles asociados
-                </h2>
-
-                <div>
-
-                    <label class="block mb-2 text-sm font-medium text-gray-700">
-                        Inmuebles
-                    </label>
-
-                    {{ form.properties }}
-
-                    <p class="mt-2 text-sm text-gray-500">
-                        Selecciona uno o varios inmuebles relacionados con este contacto.
-                    </p>
-
-                </div>
-
-            </section>
-
-            <!-- Notas -->
-            <section class="border-t border-gray-200 pt-8 mt-2">
-
-                <h2 class="text-lg font-semibold text-gray-900 mb-5">
-                    Notas internas
-                </h2>
-
-                <div>
-
-                    <label class="block mb-2 text-sm font-medium text-gray-700">
-                        Notas
-                    </label>
-
-                    {{ form.notes }}
-
-                </div>
-
-            </section>
-
-            <!-- Footer -->
-            <div class="flex justify-end gap-3 pt-8 border-t border-gray-200">
-
-                <a
-                    href="{% url 'contact_list' %}"
-                    class="px-5 py-3 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
-
-                    Cancelar
-
-                </a>
-
-                <button
-                    type="submit"
-                    class="px-6 py-3 rounded-xl bg-gray-900 text-white hover:bg-black transition shadow-sm">
-
-                    Guardar contacto
-
-                </button>
-
-            </div>
-
-        </form>
-
+<style>
+    .ts-wrapper .ts-control {
+        min-height: 48px;
+        border: 1px solid rgb(209 213 219);
+        border-radius: 0.75rem;
+        padding: 0.65rem 1rem;
+        box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+    }
+    .ts-wrapper.focus .ts-control {
+        border-color: rgb(99 102 241);
+        box-shadow: 0 0 0 4px rgb(224 231 255);
+    }
+    .ts-wrapper.multi .ts-control > div {
+        border-radius: 9999px;
+        padding: 0.25rem 0.65rem;
+    }
+</style>
+
+<div class="mx-auto max-w-5xl space-y-6">
+    <div>
+        <a href="{% url 'contact_list' %}" class="text-sm font-medium text-gray-500 hover:text-gray-900">← Volver a contactos</a>
+        <h1 class="mt-3 text-3xl font-bold text-gray-900">{{ title }}</h1>
+        <p class="mt-2 text-sm text-gray-500">Completa los datos personales, de contacto y de gestión comercial.</p>
     </div>
 
-</div>
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        {{ form.media }}
 
+        {% if form.non_field_errors %}
+            <div class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+            <div class="mb-6">
+                <p class="text-sm font-semibold text-indigo-700">1. Información personal</p>
+                <h2 class="mt-1 text-xl font-bold text-gray-900">Identificación del contacto</h2>
+                <p class="mt-2 text-sm text-gray-500">Datos básicos para identificar correctamente a la persona.</p>
+            </div>
+
+            <div class="grid gap-5 md:grid-cols-2">
+                <div>
+                    <label for="{{ form.name.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Nombre</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.last_name.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Apellidos</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}<p class="mt-1 text-sm text-red-600">{{ form.last_name.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.identification_number.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Documento de identidad</label>
+                    {{ form.identification_number }}
+                    {% if form.identification_number.errors %}<p class="mt-1 text-sm text-red-600">{{ form.identification_number.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.marital_status.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Estado civil</label>
+                    {{ form.marital_status }}
+                    {% if form.marital_status.errors %}<p class="mt-1 text-sm text-red-600">{{ form.marital_status.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.birth_date.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Fecha de nacimiento</label>
+                    {{ form.birth_date }}
+                    {% if form.birth_date.errors %}<p class="mt-1 text-sm text-red-600">{{ form.birth_date.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.occupation.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Profesión</label>
+                    {{ form.occupation }}
+                    {% if form.occupation.errors %}<p class="mt-1 text-sm text-red-600">{{ form.occupation.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+            <div class="mb-6">
+                <p class="text-sm font-semibold text-indigo-700">2. Datos de contacto</p>
+                <h2 class="mt-1 text-xl font-bold text-gray-900">Comunicación y domicilio</h2>
+                <p class="mt-2 text-sm text-gray-500">Información para contactar y localizar al cliente.</p>
+            </div>
+
+            <div class="grid gap-5 md:grid-cols-2">
+                <div>
+                    <label for="{{ form.phone.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Teléfono</label>
+                    <div class="flex">
+                        <span class="flex items-center rounded-l-xl border border-r-0 border-gray-300 bg-gray-50 px-4 font-semibold text-gray-600">+34</span>
+                        {{ form.phone }}
+                    </div>
+                    {% if form.phone.errors %}<p class="mt-1 text-sm text-red-600">{{ form.phone.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.email.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Correo electrónico</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}<p class="mt-1 text-sm text-red-600">{{ form.email.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="md:col-span-2">
+                    <div class="my-1 border-t border-gray-100"></div>
+                </div>
+                <div class="md:col-span-2">
+                    <label for="{{ form.street.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Calle</label>
+                    {{ form.street }}
+                    {% if form.street.errors %}<p class="mt-1 text-sm text-red-600">{{ form.street.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.number.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Número</label>
+                    {{ form.number }}
+                    {% if form.number.errors %}<p class="mt-1 text-sm text-red-600">{{ form.number.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.floor.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Piso / Puerta</label>
+                    {{ form.floor }}
+                    {% if form.floor.errors %}<p class="mt-1 text-sm text-red-600">{{ form.floor.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.postal_code.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Código postal</label>
+                    {{ form.postal_code }}
+                    {% if form.postal_code.errors %}<p class="mt-1 text-sm text-red-600">{{ form.postal_code.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.city.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Ciudad</label>
+                    {{ form.city }}
+                    {% if form.city.errors %}<p class="mt-1 text-sm text-red-600">{{ form.city.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="md:col-span-2">
+                    <label for="{{ form.province.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Provincia</label>
+                    {{ form.province }}
+                    {% if form.province.errors %}<p class="mt-1 text-sm text-red-600">{{ form.province.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+            <div class="mb-6">
+                <p class="text-sm font-semibold text-indigo-700">3. Gestión comercial</p>
+                <h2 class="mt-1 text-xl font-bold text-gray-900">Clasificación y responsable</h2>
+                <p class="mt-2 text-sm text-gray-500">Define el papel del contacto y quién realizará su seguimiento.</p>
+            </div>
+
+            <div class="grid gap-5 md:grid-cols-2">
+                <div>
+                    <label for="{{ form.contact_type.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Tipo de contacto</label>
+                    {{ form.contact_type }}
+                    {% if form.contact_type.errors %}<p class="mt-1 text-sm text-red-600">{{ form.contact_type.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.assigned_agent.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Responsable</label>
+                    {{ form.assigned_agent }}
+                    {% if form.assigned_agent.errors %}<p class="mt-1 text-sm text-red-600">{{ form.assigned_agent.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="md:col-span-2">
+                    <label for="{{ form.properties.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Inmuebles asociados</label>
+                    {{ form.properties }}
+                    {% if form.properties.errors %}<p class="mt-1 text-sm text-red-600">{{ form.properties.errors.0 }}</p>{% endif %}
+                    <p class="mt-2 text-xs text-gray-500">Puedes buscar y seleccionar varios inmuebles relacionados.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+            <div class="mb-6">
+                <p class="text-sm font-semibold text-indigo-700">4. Información adicional</p>
+                <h2 class="mt-1 text-xl font-bold text-gray-900">Notas internas</h2>
+                <p class="mt-2 text-sm text-gray-500">Observaciones visibles únicamente para el equipo.</p>
+            </div>
+            <label for="{{ form.notes.id_for_label }}" class="sr-only">Notas</label>
+            {{ form.notes }}
+            {% if form.notes.errors %}<p class="mt-1 text-sm text-red-600">{{ form.notes.errors.0 }}</p>{% endif %}
+        </section>
+
+        <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <a href="{% url 'contact_list' %}" class="rounded-xl border border-gray-300 px-5 py-3 text-center font-semibold text-gray-700 hover:bg-gray-50">Cancelar</a>
+            <button type="submit" class="rounded-xl bg-gray-900 px-6 py-3 font-semibold text-white shadow-sm hover:bg-black">Guardar contacto</button>
+        </div>
+    </form>
+</div>
 {% endblock %}
 
 {% block extra_js %}
-
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-
     const propertySelect = document.querySelector('#id_properties');
-
-    if (propertySelect) {
-
+    if (propertySelect && !propertySelect.tomselect) {
         new TomSelect(propertySelect, {
-            plugins: {
-                remove_button: {
-                    title: 'Eliminar'
-                }
-            },
-
+            plugins: { remove_button: { title: 'Eliminar' } },
             create: false,
-
             maxOptions: 100,
-
             placeholder: 'Buscar inmueble por dirección...',
-
             searchField: ['text'],
         });
-
     }
 
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-
     const phoneInput = document.getElementById('id_phone');
-
     if (!phoneInput) return;
-
     phoneInput.addEventListener('input', function () {
-
-        let value = this.value.replace(/\D/g, '');
-
-        value = value.substring(0, 9);
-
+        let value = this.value.replace(/\D/g, '').substring(0, 9);
         if (value.length > 6) {
-            value = value.replace(
-                /(\d{3})(\d{3})(\d+)/,
-                '$1 $2 $3'
-            );
+            value = value.replace(/(\d{3})(\d{3})(\d+)/, '$1 $2 $3');
+        } else if (value.length > 3) {
+            value = value.replace(/(\d{3})(\d+)/, '$1 $2');
         }
-        else if (value.length > 3) {
-            value = value.replace(
-                /(\d{3})(\d+)/,
-                '$1 $2'
-            );
-        }
-
         this.value = value;
-
     });
-
 });
-
 </script>
-
 {% endblock %}

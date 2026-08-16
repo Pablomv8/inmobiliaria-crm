@@ -1,133 +1,89 @@
-<aside class="w-72 h-screen bg-white border-r border-gray-200 flex flex-col">
+{% with current=request.resolver_match.url_name %}
+<div class="flex h-full min-h-0 w-full flex-col">
+    <div class="flex h-20 shrink-0 items-center justify-between border-b border-gray-200 px-6">
+        <a href="{% url 'dashboard' %}" class="flex items-center gap-3 text-gray-900">
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-900 text-white">
+                <i class="fa-solid fa-building"></i>
+            </span>
+            <span class="text-xl font-bold">InmoCRM</span>
+        </a>
 
-    <!-- Logo -->
-    <div class="h-20 flex items-center justify-between px-6 border-b border-gray-200">
-
-        
-
-        <!-- Botón cerrar (solo móvil) -->
         <button
-            class="xl:hidden p-2 rounded hover:bg-gray-100 text-xl"
+            type="button"
+            class="inline-flex h-10 w-10 items-center justify-center rounded-xl text-gray-600 hover:bg-gray-100 lg:hidden"
             @click="sidebarOpen = false"
+            aria-label="Cerrar menú principal"
         >
-            ✕
+            <i class="fa-solid fa-xmark"></i>
         </button>
-
-        
-        <h1 class="text-2xl font-bold text-gray-800">
-            InmoCRM
-        </h1>
     </div>
 
-    <!-- Navigation -->
-    <nav class="flex-1 p-4 space-y-2">
+    <nav class="min-h-0 flex-1 overflow-y-auto px-4 py-5">
+        <p class="mb-2 px-4 text-xs font-bold uppercase tracking-wider text-gray-400">Principal</p>
+        <div class="space-y-1">
+            <a href="{% url 'dashboard' %}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition {% if current == 'dashboard' %}bg-gray-900 text-white shadow-sm{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                <i class="fa-solid fa-house w-5 text-center"></i>
+                <span>Dashboard</span>
+            </a>
 
-        <a href="{% url 'dashboard' %}"
-        class="flex items-center gap-3 px-4 py-3 rounded-xl
-        {% if request.resolver_match.url_name == 'dashboard' %}
-                bg-gray-900 text-white
-        {% else %}
-                text-gray-700 hover:bg-gray-100
-        {% endif %}">
-                <i class="fa-regular fa-house"></i> Dashboard
-        </a>
+            {% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" %}
+                <a href="{% url 'team_overview' %}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition {% if current == 'team_overview' or current == 'team_member_detail' %}bg-gray-900 text-white shadow-sm{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                    <i class="fa-solid fa-users w-5 text-center"></i>
+                    <span>Seguimiento</span>
+                </a>
+            {% endif %}
 
-        <a href="{% url 'contact_list' %}"
-        class="flex items-center gap-3 px-4 py-3 rounded-xl
-        {% if request.resolver_match.url_name == 'contact_list' %}
-                bg-gray-900 text-white
-        {% else %}
-                text-gray-700 hover:bg-gray-100
-        {% endif %}">
-           <i class="fa-regular fa-user"></i>Personas
-        </a>
+            <a href="{% url 'calendar' %}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition {% if current == 'calendar' or current == 'agenda' or current == 'appointment_detail' or current == 'appointment_update' or current == 'call_detail' %}bg-gray-900 text-white shadow-sm{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                <i class="fa-regular fa-calendar w-5 text-center"></i>
+                <span>Agenda</span>
+            </a>
 
-        <a href="{% url 'task_list' %}"
-        class="flex items-center gap-3 px-4 py-3 rounded-xl
-        {% if request.resolver_match.url_name == 'task_list' %}
-                bg-gray-900 text-white
-        {% else %}
-                text-gray-700 hover:bg-gray-100
-        {% endif %}">
-            <i class="fa-regular fa-clipboard"></i>Tareas
-        </a>
+            <a href="{% url 'task_list' %}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition {% if current == 'task_list' or current == 'task_detail' or current == 'task_create' or current == 'task_update' %}bg-gray-900 text-white shadow-sm{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                <i class="fa-regular fa-clipboard w-5 text-center"></i>
+                <span>Tareas</span>
+            </a>
+        </div>
 
-        <a href="{% url 'properties' %}"
-        class="flex items-center gap-3 px-4 py-3 rounded-xl
-        {% if request.resolver_match.url_name == 'properties' %}
-                bg-gray-900 text-white
-        {% else %}
-                text-gray-700 hover:bg-gray-100
-        {% endif %}">
-            <i class="fa-regular fa-building"></i>Inmuebles
-        </a>
+        <p class="mb-2 mt-6 px-4 text-xs font-bold uppercase tracking-wider text-gray-400">Cartera</p>
+        <div class="space-y-1">
+            <a href="{% url 'contact_list' %}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition {% if current == 'contact_list' or current == 'contact_create' or current == 'contact_update' or current == 'contact_detail' %}bg-gray-900 text-white shadow-sm{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                <i class="fa-regular fa-user w-5 text-center"></i>
+                <span>Personas</span>
+            </a>
 
-        
+            <a href="{% url 'properties' %}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition {% if current == 'properties' or current == 'property_create' or current == 'property_update' or current == 'property_detail' %}bg-gray-900 text-white shadow-sm{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                <i class="fa-regular fa-building w-5 text-center"></i>
+                <span>Inmuebles</span>
+            </a>
 
-        <a href="{% url 'calendar' %}" 
-            class="flex items-center gap-3 px-4 py-3 rounded-xl
-            {% if request.resolver_match.url_name == '' %}
-                    bg-gray-900 text-white
-            {% else %}
-                    text-gray-700 hover:bg-gray-100
-            {% endif %}">
-                <i class="fa-regular fa-newspaper"></i> Noticias
-        </a>
+            <a href="{% url 'news_list' %}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition {% if current == 'news_list' or current == 'news_create_general' or current == 'news_create' or current == 'news_detail' or current == 'news_update' or current == 'news_delete' %}bg-gray-900 text-white shadow-sm{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                <i class="fa-regular fa-newspaper w-5 text-center"></i>
+                <span>Noticias</span>
+            </a>
 
-        <a href="{% url 'listing_list' %}" 
-            class="flex items-center gap-3 px-4 py-3 rounded-xl
-            {% if request.resolver_match.url_name == 'listing_list' %}
-                    bg-gray-900 text-white
-            {% else %}
-                    text-gray-700 hover:bg-gray-100
-            {% endif %}">
-               <i class="fa-solid fa-list-check"></i>Encargos
-        </a>
+            <a href="{% url 'listing_list' %}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition {% if current == 'listing_list' or current == 'listing_detail' or current == 'create_listing' or current == 'create_listing_call' or current == 'create_listing_appointment' %}bg-gray-900 text-white shadow-sm{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                <i class="fa-solid fa-list-check w-5 text-center"></i>
+                <span>Encargos</span>
+            </a>
 
-        <a href="{% url 'calendar' %}" 
-            class="flex items-center gap-3 px-4 py-3 rounded-xl
-            {% if request.resolver_match.url_name == '' %}
-                    bg-gray-900 text-white
-            {% else %}
-                    text-gray-700 hover:bg-gray-100
-            {% endif %}">
-                <i class="fa-solid fa-cart-shopping"></i> Pedidos
-        </a>
+            <a href="{% url 'order_list' %}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition {% if current == 'order_list' or current == 'order_create' or current == 'order_create_for_buyer' or current == 'order_detail' or current == 'order_update' or current == 'order_delete' %}bg-gray-900 text-white shadow-sm{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                <i class="fa-solid fa-cart-shopping w-5 text-center"></i>
+                <span>Pedidos</span>
+            </a>
+        </div>
 
-        <a href="{% url 'calendar' %}" 
-            class="flex items-center gap-3 px-4 py-3 rounded-xl
-            {% if request.resolver_match.url_name == 'calendar' %}
-                    bg-gray-900 text-white
-            {% else %}
-                    text-gray-700 hover:bg-gray-100
-            {% endif %}">
-               <i class="fa-regular fa-calendar"></i> Agenda
-        </a>
+        <p class="mb-2 mt-6 px-4 text-xs font-bold uppercase tracking-wider text-gray-400">Control</p>
+        <div class="space-y-1">
+            <a href="{% url 'sale_list' %}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition {% if current == 'sale_list' %}bg-gray-900 text-white shadow-sm{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                <i class="fa-solid fa-euro-sign w-5 text-center"></i>
+                <span>Ventas</span>
+            </a>
 
-        <a href="{% url 'sale_list' %}"
-        class="flex items-center gap-3 px-4 py-3 rounded-xl
-        {% if request.resolver_match.url_name == '' %}
-                bg-gray-900 text-white
-        {% else %}
-                text-gray-700 hover:bg-gray-100
-        {% endif %}">
-            <i class="fa-solid fa-euro-sign"></i> Ventas
-        </a>
-
-        <a href="{% url 'activity_list' %}"
-            class="flex items-center gap-3 px-4 py-3 rounded-xl
-            {% if request.resolver_match.url_name == 'activity_list' %}
-                    bg-gray-900 text-white
-            {% else %}
-                    text-gray-700 hover:bg-gray-100
-            {% endif %}">
-
-                <i class="fa-solid fa-chart-line"></i> Actividad
-
-        </a>
-
-
-
+            <a href="{% url 'activity_list' %}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition {% if current == 'activity_list' %}bg-gray-900 text-white shadow-sm{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                <i class="fa-solid fa-chart-line w-5 text-center"></i>
+                <span>Actividad</span>
+            </a>
+        </div>
     </nav>
-
-</aside>
+</div>
+{% endwith %}

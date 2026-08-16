@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+        <div><a href="{% url 'order_list' %}" class="text-sm text-gray-500">← Volver a pedidos</a><h1 class="text-3xl font-bold text-gray-900 mt-3">Pedido de {{ order.buyer }}</h1><div class="flex flex-wrap items-center gap-2 mt-2"><p class="text-gray-500">Creado el {{ order.created_at|date:"d/m/Y" }}</p><span class="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium">{{ order.get_status_display }}</span></div></div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'create_order_sale_appointment' order.id %}" class="px-4 py-2 rounded-xl bg-green-600 text-white">Programar cita de venta</a>
+            <a href="{% url 'order_update' order.id %}" class="px-4 py-2 rounded-xl bg-gray-900 text-white">Editar</a>
+            <a href="{% url 'order_delete' order.id %}" class="px-4 py-2 rounded-xl bg-red-50 text-red-700">Eliminar</a>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="rounded-xl bg-gray-50 p-4"><p class="text-sm text-gray-500">Comprador</p><a href="{% url 'contact_detail' order.buyer.id %}" class="font-semibold text-blue-600">{{ order.buyer }}</a></div>
+            <div class="rounded-xl bg-gray-50 p-4"><p class="text-sm text-gray-500">Agente asignado</p><p class="font-semibold">{{ order.buyer.assigned_agent|default:"Sin asignar" }}</p></div>
+            <div class="rounded-xl bg-gray-50 p-4"><p class="text-sm text-gray-500">Presupuesto máximo</p><p class="font-semibold">{{ order.max_price }} €</p></div>
+            <div class="rounded-xl bg-gray-50 p-4"><p class="text-sm text-gray-500">Tipo de inmueble</p><p class="font-semibold">{{ order.get_property_type_display }}</p></div>
+            <div class="rounded-xl bg-gray-50 p-4"><p class="text-sm text-gray-500">Forma de pago</p><p class="font-semibold">{{ order.get_payment_type_display }}</p></div>
+            <div class="rounded-xl bg-gray-50 p-4"><p class="text-sm text-gray-500">Zona</p><p class="font-semibold">{{ order.zone|default:"Cualquier zona" }}</p></div>
+            <div class="rounded-xl bg-gray-50 p-4"><p class="text-sm text-gray-500">Habitaciones</p><p class="font-semibold">{{ order.bedrooms|default:"Sin preferencia" }}</p></div>
+            <div class="rounded-xl bg-gray-50 p-4"><p class="text-sm text-gray-500">Baños</p><p class="font-semibold">{{ order.bathrooms|default:"Sin preferencia" }}</p></div>
+        </div>
+        <div class="mt-6 rounded-xl bg-gray-50 p-5"><h2 class="font-semibold">Otra información</h2><p class="text-gray-700 mt-2 whitespace-pre-line">{{ order.notes|default:"Sin información adicional." }}</p></div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8 mt-6">
+        <div class="mb-5">
+            <h2 class="text-xl font-semibold text-gray-900">Comentarios</h2>
+            <p class="text-sm text-gray-500 mt-1">Registra llamadas, preferencias y novedades del comprador.</p>
+        </div>
+
+        <form method="post" action="{% url 'order_add_comment' order.id %}" class="mb-7">
+            {% csrf_token %}
+            {{ comment_form.text }}
+            {% if comment_form.text.errors %}
+                <p class="text-sm text-red-600 mt-2">{{ comment_form.text.errors.0 }}</p>
+            {% endif %}
+            <div class="flex justify-end mt-3">
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-black transition">
+                    Añadir comentario
+                </button>
+            </div>
+        </form>
+
+        <div class="space-y-4">
+            {% for comment in comments %}
+                <article class="rounded-xl bg-gray-50 border border-gray-100 p-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-2">
+                        <p class="text-sm font-medium text-gray-900">{{ comment.user|default:"Usuario eliminado" }}</p>
+                        <time class="text-xs text-gray-500">{{ comment.created_at|date:"d/m/Y H:i" }}</time>
+                    </div>
+                    <p class="text-gray-700 whitespace-pre-line">{{ comment.text }}</p>
+                </article>
+            {% empty %}
+                <div class="rounded-xl bg-gray-50 p-5 text-sm text-gray-500">
+                    Todavía no hay comentarios en este pedido.
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8 mt-6">
+        <div class="flex items-center justify-between gap-4 mb-5">
+            <div>
+                <h2 class="text-xl font-semibold text-gray-900">Citas del pedido</h2>
+                <p class="text-sm text-gray-500 mt-1">Visitas, aceptación de propuestas, contrato y escrituración.</p>
+            </div>
+            <a href="{% url 'create_order_sale_appointment' order.id %}" class="text-sm font-medium text-green-700">+ Nueva cita</a>
+        </div>
+
+        <div class="space-y-3">
+            {% for appointment in sale_appointments %}
+                <a href="{% url 'appointment_detail' appointment.id %}"
+                   class="block rounded-xl border border-gray-200 p-4 hover:border-gray-400 transition">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div>
+                            <p class="font-semibold text-gray-900">{{ appointment.get_appointment_type_display }} · {{ appointment.listing.property.full_address }}</p>
+                            <p class="text-sm text-gray-500 mt-1">{{ appointment.date|date:"d/m/Y" }} · {{ appointment.time|time:"H:i" }}–{{ appointment.end_time|time:"H:i" }} · {{ appointment.agent }}</p>
+                        </div>
+                        <span class="text-sm {% if appointment.status == 'completed' %}text-green-700{% elif appointment.status == 'cancelled' %}text-red-700{% else %}text-blue-700{% endif %}">
+                            {{ appointment.get_status_display }}
+                        </span>
+                    </div>
+                </a>
+            {% empty %}
+                <div class="rounded-xl bg-gray-50 p-5 text-sm text-gray-500">
+                    Todavía no hay citas programadas para este pedido.
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

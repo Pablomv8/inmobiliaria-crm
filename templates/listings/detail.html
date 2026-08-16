@@ -17,7 +17,7 @@
 
     <div class="bg-white rounded-2xl shadow-sm border p-8">
 
-        <div class="flex justify-between items-start mb-8">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-8">
 
             <div>
 
@@ -31,11 +31,16 @@
 
             </div>
 
-            <span class="px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm">
-
-                {{ listing.get_status_display }}
-
-            </span>
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="px-3 py-2 rounded-full bg-green-100 text-green-700 text-sm">{{ listing.get_status_display }}</span>
+                <span class="px-3 py-2 rounded-full bg-violet-50 text-violet-700 text-sm">{{ listing.get_workflow_status_display }}</span>
+                {% if listing.owner %}
+                    <a href="{% url 'create_listing_call' listing.id %}"
+                       class="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm hover:bg-black">📞 Programar llamada</a>
+                    <a href="{% url 'create_listing_appointment' listing.id %}"
+                       class="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm hover:bg-blue-700">📅 Cita de seguimiento</a>
+                {% endif %}
+            </div>
 
         </div>
 
@@ -89,6 +94,66 @@
 
             </div>
 
+            <div class="bg-gray-50 rounded-xl p-4">
+
+                <p class="text-sm text-gray-500">
+                    Propietario
+                </p>
+
+                <p class="font-semibold">
+                    {{ listing.owner|default:"Sin propietario asignado" }}
+                </p>
+
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-4">
+
+                <p class="text-sm text-gray-500">
+                    Comisión acordada
+                </p>
+
+                <p class="font-semibold">
+                    {{ listing.commission_percent|default_if_none:"—" }}%
+                </p>
+
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-4">
+
+                <p class="text-sm text-gray-500">
+                    Fecha de inicio
+                </p>
+
+                <p class="font-semibold">
+                    {{ listing.start_date|date:"d/m/Y" }}
+                </p>
+
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-4">
+
+                <p class="text-sm text-gray-500">
+                    Fecha de conclusión
+                </p>
+
+                <p class="font-semibold">
+                    {{ listing.end_date|date:"d/m/Y"|default:"Sin definir" }}
+                </p>
+
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-4 md:col-span-2">
+
+                <p class="text-sm text-gray-500">
+                    Exclusividad
+                </p>
+
+                <p class="font-semibold">
+                    {% if listing.is_exclusive %}Sí, encargo en exclusiva{% else %}No exclusivo{% endif %}
+                </p>
+
+            </div>
+
             <div class="bg-gray-50 rounded-xl p-4 md:col-span-2">
 
                 <p class="text-sm text-gray-500">
@@ -105,6 +170,12 @@
             </div>
 
         </div>
+
+        {% if not listing.owner %}
+            <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800">
+                Este encargo antiguo no tiene propietario asignado. Las llamadas y citas de seguimiento estarán disponibles cuando se complete ese dato.
+            </div>
+        {% endif %}
 
         <div class="mt-8 border-t pt-6">
 
@@ -125,7 +196,7 @@
 
                 {% endif %}
 
-                {% if listing.source_appointment.news %}
+                {% if listing.source_appointment and listing.source_appointment.news %}
 
                     <a
                         href="{% url 'news_detail' listing.source_appointment.news.id %}"
@@ -140,6 +211,108 @@
 
         </div>
 
+    </div>
+
+    <section class="bg-white rounded-2xl shadow-sm border p-6 mt-6">
+        <div class="mb-5">
+            <h2 class="text-lg font-semibold">Propuestas de compra</h2>
+            <p class="text-sm text-gray-500 mt-1">Ofertas realizadas por compradores sobre este encargo.</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4">
+            {% for proposal in proposals %}
+                <article class="rounded-xl border border-gray-200 p-5">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <a href="{% url 'proposal_appointment_detail' proposal.id %}" class="font-semibold text-gray-900 hover:text-green-700">{{ proposal.buyer }}</a>
+                            <p class="text-sm text-gray-500 mt-1">Creada el {{ proposal.proposal_date|date:"d/m/Y" }}</p>
+                            {% if proposal.source_sale_appointment.source_counteroffer %}
+                                <p class="mt-1 text-xs font-medium text-amber-700">Respuesta a la contraoferta de {{ proposal.source_sale_appointment.source_counteroffer.owner_price }} €</p>
+                            {% endif %}
+                        </div>
+                        <span class="rounded-full bg-green-100 text-green-800 px-3 py-1 text-xs">{{ proposal.get_status_display }}</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 mt-4">
+                        <div class="rounded-lg bg-gray-50 p-3">
+                            <p class="text-xs text-gray-500">Precio ofertado</p>
+                            <p class="font-semibold mt-1">{{ proposal.offered_price }} €</p>
+                        </div>
+                        <div class="rounded-lg bg-gray-50 p-3">
+                            <p class="text-xs text-gray-500">Señal entregada</p>
+                            <p class="font-semibold mt-1">{{ proposal.deposit_amount }} €</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
+                        <a href="{% url 'proposal_appointment_detail' proposal.id %}" class="text-sm font-medium text-green-700">Ver propuesta</a>
+                        {% for counteroffer in proposal.counteroffers.all %}
+                            <a href="{% url 'counteroffer_detail' counteroffer.id %}" class="text-sm font-medium text-amber-700">
+                                Contraoferta: {{ counteroffer.owner_price }} € →
+                            </a>
+                        {% endfor %}
+                    </div>
+                </article>
+            {% empty %}
+                <div class="md:col-span-2 rounded-xl bg-gray-50 p-5 text-sm text-gray-500">
+                    Este encargo todavía no tiene propuestas de compra.
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <div class="grid lg:grid-cols-3 gap-6 mt-6">
+        <section class="lg:col-span-2 bg-white rounded-2xl shadow-sm border p-6">
+            <h2 class="text-lg font-semibold mb-5">Comentarios</h2>
+
+            <form method="post" action="{% url 'listing_add_comment' listing.id %}" class="mb-6">
+                {% csrf_token %}
+                {{ comment_form.text }}
+                <div class="flex justify-end mt-3">
+                    <button class="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm hover:bg-black">Añadir comentario</button>
+                </div>
+            </form>
+
+            <div class="space-y-3">
+                {% for comment in comments %}
+                    <div class="rounded-xl bg-gray-50 border border-gray-100 p-4">
+                        <div class="flex justify-between gap-4 mb-2">
+                            <span class="font-medium text-gray-900">{{ comment.user|default:"Usuario eliminado" }}</span>
+                            <span class="text-xs text-gray-400">{{ comment.created_at|date:"d/m/Y H:i" }}</span>
+                        </div>
+                        <p class="text-sm text-gray-700 whitespace-pre-line">{{ comment.text }}</p>
+                    </div>
+                {% empty %}
+                    <p class="text-center text-gray-400 py-6">Sin comentarios todavía.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <aside class="bg-white rounded-2xl shadow-sm border p-6">
+            <h2 class="text-lg font-semibold mb-5">Historial</h2>
+            <div class="space-y-4">
+                {% for item in timeline %}
+                    <div class="flex gap-3">
+                        <div class="w-8 h-8 shrink-0 rounded-full bg-gray-100 flex items-center justify-center">
+                            {% if item.type == "comment" %}💬{% elif item.type == "call" %}📞{% else %}📅{% endif %}
+                        </div>
+                        <div class="min-w-0 pb-3">
+                            {% if item.type == "comment" %}
+                                <p class="font-medium text-sm">Comentario añadido</p>
+                                <p class="text-xs text-gray-500 mt-1">{{ item.object.text|truncatechars:70 }}</p>
+                            {% elif item.type == "call" %}
+                                <p class="font-medium text-sm">Llamada programada</p>
+                                <a href="{% url 'call_detail' item.object.id %}" class="text-xs text-blue-600">Ver llamada</a>
+                            {% else %}
+                                <p class="font-medium text-sm">Cita de {{ item.object.get_appointment_type_display|lower }}</p>
+                                <a href="{% url 'appointment_detail' item.object.id %}" class="text-xs text-blue-600">Ver cita</a>
+                            {% endif %}
+                            <p class="text-xs text-gray-400 mt-1">{{ item.date|date:"d/m/Y H:i" }}</p>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-sm text-gray-500">No hay actividad registrada.</p>
+                {% endfor %}
+            </div>
+        </aside>
     </div>
 
 </div>

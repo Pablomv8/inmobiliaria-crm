@@ -5,6 +5,21 @@ from listings.views import create_listing_from_appointment
 urlpatterns = [
     path("appointment/<int:news_id>/create/", views.create_appointment, name="create_appointment"),
     path("call/<int:news_id>/create/", views.create_call, name="create_call"),
+    path(
+        "listing/<int:listing_id>/appointment/create/",
+        views.create_listing_appointment,
+        name="create_listing_appointment",
+    ),
+    path(
+        "listing/<int:listing_id>/call/create/",
+        views.create_listing_call,
+        name="create_listing_call",
+    ),
+    path(
+        "order/<int:order_id>/sale-appointment/create/",
+        views.create_order_sale_appointment,
+        name="create_order_sale_appointment",
+    ),
     path("agenda/",views.agenda,name="agenda"),
     path(
         "",
@@ -23,11 +38,76 @@ urlpatterns = [
         views.call_detail,
         name="call_detail"
     ),
+    path(
+        "calls/<int:pk>/comments/",
+        views.add_call_comment,
+        name="call_add_comment",
+    ),
 
     path(
         "appointments/<int:pk>/",
         views.appointment_detail,
         name="appointment_detail"
+    ),
+    path(
+        "appointments/<int:pk>/edit/",
+        views.appointment_update,
+        name="appointment_update",
+    ),
+    path(
+        "appointments/<int:pk>/result/",
+        views.add_appointment_result,
+        name="appointment_add_result"
+    ),
+    path(
+        "appointments/<int:pk>/schedule-call/",
+        views.schedule_call_from_appointment,
+        name="appointment_schedule_call"
+    ),
+    path(
+        "appointments/<int:pk>/proposal/create/",
+        views.create_proposal_appointment,
+        name="create_proposal_appointment",
+    ),
+    path(
+        "appointments/<int:pk>/purchase-proposal/create/",
+        views.create_purchase_proposal,
+        name="create_purchase_proposal",
+    ),
+    path(
+        "appointments/<int:pk>/proposal/decline/",
+        views.decline_sale_proposal,
+        name="decline_sale_proposal",
+    ),
+    path(
+        "proposals/<int:pk>/",
+        views.proposal_appointment_detail,
+        name="proposal_appointment_detail",
+    ),
+    path(
+        "proposals/<int:proposal_id>/acceptance/create/",
+        views.create_acceptance_appointment,
+        name="create_acceptance_appointment",
+    ),
+    path(
+        "appointments/<int:pk>/after-acceptance/<str:appointment_type>/create/",
+        views.create_post_acceptance_appointment,
+        name="create_post_acceptance_appointment",
+    ),
+    path(
+        "appointments/<int:pk>/counteroffer/create/",
+        views.create_counteroffer,
+        name="create_counteroffer",
+    ),
+    path(
+        "counteroffers/<int:pk>/",
+        views.counteroffer_detail,
+        name="counteroffer_detail",
+    ),
+    path(
+        "counteroffers/<int:pk>/proposal-appointment/create/",
+        views.create_counteroffer_response_appointment,
+        name="create_counteroffer_response_appointment",
     ),
     path(
         "available-slots/",

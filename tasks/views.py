@@ -1,27 +1,20 @@
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
+from django.views.generic import ListView, CreateView, UpdateView, DetailView
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.utils import timezone
 
 
 from .models import Task
-from contacts.models import Contact
-from django.http import HttpResponseForbidden
+from .forms import TaskForm
+from properties.models import Zone
 from django.contrib.auth import get_user_model
 from activities.utils import log_activity
 from activities.models import Activity
 
 User = get_user_model()
-
-def dispatch(self, request, *args, **kwargs):
-    user = request.user
-
-    if user.role not in ["admin", "manager"]:
-        return HttpResponseForbidden("No tienes permisos")
-
-    return super().dispatch(request, *args, **kwargs)
 
 # -----------------------
 # LISTADO
@@ -34,14 +27,18 @@ class TaskListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
 
         user = self.request.user
+        can_manage_all = (
+            user.is_superuser
+            or user.role in ["admin", "manager"]
+        )
 
         qs = Task.objects.select_related(
             "assigned_to",
-            "contact"
+            "zone",
         )
 
         # agentes solo ven sus tareas
-        if user.role == "agent":
+        if not can_manage_all:
             qs = qs.filter(assigned_to=user)
 
         # FILTRO ESTADO
@@ -56,17 +53,31 @@ class TaskListView(LoginRequiredMixin, ListView):
         if priority:
             qs = qs.filter(priority=priority)
 
+        task_type = self.request.GET.get("task_type")
+
+        if task_type:
+            qs = qs.filter(task_type=task_type)
+
+        zone = self.request.GET.get("zone")
+
+        if zone:
+            qs = qs.filter(zone_id=zone)
+
         # FILTRO AGENTE
         agent = self.request.GET.get("agent")
 
-        if agent:
+        if agent and can_manage_all:
             qs = qs.filter(assigned_to_id=agent)
 
         # BÚSQUEDA
         search = self.request.GET.get("search")
 
         if search:
-            qs = qs.filter(title__icontains=search)
+            qs = qs.filter(
+                Q(title__icontains=search)
+                | Q(description__icontains=search)
+                | Q(zone__name__icontains=search)
+            )
 
         ordering = self.request.GET.get("ordering")
 
@@ -82,13 +93,17 @@ class TaskListView(LoginRequiredMixin, ListView):
         else:
             qs = qs.order_by("-created_at")
 
-        return qs.order_by("-created_at")
+        return qs
         
     def get_context_data(self, **kwargs):
 
         context = super().get_context_data(**kwargs)
 
-        context["agents"] = User.objects.filter(role="agent")
+        context["agents"] = User.objects.filter(is_active=True).order_by("username")
+        context["zones"] = Zone.objects.all().order_by("name")
+        context["task_type_choices"] = Task.TASK_TYPE_CHOICES
+        context["status_choices"] = Task.STATUS_CHOICES
+        context["priority_choices"] = Task.PRIORITY_CHOICES
 
         return context
 
@@ -105,10 +120,10 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
 
         user = self.request.user
 
-        qs = Task.objects.select_related("assigned_to", "contact")
+        qs = Task.objects.select_related("assigned_to", "zone")
 
         # Admin y manager ven todo
-        if user.role in ["admin", "manager"]:
+        if user.is_superuser or user.role in ["admin", "manager"]:
             return qs
 
         # Agent solo ve sus tareas
@@ -134,16 +149,7 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
 # -----------------------
 class TaskCreateView(LoginRequiredMixin, CreateView):
     model = Task
-    fields = [
-        "title",
-        "description",
-        "contact",
-        "related_property",
-        "assigned_to",
-        "status",
-        "priority",
-        "due_date",
-    ]
+    form_class = TaskForm
     template_name = "tasks/task_form.html"
     success_url = reverse_lazy("task_list")
 
@@ -157,7 +163,6 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
             self.request.user,
             "task_created",
             f"Creó la tarea '{self.object.title}'",
-            contact=self.object.contact,
             task=self.object
         )
 
@@ -169,14 +174,7 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
 # -----------------------
 class TaskUpdateView(LoginRequiredMixin, UpdateView):
     model = Task
-    fields = [
-        "title",
-        "description",
-        "assigned_to",
-        "status",
-        "priority",
-        "due_date",
-    ]
+    form_class = TaskForm
     template_name = "tasks/task_form.html"
     success_url = reverse_lazy("task_list")
 
@@ -244,7 +242,7 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
     def get_queryset(self):
         user = self.request.user
 
-        if user.role in ["admin", "manager"]:
+        if user.is_superuser or user.role in ["admin", "manager"]:
             return Task.objects.all()
 
         # agentes solo pueden editar sus tareas
@@ -258,17 +256,22 @@ class TaskUpdateView(LoginRequiredMixin, UpdateView):
 def task_delete(request, pk):
     task = get_object_or_404(Task, pk=pk)
 
-    if request.user.role not in ["admin", "manager"]:
+    if not (
+        request.user.is_superuser
+        or request.user.role in ["admin", "manager"]
+    ):
         return redirect("task_list")
 
     if request.method == "POST":
+        title = task.title
+        contact = task.contact
         task.delete()
         log_activity(
-                request.user,
-                "task_reassigned",
-                f"Eliminó la tarea '{task.title}'",
-                contact=task.contact,
-                task=task),
+            request.user,
+            "task_deleted",
+            f"Eliminó la tarea '{title}'",
+            contact=contact,
+        )
                 
         return redirect("task_list")
 
@@ -287,7 +290,11 @@ def task_update_status(request, pk):
 
     task = get_object_or_404(Task, pk=pk)
 
-    if request.user.role == "agent" and task.assigned_to != request.user:
+    if not (
+        request.user.is_superuser
+        or request.user.role in ["admin", "manager"]
+        or task.assigned_to == request.user
+    ):
         return JsonResponse({"success": False}, status=403)
 
     status = request.POST.get("status")
@@ -337,7 +344,11 @@ def task_update_priority(request, pk):
 
     task = get_object_or_404(Task, pk=pk)
     old_priority = task.priority
-    if request.user.role == "agent" and task.assigned_to != request.user:
+    if not (
+        request.user.is_superuser
+        or request.user.role in ["admin", "manager"]
+        or task.assigned_to == request.user
+    ):
         return JsonResponse({"success": False}, status=403)
 
     priority = request.POST.get("priority")
