@@ -125,19 +125,31 @@ class Listing(models.Model):
         return f"{self.property} - {self.get_listing_type_display()}"
 
     def save(self, *args, **kwargs):
-        is_new = self._state.adding
-
-        if not is_new:
-            return super().save(*args, **kwargs)
+        previous_property_id = None
+        if self.pk:
+            previous_property_id = Listing.objects.filter(pk=self.pk).values_list(
+                "property_id",
+                flat=True,
+            ).first()
 
         with transaction.atomic():
             result = super().save(*args, **kwargs)
-            changed = self.property.__class__.objects.filter(
-                pk=self.property_id,
-                status="prospect",
-            ).update(status="active")
-            if changed:
-                self.property.status = "active"
+            property_ids = {
+                property_id
+                for property_id in [previous_property_id, self.property_id]
+                if property_id
+            }
+            for property_obj in self.property.__class__.objects.filter(
+                pk__in=property_ids,
+            ):
+                property_obj.sync_status()
+            return result
+
+    def delete(self, *args, **kwargs):
+        property_obj = self.property
+        with transaction.atomic():
+            result = super().delete(*args, **kwargs)
+            property_obj.sync_status()
             return result
 
 

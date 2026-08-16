@@ -65,9 +65,10 @@
                     {% if form.property_type.errors %}<p class="mt-1 text-sm text-red-600">{{ form.property_type.errors.0 }}</p>{% endif %}
                 </div>
                 <div>
-                    <label for="{{ form.status.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Estado</label>
-                    {{ form.status }}
-                    {% if form.status.errors %}<p class="mt-1 text-sm text-red-600">{{ form.status.errors.0 }}</p>{% endif %}
+                    <label for="{{ form.occupied_by.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Ocupado por</label>
+                    {{ form.occupied_by }}
+                    {% if form.occupied_by.errors %}<p class="mt-1 text-sm text-red-600">{{ form.occupied_by.errors.0 }}</p>{% endif %}
+                    <p class="mt-2 text-xs text-gray-500">El estado comercial se calculará automáticamente.</p>
                 </div>
             </div>
         </section>

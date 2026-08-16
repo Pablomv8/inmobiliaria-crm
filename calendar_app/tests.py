@@ -183,7 +183,7 @@ class AppointmentResultFlowTests(TestCase):
         self.assertEqual(str(listing.end_date), "2027-02-11")
         self.assertTrue(listing.is_exclusive)
         self.assertIs(self.appointment.result_success, True)
-        self.assertEqual(self.property.status, "active")
+        self.assertEqual(self.property.status, "in_listing")
         self.news.refresh_from_db()
         self.assertEqual(self.news.status, "closed")
 
@@ -1280,7 +1280,7 @@ class AppointmentResultFlowAdditionalTests(TestCase):
         )
         self.assertFalse(Listing.objects.exists())
         self.property.refresh_from_db()
-        self.assertEqual(self.property.status, "active")
+        self.assertEqual(self.property.status, "news")
 
     def test_listing_form_rejects_owner_from_another_property(self):
         other_owner = Contact.objects.create(

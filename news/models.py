@@ -70,18 +70,31 @@ class News(models.Model):
         return f"{self.get_motivation_display()} · {self.related_property}"
 
     def save(self, *args, **kwargs):
-        is_new = self._state.adding
-
-        if not is_new:
-            return super().save(*args, **kwargs)
+        previous_property_id = None
+        if self.pk:
+            previous_property_id = News.objects.filter(pk=self.pk).values_list(
+                "related_property_id",
+                flat=True,
+            ).first()
 
         with transaction.atomic():
             result = super().save(*args, **kwargs)
-            changed = Property.objects.filter(pk=self.related_property_id).exclude(
-                status="active"
-            ).update(status="active")
-            if changed:
-                self.related_property.status = "active"
+            property_ids = {
+                property_id
+                for property_id in [previous_property_id, self.related_property_id]
+                if property_id
+            }
+            for property_obj in Property.objects.filter(pk__in=property_ids):
+                property_obj.sync_status()
+            return result
+
+    def delete(self, *args, **kwargs):
+        property_id = self.related_property_id
+        with transaction.atomic():
+            result = super().delete(*args, **kwargs)
+            property_obj = Property.objects.filter(pk=property_id).first()
+            if property_obj:
+                property_obj.sync_status()
             return result
     
 

@@ -1,11 +1,17 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from contacts.models import Contact
+from listings.models import Listing
+from news.models import News
+from sales.models import Sale
 
 from .forms import OwnerContactForm, PropertyForm
-from .models import Property, Zone
+from .models import Property, PropertyComment, Zone
 
 
 class PropertyModelTests(TestCase):
@@ -35,6 +41,8 @@ class PropertyModelTests(TestCase):
 
         self.assertNotIn("title", form.fields)
         self.assertNotIn("price", form.fields)
+        self.assertNotIn("status", form.fields)
+        self.assertIn("occupied_by", form.fields)
 
     def test_property_form_exposes_zone_ordered_by_name(self):
         second_zone = Zone.objects.create(name="Zona Sur")
@@ -60,7 +68,7 @@ class PropertyModelTests(TestCase):
                     "number": "10",
                     "city": "Madrid",
                     "property_type": property_type,
-                    "status": "prospect",
+                    "occupied_by": "owner",
                 })
 
                 self.assertTrue(form.is_valid(), form.errors)
@@ -90,6 +98,8 @@ class PropertyFormViewTests(TestCase):
         self.assertEqual(form_response.status_code, 200)
         self.assertContains(form_response, "1. Ubicación y clasificación")
         self.assertContains(form_response, 'name="zone"', html=False)
+        self.assertContains(form_response, 'name="occupied_by"', html=False)
+        self.assertNotContains(form_response, 'name="status"', html=False)
 
         response = self.client.post(
             reverse("property_create"),
@@ -99,13 +109,15 @@ class PropertyFormViewTests(TestCase):
                 "city": "Madrid",
                 "zone": self.second_zone.pk,
                 "property_type": "local",
-                "status": "prospect",
+                "occupied_by": "vacant",
             },
         )
 
         created_property = Property.objects.get(street="Calle Nueva")
         self.assertRedirects(response, reverse("properties"))
         self.assertEqual(created_property.zone, self.second_zone)
+        self.assertEqual(created_property.occupied_by, "vacant")
+        self.assertEqual(created_property.status, "vacant")
 
     def test_edit_form_changes_property_zone(self):
         response = self.client.post(
@@ -116,7 +128,7 @@ class PropertyFormViewTests(TestCase):
                 "city": self.property.city,
                 "zone": self.second_zone.pk,
                 "property_type": self.property.property_type,
-                "status": self.property.status,
+                "occupied_by": "tenants",
             },
         )
 
@@ -126,6 +138,167 @@ class PropertyFormViewTests(TestCase):
             reverse("property_detail", args=[self.property.pk]),
         )
         self.assertEqual(self.property.zone, self.second_zone)
+        self.assertEqual(self.property.occupied_by, "tenants")
+        self.assertEqual(self.property.status, "rented")
+
+
+class PropertyAutomaticStatusTests(TestCase):
+    def setUp(self):
+        self.agent = get_user_model().objects.create_user(
+            username="property-status-agent",
+            password="test-password",
+            role="agent",
+        )
+        self.property = Property.objects.create(
+            street="Calle Estados",
+            number="1",
+            city="Madrid",
+            property_type="flat",
+            occupied_by="owner",
+        )
+        self.owner = Contact.objects.create(
+            name="Propietaria estados",
+            phone="600111222",
+            contact_type="owner",
+        )
+        self.buyer = Contact.objects.create(
+            name="Comprador estados",
+            phone="600333444",
+            contact_type="buyer",
+        )
+        self.client.force_login(self.agent)
+
+    def test_new_property_starts_as_never_contacted(self):
+        self.assertEqual(self.property.status, "never_contacted")
+
+    def test_occupancy_sets_vacant_or_rented_status(self):
+        vacant = Property.objects.create(
+            street="Calle Vacía",
+            number="2",
+            city="Madrid",
+            property_type="house",
+            occupied_by="vacant",
+        )
+        rented = Property.objects.create(
+            street="Calle Alquilada",
+            number="3",
+            city="Madrid",
+            property_type="flat",
+            occupied_by="tenants",
+        )
+
+        self.assertEqual(vacant.status, "vacant")
+        self.assertEqual(rented.status, "rented")
+
+    def test_property_comment_marks_contact_and_records_author(self):
+        response = self.client.post(
+            reverse("property_add_comment", args=[self.property.pk]),
+            {"text": "La propietaria pide que volvamos a llamar."},
+        )
+
+        comment = PropertyComment.objects.get()
+        self.property.refresh_from_db()
+        self.assertRedirects(
+            response,
+            reverse("property_detail", args=[self.property.pk]),
+        )
+        self.assertEqual(comment.user, self.agent)
+        self.assertEqual(self.property.status, "contacted")
+        detail_response = self.client.get(
+            reverse("property_detail", args=[self.property.pk])
+        )
+        self.assertContains(detail_response, "Historial de contacto")
+        self.assertContains(
+            detail_response,
+            "La propietaria pide que volvamos a llamar.",
+        )
+
+    def test_contact_older_than_30_days_is_refreshed_automatically(self):
+        comment = PropertyComment.objects.create(
+            property=self.property,
+            user=self.agent,
+            text="Contacto antiguo.",
+        )
+        PropertyComment.objects.filter(pk=comment.pk).update(
+            created_at=timezone.now() - timedelta(days=31),
+        )
+
+        self.client.get(reverse("properties"))
+
+        self.property.refresh_from_db()
+        self.assertEqual(self.property.status, "contacted_30")
+
+    def test_new_comment_reactivates_an_old_contact(self):
+        comment = PropertyComment.objects.create(
+            property=self.property,
+            user=self.agent,
+            text="Contacto antiguo.",
+        )
+        PropertyComment.objects.filter(pk=comment.pk).update(
+            created_at=timezone.now() - timedelta(days=31),
+        )
+        self.property.sync_status()
+        self.assertEqual(self.property.status, "contacted_30")
+
+        PropertyComment.objects.create(
+            property=self.property,
+            user=self.agent,
+            text="Nuevo contacto.",
+        )
+
+        self.property.refresh_from_db()
+        self.assertEqual(self.property.status, "contacted")
+
+    def test_news_and_listing_take_priority_over_contact(self):
+        PropertyComment.objects.create(
+            property=self.property,
+            user=self.agent,
+            text="Primer contacto.",
+        )
+        news = News.objects.create(
+            related_property=self.property,
+            agent=self.agent,
+            motivation="sale",
+            client_price="250000",
+            estimated_price="240000",
+        )
+        self.property.refresh_from_db()
+        self.assertEqual(self.property.status, "news")
+
+        listing = Listing.objects.create(
+            property=self.property,
+            owner=self.owner,
+            listing_type="sale",
+            owner_price="245000",
+            agency_price="250000",
+            price_diference="5000",
+            agent=self.agent,
+        )
+        self.property.refresh_from_db()
+        self.assertEqual(self.property.status, "in_listing")
+
+        listing.status = "cancelled"
+        listing.save()
+        self.property.refresh_from_db()
+        self.assertEqual(self.property.status, "news")
+
+        news.delete()
+        self.property.refresh_from_db()
+        self.assertEqual(self.property.status, "contacted")
+
+    def test_signed_sale_marks_property_as_sold(self):
+        Sale.objects.create(
+            related_property=self.property,
+            buyer=self.buyer,
+            agent=self.agent,
+            sale_price="250000",
+            commission_percent="3",
+            sale_date=timezone.localdate(),
+            status="signed",
+        )
+
+        self.property.refresh_from_db()
+        self.assertEqual(self.property.status, "sold")
 
 
 class OwnerContactFormTests(TestCase):

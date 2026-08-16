@@ -6,7 +6,7 @@ from django.shortcuts import (
 
 from .models import Property, Zone
 from contacts.models import Contact
-from .forms import PropertyForm, OwnerContactForm
+from .forms import PropertyCommentForm, PropertyForm, OwnerContactForm
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
@@ -18,6 +18,7 @@ from django.db.models import Q
 
 @login_required
 def property_list(request):
+    Property.refresh_aged_contact_statuses()
 
     properties = Property.objects.all()
 
@@ -33,8 +34,6 @@ def property_list(request):
 
     zones = Zone.objects.all()
     selected_zone = request.GET.get("zone")
-
-    properties = Property.objects.all()
 
     if selected_zone:
 
@@ -105,8 +104,9 @@ def property_list(request):
 
 @login_required
 def property_detail(request, pk):
-
+    Property.refresh_aged_contact_statuses()
     property = get_object_or_404(Property, pk=pk)
+    property.sync_status()
 
     owners = property.contacts.filter(
         contact_type="owner"
@@ -117,7 +117,9 @@ def property_detail(request, pk):
     )
 
     return render(request, 'properties/detail.html', {
-        'property': property
+        'property': property,
+        'comments': property.comments.select_related("user"),
+        'comment_form': PropertyCommentForm(),
     })
 
 
@@ -200,13 +202,39 @@ def property_update_status(request, pk):
         pk=pk
     )
 
-    property_obj.status = request.POST.get("status")
-
-    property_obj.save()
+    property_obj.sync_status()
 
     return JsonResponse({
-        "success": True
+        "success": True,
+        "status": property_obj.status,
+        "status_display": property_obj.get_status_display(),
     })
+
+
+@login_required
+@require_POST
+def property_add_comment(request, pk):
+    property_obj = get_object_or_404(Property, pk=pk)
+    form = PropertyCommentForm(request.POST)
+
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.property = property_obj
+        comment.user = request.user
+        comment.save()
+        return redirect("property_detail", pk=property_obj.pk)
+
+    property_obj.sync_status()
+    return render(
+        request,
+        "properties/detail.html",
+        {
+            "property": property_obj,
+            "comments": property_obj.comments.select_related("user"),
+            "comment_form": form,
+        },
+        status=400,
+    )
 
 
 @login_required

@@ -1,5 +1,7 @@
 from django import forms
-from .models import Property, Zone
+from contacts.models import Contact
+
+from .models import Property, PropertyComment, Zone
 
 
 INPUT_CLASS = """
@@ -50,7 +52,7 @@ class PropertyForm(forms.ModelForm):
             'property_type',
             'image',
             'description',
-            'status',
+            'occupied_by',
         ]
 
         labels = {
@@ -67,7 +69,7 @@ class PropertyForm(forms.ModelForm):
             "property_type": "Tipo de inmueble",
             "image": "Imagen principal",
             "description": "Descripción",
-            "status": "Estado",
+            "occupied_by": "Ocupado por",
         }
 
         help_texts = {
@@ -138,7 +140,7 @@ class PropertyForm(forms.ModelForm):
                 'class': SELECT_CLASS,
             }),
 
-            'status': forms.Select(attrs={
+            'occupied_by': forms.Select(attrs={
                 'class': SELECT_CLASS,
             }),
 
@@ -161,7 +163,6 @@ class PropertyForm(forms.ModelForm):
                 'placeholder': 'Describe el inmueble...'
             }),
         }
-from contacts.models import Contact
 
 class OwnerContactForm(forms.ModelForm):
 
@@ -229,7 +230,6 @@ class OwnerContactForm(forms.ModelForm):
             "assigned_agent": "Agente asignado",
             "notes": "Notas internas",
         }
-
         help_texts = {
             "identification_number": "Documento identificativo del propietario.",
             "phone": "Número de contacto principal.",
@@ -334,3 +334,23 @@ class OwnerContactForm(forms.ModelForm):
                 contact.properties.add(self.property_obj)
 
         return contact
+
+
+class PropertyCommentForm(forms.ModelForm):
+    class Meta:
+        model = PropertyComment
+        fields = ["text"]
+        widgets = {
+            "text": forms.Textarea(attrs={
+                "class": TEXTAREA_CLASS,
+                "rows": 3,
+                "maxlength": 1000,
+                "placeholder": "Añade el resultado del contacto o una observación...",
+            }),
+        }
+
+    def clean_text(self):
+        text = self.cleaned_data["text"].strip()
+        if not text:
+            raise forms.ValidationError("El comentario no puede estar vacío.")
+        return text

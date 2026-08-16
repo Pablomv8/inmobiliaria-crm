@@ -7,6 +7,7 @@ from .views import (
     property_update,
     property_delete,
     property_update_status,
+    property_add_comment,
     create_owner_for_property,
     add_owner_to_property,
 )
@@ -24,6 +25,8 @@ urlpatterns = [
     path('<int:pk>/delete/', property_delete, name='property_delete'),
 
     path('<int:pk>/update_status/', property_update_status, name = 'property_update_status' ),
+
+    path('<int:pk>/comments/add/', property_add_comment, name='property_add_comment'),
 
     path(
         "properties/<int:property_id>/owners/new/",

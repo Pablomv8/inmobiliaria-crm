@@ -189,6 +189,7 @@ def build_activity_chart(days, news, appointments, proposals):
 
 @login_required
 def dashboard(request):
+    Property.refresh_aged_contact_statuses()
     user = request.user
     today = timezone.localdate()
     now = timezone.now()
@@ -338,7 +339,12 @@ def dashboard(request):
             "office_contacts": Contact.objects.count(),
             "office_properties": Property.objects.count(),
             "office_active_properties": Property.objects.filter(
-                status="active"
+                status__in=[
+                    "news",
+                    "contacted",
+                    "contacted_30",
+                    "in_listing",
+                ]
             ).count(),
             "office_listings": Listing.objects.count(),
             "office_active_listings": Listing.objects.filter(

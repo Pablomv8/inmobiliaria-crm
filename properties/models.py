@@ -1,4 +1,8 @@
 from django.db import models
+from django.db.models import Max
+from django.utils import timezone
+
+from datetime import timedelta
 
 
 class Zone(models.Model):
@@ -33,11 +37,20 @@ class Property(models.Model):
     )
 
     STATUS_CHOICES = [
-        ("active", "Activo"),
-        ("reserved", "Reservado"),
+        ("news", "Noticia"),
+        ("never_contacted", "Nunca contactado"),
+        ("contacted", "Contactado"),
+        ("contacted_30", "Contactado hace más de 30 días"),
+        ("vacant", "Vacío"),
+        ("in_listing", "En encargo"),
         ("sold", "Vendido"),
         ("rented", "Alquilado"),
-        ("prospect", "Borrador")
+    ]
+
+    OCCUPANCY_CHOICES = [
+        ("vacant", "Vacío"),
+        ("owner", "Propietario"),
+        ("tenants", "Inquilinos"),
     ]
 
     street = models.CharField(
@@ -87,9 +100,17 @@ class Property(models.Model):
 
 
     status = models.CharField(
-        max_length=20,
+        max_length=30,
         choices=STATUS_CHOICES,
-        default="prospect"
+        default="never_contacted",
+        editable=False,
+    )
+
+    occupied_by = models.CharField(
+        max_length=20,
+        choices=OCCUPANCY_CHOICES,
+        default="owner",
+        verbose_name="Ocupado por",
     )
 
     latitude = models.DecimalField(
@@ -128,6 +149,60 @@ class Property(models.Model):
         help_text="Superficie construida en m²",
     )
 
+    def calculate_status(self):
+        if self.pk:
+            if self.sales.filter(status="signed").exists():
+                return "sold"
+
+            if self.listings.filter(status="sold").exists():
+                return "sold"
+
+            if self.listings.filter(status="rented").exists():
+                return "rented"
+
+            if self.listings.filter(status="active").exists():
+                return "in_listing"
+
+            if self.news.exists():
+                return "news"
+
+        if self.occupied_by == "tenants":
+            return "rented"
+
+        if self.occupied_by == "vacant":
+            return "vacant"
+
+        latest_comment = self.comments.order_by("-created_at").first() if self.pk else None
+        if latest_comment is None:
+            return "never_contacted"
+
+        if latest_comment.created_at < timezone.now() - timedelta(days=30):
+            return "contacted_30"
+
+        return "contacted"
+
+    def sync_status(self):
+        calculated_status = self.calculate_status()
+        if self.status != calculated_status:
+            self.__class__.objects.filter(pk=self.pk).update(
+                status=calculated_status,
+            )
+            self.status = calculated_status
+        return calculated_status
+
+    @classmethod
+    def refresh_aged_contact_statuses(cls):
+        threshold = timezone.now() - timedelta(days=30)
+        return cls.objects.filter(status="contacted").annotate(
+            latest_comment=Max("comments__created_at"),
+        ).filter(
+            latest_comment__lt=threshold,
+        ).update(status="contacted_30")
+
+    def save(self, *args, **kwargs):
+        self.status = self.calculate_status()
+        return super().save(*args, **kwargs)
+
     
     
     @property
@@ -140,4 +215,40 @@ class Property(models.Model):
     
     def __str__(self):
         return self.full_address
+
+
+class PropertyComment(models.Model):
+    property = models.ForeignKey(
+        Property,
+        on_delete=models.CASCADE,
+        related_name="comments",
+    )
+    user = models.ForeignKey(
+        "users.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="property_comments",
+    )
+    text = models.TextField(verbose_name="Comentario")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Comentario de inmueble"
+        verbose_name_plural = "Comentarios de inmuebles"
+
+    def save(self, *args, **kwargs):
+        result = super().save(*args, **kwargs)
+        self.property.sync_status()
+        return result
+
+    def delete(self, *args, **kwargs):
+        property_obj = self.property
+        result = super().delete(*args, **kwargs)
+        property_obj.sync_status()
+        return result
+
+    def __str__(self):
+        return f"Comentario del inmueble {self.property_id}"
 

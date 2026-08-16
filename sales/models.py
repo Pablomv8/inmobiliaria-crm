@@ -83,18 +83,14 @@ class Sale(models.Model):
         # SOLO reaccionar si cambia estado o es nueva
         if is_new or old_status != self.status:
 
-            # VENTA COMPLETADA
             if self.status == "signed":
-
-                self.related_property.status = "sold"
-                self.related_property.save()
-
-                # cerrar contacto
                 self.buyer.status = "closed"
                 self.buyer.save()
 
-            # VENTA CANCELADA
-            if self.status == "cancelled":
+            self.related_property.sync_status()
 
-                self.related_property.status = "active"
-                self.related_property.save()
+    def delete(self, *args, **kwargs):
+        property_obj = self.related_property
+        result = super().delete(*args, **kwargs)
+        property_obj.sync_status()
+        return result

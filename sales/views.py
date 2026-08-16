@@ -125,11 +125,6 @@ class SaleCreateView(CreateView):
 
         sale = self.object
 
-        # inmueble vendido
-
-        sale.related_property.status = "sold"
-        sale.related_property.save()
-
         # contacto cerrado
 
         sale.buyer.status = "closed"
