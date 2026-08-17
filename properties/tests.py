@@ -26,6 +26,7 @@ class PropertyModelTests(TestCase):
                 ("villa", "Villa"),
                 ("office", "Oficina"),
                 ("local", "Local"),
+                ("nave", "Nave"),
                 ("solar", "Solar"),
                 ("terreno", "Terreno"),
             ),
@@ -62,7 +63,7 @@ class PropertyModelTests(TestCase):
         )
 
     def test_property_form_accepts_previous_and_new_types(self):
-        for property_type in ("flat", "local", "solar", "terreno"):
+        for property_type in ("flat", "local", "nave", "solar", "terreno"):
             with self.subTest(property_type=property_type):
                 form = PropertyForm(data={
                     "street": "Calle Mayor",

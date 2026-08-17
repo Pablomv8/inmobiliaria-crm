@@ -40,6 +40,8 @@ def build_property_timeline(property_obj, viewer):
         events.append({
             "timestamp": history.created_at,
             "type": "status",
+            "status": history.new_status,
+            "status_label": history.get_new_status_display(),
             "icon": "🔄",
             "title": "Cambio de estado",
             "description": (

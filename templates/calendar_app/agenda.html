@@ -48,9 +48,7 @@
 
                         {% else %}
 
-                            <span class="text-sm font-semibold text-green-600">
-                                📅 {{ event.object.get_appointment_type_display }}
-                            </span>
+                            {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type=event.object.appointment_type label=event.object.get_appointment_type_display %}
 
                             <p class="mt-1">
                                 {{ event.object.related_property }}

@@ -32,6 +32,7 @@ class Property(models.Model):
         ('villa', 'Villa'),
         ('office', 'Oficina'),
         ('local', 'Local'),
+        ('nave', 'Nave'),
         ('solar', 'Solar'),
         ('terreno', 'Terreno'),
     )

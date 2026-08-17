@@ -86,9 +86,11 @@
                                     {{ event.time|time:"H:i" }}{% if event.type == "appointment" or event.type == "task" %}–{{ event.end_time|time:"H:i" }}{% endif %}
                                 </span>
 
-                                <span class="text-xs px-2 py-1 rounded-full bg-gray-100">
-                                    {% if event.type == "call" %}Llamada{% elif event.type == "task" %}Tarea{% else %}Cita{% endif %}
-                                </span>
+                                {% if event.type == "appointment" %}
+                                    {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type=event.object.appointment_type label=event.object.get_appointment_type_display %}
+                                {% else %}
+                                    <span class="text-xs px-2 py-1 rounded-full bg-gray-100">{% if event.type == "call" %}Llamada{% else %}Tarea{% endif %}</span>
+                                {% endif %}
 
                             </div>
 
@@ -177,6 +179,9 @@
                             Hasta las {{ event.end_time|time:"H:i" }}
                         </div>
                     {% else %}
+                        <div class="mb-2">
+                            {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type=event.object.appointment_type label=event.object.get_appointment_type_display %}
+                        </div>
                         <div class="text-sm text-gray-600">
                             📅 {{ event.object.get_appointment_type_display }}
                         </div>
@@ -220,6 +225,9 @@
                             Hasta las {{ event.end_time|time:"H:i" }}
                         </div>
                     {% else %}
+                        <div class="mb-2">
+                            {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type=event.object.appointment_type label=event.object.get_appointment_type_display %}
+                        </div>
                         <div class="text-sm text-gray-600">
                             📅 {{ event.object.get_appointment_type_display }}
                         </div>
@@ -237,6 +245,24 @@
                 <p class="text-sm text-gray-500">No hay eventos mañana.</p>
                 {% endfor %}
 
+            </div>
+
+            <!-- LEYENDA DE CITAS -->
+            <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                <div class="mb-4">
+                    <h3 class="font-bold text-lg">Leyenda de citas</h3>
+                    <p class="mt-1 text-xs text-gray-500">Colores utilizados en el calendario.</p>
+                </div>
+                <div class="grid grid-cols-2 gap-2 lg:grid-cols-1">
+                    {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type="acquisition" label="Adquisición" %}
+                    {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type="sale" label="Venta" %}
+                    {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type="valuation" label="Valoración" %}
+                    {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type="follow_up" label="Seguimiento" %}
+                    {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type="proposal" label="Propuesta" %}
+                    {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type="proposal_acceptance" label="Aceptación de propuesta" %}
+                    {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type="contract" label="Contrato" %}
+                    {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type="signing" label="Escrituración" %}
+                </div>
             </div>
 
         </div>

@@ -1,0 +1,22 @@
+<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold
+    {% if appointment_type == 'acquisition' %}bg-sky-100 text-sky-800
+    {% elif appointment_type == 'sale' %}bg-emerald-100 text-emerald-800
+    {% elif appointment_type == 'valuation' %}bg-amber-100 text-amber-800
+    {% elif appointment_type == 'follow_up' %}bg-cyan-100 text-cyan-800
+    {% elif appointment_type == 'proposal' %}bg-violet-100 text-violet-800
+    {% elif appointment_type == 'proposal_acceptance' %}bg-pink-100 text-pink-800
+    {% elif appointment_type == 'contract' %}bg-orange-100 text-orange-800
+    {% elif appointment_type == 'signing' %}bg-rose-100 text-rose-800
+    {% else %}bg-gray-100 text-gray-700{% endif %}">
+    <span class="mr-1.5 h-2 w-2 rounded-full
+        {% if appointment_type == 'acquisition' %}bg-sky-500
+        {% elif appointment_type == 'sale' %}bg-emerald-500
+        {% elif appointment_type == 'valuation' %}bg-amber-500
+        {% elif appointment_type == 'follow_up' %}bg-cyan-500
+        {% elif appointment_type == 'proposal' %}bg-violet-500
+        {% elif appointment_type == 'proposal_acceptance' %}bg-pink-500
+        {% elif appointment_type == 'contract' %}bg-orange-500
+        {% elif appointment_type == 'signing' %}bg-rose-500
+        {% else %}bg-gray-400{% endif %}"></span>
+    {{ label }}
+</span>

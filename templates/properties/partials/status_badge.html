@@ -1,0 +1,22 @@
+<span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold
+    {% if status == 'news' %}bg-yellow-100 text-yellow-800
+    {% elif status == 'never_contacted' %}bg-gray-100 text-gray-700
+    {% elif status == 'contacted' %}bg-emerald-100 text-emerald-800
+    {% elif status == 'contacted_30' %}bg-orange-100 text-orange-800
+    {% elif status == 'vacant' %}bg-cyan-100 text-cyan-800
+    {% elif status == 'in_listing' %}bg-indigo-100 text-indigo-800
+    {% elif status == 'sold' %}bg-rose-100 text-rose-800
+    {% elif status == 'rented' %}bg-violet-100 text-violet-800
+    {% else %}bg-gray-100 text-gray-700{% endif %}">
+    <span class="mr-1.5 h-2 w-2 rounded-full
+        {% if status == 'news' %}bg-yellow-500
+        {% elif status == 'never_contacted' %}bg-gray-400
+        {% elif status == 'contacted' %}bg-emerald-500
+        {% elif status == 'contacted_30' %}bg-orange-500
+        {% elif status == 'vacant' %}bg-cyan-500
+        {% elif status == 'in_listing' %}bg-indigo-500
+        {% elif status == 'sold' %}bg-rose-500
+        {% elif status == 'rented' %}bg-violet-500
+        {% else %}bg-gray-400{% endif %}"></span>
+    {{ label }}
+</span>

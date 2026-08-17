@@ -1234,7 +1234,7 @@ class AvailableSlotsTests(TestCase):
         self.assertIn(("appointment", appointment.pk), agenda_objects)
 
     def test_proposal_appointment_is_returned_as_occupied_without_cache(self):
-        Appointment.objects.create(
+        proposal = Appointment.objects.create(
             related_property=Property.objects.first(),
             contact=Contact.objects.first(),
             agent=self.agent,
@@ -1254,6 +1254,26 @@ class AvailableSlotsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("11:00", response.json()["occupied"])
         self.assertIn("no-cache", response.headers["Cache-Control"])
+
+        calendar_events = {
+            event["id"]: event
+            for event in self.client.get(reverse("calendar_events")).json()
+        }
+        acquisition = Appointment.objects.filter(
+            appointment_type="acquisition",
+        ).first()
+        self.assertEqual(
+            calendar_events[f"appointment-{acquisition.pk}"]["color"],
+            "#0ea5e9",
+        )
+        self.assertEqual(
+            calendar_events[f"appointment-{proposal.pk}"]["color"],
+            "#8b5cf6",
+        )
+        self.assertNotEqual(
+            calendar_events[f"appointment-{acquisition.pk}"]["color"],
+            calendar_events[f"appointment-{proposal.pk}"]["color"],
+        )
 
 class AppointmentResultFlowAdditionalTests(TestCase):
     setUp = AppointmentResultFlowTests.setUp

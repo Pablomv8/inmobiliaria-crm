@@ -38,6 +38,22 @@ from calendar_app.models import (
 )
 
 
+APPOINTMENT_CALENDAR_COLORS = {
+    "acquisition": "#0ea5e9",
+    "sale": "#10b981",
+    "valuation": "#f59e0b",
+    "follow_up": "#06b6d4",
+    "proposal": "#8b5cf6",
+    "proposal_acceptance": "#ec4899",
+    "contract": "#f97316",
+    "signing": "#e11d48",
+}
+
+
+def appointment_calendar_color(appointment_type):
+    return APPOINTMENT_CALENDAR_COLORS.get(appointment_type, "#6b7280")
+
+
 def get_user_appointments(user):
     appointments = Appointment.objects.all()
 
@@ -1222,7 +1238,7 @@ def calendar_events(request):
                 f"T"
                 f"{appointment.end_time}"
             ),
-            "color": "#16a34a",
+            "color": appointment_calendar_color(appointment.appointment_type),
         }
         if can_open_calendar_item(request.user, appointment.agent):
             event["url"] = reverse(
