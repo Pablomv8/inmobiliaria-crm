@@ -32,7 +32,7 @@ class SaleForm(forms.ModelForm):
             "buyer",
             "agent",
             "sale_price",
-            "commission_percent",
+            "commission_amount",
             "sale_date",
             "notes",
         ]
@@ -54,8 +54,11 @@ class SaleForm(forms.ModelForm):
                 "class":INPUT_CLASS
             }),
 
-            "commission_percent": forms.NumberInput(attrs={
-                "class": INPUT_CLASS
+            "commission_amount": forms.NumberInput(attrs={
+                "class": INPUT_CLASS,
+                "min": 0,
+                "step": "0.01",
+                "placeholder": "Ej: 7500,00",
             }),
 
             "sale_date": forms.DateInput(
@@ -79,4 +82,4 @@ class SaleForm(forms.ModelForm):
             Property.objects.filter(
                 status="active"
             )
-    )    
+    )

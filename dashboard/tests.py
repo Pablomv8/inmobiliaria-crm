@@ -10,6 +10,7 @@ from listings.models import Listing
 from news.models import News
 from orders.models import Order
 from properties.models import Property
+from sales.models import Sale
 
 
 class DashboardScopeTests(TestCase):
@@ -128,6 +129,23 @@ class DashboardScopeTests(TestCase):
         self.assertNotIn("office_listings", response.context)
         self.assertContains(response, "Mi cartera")
         self.assertNotContains(response, "Vista global de la oficina")
+
+    def test_dashboard_sums_commissions_as_money_without_percentage_calculation(self):
+        Sale.objects.create(
+            related_property=self.agent_property,
+            buyer=self.agent_buyer,
+            agent=self.agent,
+            sale_price="250000.00",
+            commission_amount="8400.00",
+            sale_date=date(2026, 8, 15),
+            status="signed",
+        )
+
+        self.client.force_login(self.agent)
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["my_commission"], 8400)
 
     def test_base_layout_has_no_search_and_only_one_scrollable_sidebar(self):
         self.client.force_login(self.agent)

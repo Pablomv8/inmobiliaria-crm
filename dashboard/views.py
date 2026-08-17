@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from itertools import chain
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, DecimalField, ExpressionWrapper, F, Sum
+from django.db.models import Count, Sum
 from django.db.models.functions import TruncDate
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, render
@@ -210,12 +210,8 @@ def dashboard(request):
 
     signed_sales = personal_sales.filter(status="signed")
     personal_revenue = signed_sales.aggregate(total=Sum("sale_price"))["total"] or 0
-    commission_expression = ExpressionWrapper(
-        F("sale_price") * F("commission_percent") / 100,
-        output_field=DecimalField(max_digits=14, decimal_places=2),
-    )
     personal_commission = (
-        signed_sales.aggregate(total=Sum(commission_expression))["total"] or 0
+        signed_sales.aggregate(total=Sum("commission_amount"))["total"] or 0
     )
 
     upcoming_appointments = list(
@@ -420,13 +416,9 @@ def team_member_detail(request, pk):
     news_total = news.count()
     signed_sales = sales.filter(status="signed")
 
-    commission_expression = ExpressionWrapper(
-        F("sale_price") * F("commission_percent") / 100,
-        output_field=DecimalField(max_digits=14, decimal_places=2),
-    )
     signed_sale_totals = signed_sales.aggregate(
         revenue=Sum("sale_price"),
-        commission=Sum(commission_expression),
+        commission=Sum("commission_amount"),
     )
 
     upcoming_appointments = list(

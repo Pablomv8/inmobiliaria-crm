@@ -215,7 +215,7 @@ class Command(BaseCommand):
                 "is_exclusive": True,
                 "start_date": today - timedelta(days=29),
                 "end_date": today + timedelta(days=150),
-                "commission_percent": "3.50",
+                "commission_amount": "10500.00",
                 "owner": owner,
                 "source_appointment": acquisition_success,
                 "agent": agent,

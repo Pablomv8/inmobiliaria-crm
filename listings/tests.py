@@ -36,7 +36,7 @@ class ListingFollowUpTests(TestCase):
             owner_price="250000",
             agency_price="240000",
             price_diference="10000",
-            commission_percent="3.00",
+            commission_amount="7200.00",
             start_date=date(2026, 8, 1),
             end_date=date(2027, 2, 1),
             agent=self.agent,

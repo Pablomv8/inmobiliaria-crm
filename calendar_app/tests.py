@@ -163,7 +163,7 @@ class AppointmentResultFlowTests(TestCase):
                 "owner": self.contact.pk,
                 "start_date": "2026-08-11",
                 "end_date": "2027-02-11",
-                "commission_percent": "3.50",
+                "commission_amount": "8750.00",
                 "is_exclusive": "on",
             },
         )
@@ -178,7 +178,7 @@ class AppointmentResultFlowTests(TestCase):
         self.assertEqual(listing.source_appointment, self.appointment)
         self.assertEqual(listing.owner, self.contact)
         self.assertEqual(listing.agent, self.user)
-        self.assertEqual(str(listing.commission_percent), "3.50")
+        self.assertEqual(str(listing.commission_amount), "8750.00")
         self.assertEqual(str(listing.start_date), "2026-08-11")
         self.assertEqual(str(listing.end_date), "2027-02-11")
         self.assertTrue(listing.is_exclusive)
@@ -496,7 +496,7 @@ class SaleAppointmentFlowTests(TestCase):
             owner_price="245000",
             agency_price="250000",
             price_diference="5000",
-            commission_percent="3.00",
+            commission_amount="7500.00",
             agent=self.agent,
         )
         self.order = Order.objects.create(
@@ -1289,7 +1289,7 @@ class AppointmentResultFlowAdditionalTests(TestCase):
                 "owner": self.contact.pk,
                 "start_date": "2026-08-11",
                 "end_date": "2026-08-10",
-                "commission_percent": "3.00",
+                "commission_amount": "7500.00",
             },
         )
 
@@ -1318,7 +1318,7 @@ class AppointmentResultFlowAdditionalTests(TestCase):
                 "owner": other_owner.pk,
                 "start_date": "2026-08-11",
                 "end_date": "2027-02-11",
-                "commission_percent": "3.00",
+                "commission_amount": "7500.00",
             },
         )
 
@@ -1378,7 +1378,7 @@ class AppointmentResultFlowAdditionalTests(TestCase):
                 "owner": self.contact.pk,
                 "start_date": "2026-08-11",
                 "end_date": "2027-02-11",
-                "commission_percent": "3.00",
+                "commission_amount": "7500.00",
             },
         )
 

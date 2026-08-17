@@ -176,7 +176,7 @@
             </p>
 
             <p class="text-xs text-gray-400 mt-1">
-                Comisión: {{ listing.commission_percent|default_if_none:"—" }}% · Agente: {{ listing.agent|default:"Sin asignar" }}
+                Comisión: {{ listing.commission_amount|default_if_none:"—" }} € · Agente: {{ listing.agent|default:"Sin asignar" }}
             </p>
 
         </a>
@@ -239,7 +239,7 @@
                     </td>
 
                     <td class="px-6 py-4 font-semibold text-gray-900">
-                        {{ listing.commission_percent|default_if_none:"—" }}%
+                        {{ listing.commission_amount|default_if_none:"—" }} €
                     </td>
 
                     <td class="px-6 py-4">

@@ -156,7 +156,7 @@
     <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
 
         <!-- HEADER TABLE -->
-        <div class="grid grid-cols-6 bg-gray-50 text-xs font-semibold text-gray-500 uppercase px-6 py-4">
+        <div class="grid grid-cols-7 bg-gray-50 text-xs font-semibold text-gray-500 uppercase px-6 py-4">
 
             <div>Fecha</div>
             <div>Inmueble</div>
@@ -164,6 +164,7 @@
             <div>Agente encargado</div>
             <div>Estado</div>
             <div>Importe</div>
+            <div>Comisión</div>
 
         </div>
 
@@ -172,7 +173,7 @@
 
             {% for sale in sales %}
 
-                <div class="grid grid-cols-6 px-6 py-4 items-center hover:bg-gray-50 transition">
+                <div class="grid grid-cols-7 px-6 py-4 items-center hover:bg-gray-50 transition">
                     <!-- FECHA -->
                     <div class="text-sm text-gray-600">
 
@@ -250,6 +251,11 @@
 
                         </span>
 
+                    </div>
+
+                    <!-- COMISIÓN -->
+                    <div class="text-sm font-semibold text-gray-700">
+                        {{ sale.commission_amount }} €
                     </div>
 
                 </div>

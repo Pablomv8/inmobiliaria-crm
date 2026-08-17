@@ -20,14 +20,14 @@ class ListingForm(forms.ModelForm):
             "owner",
             "start_date",
             "end_date",
-            "commission_percent",
+            "commission_amount",
             "is_exclusive",
         ]
         labels = {
             "owner": "Propietario",
             "start_date": "Fecha de inicio",
             "end_date": "Fecha de conclusión",
-            "commission_percent": "Comisión acordada (%)",
+            "commission_amount": "Comisión acordada (€)",
             "is_exclusive": "Encargo en exclusiva",
         }
         widgets = {
@@ -40,12 +40,11 @@ class ListingForm(forms.ModelForm):
                 "class": INPUT_CLASS,
                 "type": "date",
             }),
-            "commission_percent": forms.NumberInput(attrs={
+            "commission_amount": forms.NumberInput(attrs={
                 "class": INPUT_CLASS,
                 "min": 0,
-                "max": 100,
                 "step": "0.01",
-                "placeholder": "Ej: 3",
+                "placeholder": "Ej: 7500,00",
             }),
             "is_exclusive": forms.CheckboxInput(attrs={
                 "class": "h-5 w-5 rounded border-gray-300 text-gray-900 focus:ring-gray-900",
@@ -65,7 +64,7 @@ class ListingForm(forms.ModelForm):
             "Selecciona un propietario asociado a este inmueble."
         )
         self.fields["end_date"].required = True
-        self.fields["commission_percent"].required = True
+        self.fields["commission_amount"].required = True
 
         if not self.is_bound:
             self.fields["owner"].initial = owners.first()

@@ -3,6 +3,7 @@ from django.db import models
 from properties.models import Property
 from contacts.models import Contact
 from users.models import User
+from django.core.validators import MinValueValidator
 
 
 class Sale(models.Model):
@@ -36,10 +37,12 @@ class Sale(models.Model):
         decimal_places=2
     )
 
-    commission_percent = models.DecimalField(
-        max_digits=5,
+    commission_amount = models.DecimalField(
+        max_digits=12,
         decimal_places=2,
-        default=3
+        default=0,
+        validators=[MinValueValidator(0)],
+        verbose_name="Comisión (€)",
     )
 
     sale_date = models.DateField()
@@ -61,14 +64,6 @@ class Sale(models.Model):
     def __str__(self):
         return f"Venta de {self.related_property.full_address}"
 
-    @property
-    def commission_amount(self):
-
-        return (
-            self.sale_price *
-            self.commission_percent / 100
-        )
-    
     def save(self, *args, **kwargs):
 
         is_new = self.pk is None

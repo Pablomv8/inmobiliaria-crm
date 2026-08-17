@@ -1,7 +1,7 @@
 from django.db import models
 from django.db import transaction
 from django.utils import timezone
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MinValueValidator
 
 class Listing(models.Model):
 
@@ -83,16 +83,13 @@ class Listing(models.Model):
         blank=True
     )
 
-    commission_percent = models.DecimalField(
-        max_digits=5,
+    commission_amount = models.DecimalField(
+        max_digits=12,
         decimal_places=2,
         null=True,
         blank=True,
-        validators=[
-            MinValueValidator(0),
-            MaxValueValidator(100),
-        ],
-        verbose_name="Comisión acordada (%)",
+        validators=[MinValueValidator(0)],
+        verbose_name="Comisión acordada (€)",
     )
 
     owner = models.ForeignKey(

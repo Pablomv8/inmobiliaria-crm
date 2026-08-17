@@ -328,7 +328,7 @@ class PropertyAutomaticStatusTests(TestCase):
             buyer=self.buyer,
             agent=self.agent,
             sale_price="250000",
-            commission_percent="3",
+            commission_amount="7500",
             sale_date=timezone.localdate(),
             status="signed",
         )
