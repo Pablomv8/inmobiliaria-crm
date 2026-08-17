@@ -46,6 +46,7 @@ class ContactRelatedWorkflowTests(TestCase):
             listing_type="sale",
             owner_price="250000",
             agency_price="245000",
+            agreed_price="247500",
             price_diference="5000",
             agent=self.agent,
         )

@@ -1,12 +1,14 @@
 from django.shortcuts import get_object_or_404, redirect, render
 from django.http import JsonResponse
 from django.urls import reverse
+from django.db import transaction
 
 from .models import Appointment, Call, CounterOffer, ProposalAppointment
 from .forms import (
     AppointmentEditForm,
     AppointmentForm,
     AppointmentResultForm,
+    FollowUpDecisionForm,
     CallForm,
     CallCommentForm,
     CounterOfferForm,
@@ -379,6 +381,13 @@ def appointment_detail(request, pk):
         {
             "appointment": appointment,
             "result_form": AppointmentResultForm(instance=appointment),
+            "follow_up_form": (
+                FollowUpDecisionForm(listing=appointment.listing)
+                if appointment.appointment_type == "follow_up"
+                and appointment.listing_id
+                and appointment.follow_up_action is None
+                else None
+            ),
             "listing": listing,
             "proposal": proposal,
             "proposal_appointment": getattr(
@@ -466,6 +475,11 @@ def add_appointment_result(request, pk):
                 "Comentario guardado. Indica si el comprador quiere hacer "
                 "una propuesta."
             )
+        elif appointment.appointment_type == "follow_up":
+            success_message = (
+                "Comentario guardado. Indica ahora si quieres rebajar, "
+                "renovar o mantener el encargo sin cambios."
+            )
         elif appointment.appointment_type == "proposal":
             success_message = (
                 "Comentario guardado. Ya puedes registrar la propuesta de compra."
@@ -490,6 +504,13 @@ def add_appointment_result(request, pk):
             {
                 "appointment": appointment,
                 "result_form": form,
+                "follow_up_form": (
+                    FollowUpDecisionForm(listing=appointment.listing)
+                    if appointment.appointment_type == "follow_up"
+                    and appointment.listing_id
+                    and appointment.follow_up_action is None
+                    else None
+                ),
                 "listing": listing,
                 "proposal": proposal,
                 "proposal_appointment": getattr(
@@ -503,6 +524,90 @@ def add_appointment_result(request, pk):
             status=400,
         )
 
+    return redirect("appointment_detail", pk=appointment.pk)
+
+
+@login_required
+@require_POST
+def apply_follow_up_decision(request, pk):
+    appointment = get_object_or_404(
+        get_user_appointments(request.user).select_related("listing"),
+        pk=pk,
+        appointment_type="follow_up",
+    )
+
+    if appointment.status != "completed" or not appointment.result_comment.strip():
+        messages.warning(
+            request,
+            "Añade el comentario de resultado antes de decidir sobre el encargo.",
+        )
+        return redirect("appointment_detail", pk=appointment.pk)
+
+    if appointment.listing is None:
+        messages.error(request, "La cita no tiene un encargo relacionado.")
+        return redirect("appointment_detail", pk=appointment.pk)
+
+    if appointment.follow_up_action is not None:
+        messages.warning(request, "Esta cita de seguimiento ya tiene una decisión registrada.")
+        return redirect("appointment_detail", pk=appointment.pk)
+
+    form = FollowUpDecisionForm(request.POST, listing=appointment.listing)
+    if not form.is_valid():
+        first_error = next(
+            (
+                str(error)
+                for errors in form.errors.values()
+                for error in errors
+            ),
+            "Revisa los datos de la decisión.",
+        )
+        messages.error(request, first_error)
+        return redirect("appointment_detail", pk=appointment.pk)
+
+    with transaction.atomic():
+        appointment = Appointment.objects.select_for_update().select_related(
+            "listing"
+        ).get(pk=appointment.pk)
+        if appointment.follow_up_action is not None:
+            messages.warning(
+                request,
+                "Esta cita de seguimiento ya tiene una decisión registrada.",
+            )
+            return redirect("appointment_detail", pk=appointment.pk)
+
+        listing = appointment.listing.__class__.objects.select_for_update().get(
+            pk=appointment.listing_id
+        )
+        action = form.cleaned_data["action"]
+        appointment.follow_up_action = action
+        appointment_update_fields = ["follow_up_action"]
+
+        if action == "price_reduction":
+            appointment.follow_up_previous_price = listing.agreed_price
+            appointment.follow_up_new_price = form.cleaned_data["new_price"]
+            listing.agreed_price = appointment.follow_up_new_price
+            listing.save(update_fields=["agreed_price"])
+            appointment_update_fields.extend([
+                "follow_up_previous_price",
+                "follow_up_new_price",
+            ])
+            success_message = "Precio del encargo rebajado correctamente."
+        elif action == "renewal":
+            appointment.follow_up_previous_end_date = listing.end_date
+            appointment.follow_up_new_end_date = form.cleaned_data["new_end_date"]
+            listing.end_date = appointment.follow_up_new_end_date
+            listing.save(update_fields=["end_date"])
+            appointment_update_fields.extend([
+                "follow_up_previous_end_date",
+                "follow_up_new_end_date",
+            ])
+            success_message = "Fecha de conclusión del encargo ampliada correctamente."
+        else:
+            success_message = "Seguimiento cerrado sin cambios en el encargo."
+
+        appointment.save(update_fields=appointment_update_fields)
+
+    messages.success(request, success_message)
     return redirect("appointment_detail", pk=appointment.pk)
 
 
@@ -619,7 +724,7 @@ def create_purchase_proposal(request, pk):
         proposal.listing = appointment.listing
         proposal.buyer = appointment.contact
         proposal.agent = appointment.agent
-        proposal.listing_price = appointment.listing.agency_price
+        proposal.listing_price = appointment.listing.agreed_price
         proposal.save()
         messages.success(request, "Propuesta de compra registrada correctamente.")
         return redirect("proposal_appointment_detail", pk=proposal.pk)
@@ -630,7 +735,7 @@ def create_purchase_proposal(request, pk):
         {
             "form": form,
             "appointment": appointment,
-            "listing_price": appointment.listing.agency_price,
+            "listing_price": appointment.listing.agreed_price,
         },
     )
 

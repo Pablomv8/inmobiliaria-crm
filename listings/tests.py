@@ -35,6 +35,7 @@ class ListingFollowUpTests(TestCase):
             listing_type="sale",
             owner_price="250000",
             agency_price="240000",
+            agreed_price="245000",
             price_diference="10000",
             commission_amount="7200.00",
             start_date=date(2026, 8, 1),
@@ -121,7 +122,144 @@ class ListingFollowUpTests(TestCase):
         )
         self.listing.refresh_from_db()
         self.assertEqual(self.listing.workflow_status, "active")
-        self.assertContains(response, "Seguimiento completado")
+        self.assertContains(response, "¿Qué quieres hacer con el encargo?")
+        self.assertContains(response, "Rebajar encargo")
+        self.assertContains(response, "Renovar encargo")
+        self.assertContains(response, "No realizar cambios")
+
+    def test_follow_up_can_reduce_the_agreed_price(self):
+        appointment = Appointment.objects.create(
+            related_property=self.property,
+            contact=self.owner,
+            agent=self.agent,
+            appointment_type="follow_up",
+            date="2026-08-20",
+            time="10:00",
+            end_time="11:00",
+            listing=self.listing,
+            status="completed",
+            result_comment="El precio está dificultando la comercialización.",
+        )
+
+        response = self.client.post(
+            reverse("apply_follow_up_decision", args=[appointment.pk]),
+            {
+                "action": "price_reduction",
+                "new_price": "230000.00",
+            },
+            follow=True,
+        )
+
+        appointment.refresh_from_db()
+        self.listing.refresh_from_db()
+        self.assertEqual(str(self.listing.agreed_price), "230000.00")
+        self.assertEqual(str(appointment.follow_up_previous_price), "245000.00")
+        self.assertEqual(str(appointment.follow_up_new_price), "230000.00")
+        self.assertEqual(appointment.follow_up_action, "price_reduction")
+        self.assertContains(response, "Se rebajó el precio acordado")
+
+    def test_follow_up_rejects_a_price_that_is_not_a_reduction(self):
+        appointment = Appointment.objects.create(
+            related_property=self.property,
+            contact=self.owner,
+            agent=self.agent,
+            appointment_type="follow_up",
+            date="2026-08-20",
+            time="10:00",
+            end_time="11:00",
+            listing=self.listing,
+            status="completed",
+            result_comment="Se revisa el precio.",
+        )
+
+        response = self.client.post(
+            reverse("apply_follow_up_decision", args=[appointment.pk]),
+            {
+                "action": "price_reduction",
+                "new_price": "245000.00",
+            },
+            follow=True,
+        )
+
+        appointment.refresh_from_db()
+        self.listing.refresh_from_db()
+        self.assertEqual(str(self.listing.agreed_price), "245000.00")
+        self.assertIsNone(appointment.follow_up_action)
+        self.assertContains(
+            response,
+            "El nuevo precio debe ser inferior al precio acordado actual.",
+        )
+
+    def test_follow_up_can_extend_the_listing_end_date(self):
+        appointment = Appointment.objects.create(
+            related_property=self.property,
+            contact=self.owner,
+            agent=self.agent,
+            appointment_type="follow_up",
+            date="2026-08-20",
+            time="10:00",
+            end_time="11:00",
+            listing=self.listing,
+            status="completed",
+            result_comment="El propietario quiere ampliar el encargo.",
+        )
+
+        response = self.client.post(
+            reverse("apply_follow_up_decision", args=[appointment.pk]),
+            {
+                "action": "renewal",
+                "new_end_date": "2027-05-01",
+            },
+            follow=True,
+        )
+
+        appointment.refresh_from_db()
+        self.listing.refresh_from_db()
+        self.assertEqual(self.listing.end_date, date(2027, 5, 1))
+        self.assertEqual(
+            appointment.follow_up_previous_end_date,
+            date(2027, 2, 1),
+        )
+        self.assertEqual(
+            appointment.follow_up_new_end_date,
+            date(2027, 5, 1),
+        )
+        self.assertEqual(appointment.follow_up_action, "renewal")
+        self.assertContains(response, "Se amplió la fecha de conclusión")
+
+    def test_follow_up_can_close_without_changes_and_cannot_be_decided_twice(self):
+        appointment = Appointment.objects.create(
+            related_property=self.property,
+            contact=self.owner,
+            agent=self.agent,
+            appointment_type="follow_up",
+            date="2026-08-20",
+            time="10:00",
+            end_time="11:00",
+            listing=self.listing,
+            status="completed",
+            result_comment="No se realizarán cambios por ahora.",
+        )
+
+        response = self.client.post(
+            reverse("apply_follow_up_decision", args=[appointment.pk]),
+            {"action": "none"},
+            follow=True,
+        )
+
+        appointment.refresh_from_db()
+        self.assertEqual(appointment.follow_up_action, "none")
+        self.assertContains(response, "sin modificar el encargo")
+
+        self.client.post(
+            reverse("apply_follow_up_decision", args=[appointment.pk]),
+            {
+                "action": "price_reduction",
+                "new_price": "220000.00",
+            },
+        )
+        self.listing.refresh_from_db()
+        self.assertEqual(str(self.listing.agreed_price), "245000.00")
 
     def test_schedule_call_from_listing(self):
         response = self.client.post(

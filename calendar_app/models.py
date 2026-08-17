@@ -31,6 +31,12 @@ class Appointment(models.Model):
         ("cancelled", "Cancelada"),
     ]
 
+    FOLLOW_UP_ACTION_CHOICES = [
+        ("price_reduction", "Rebaja del encargo"),
+        ("renewal", "Renovación del encargo"),
+        ("none", "Sin cambios"),
+    ]
+
     related_property = models.ForeignKey(
         Property,
         on_delete=models.CASCADE
@@ -73,6 +79,42 @@ class Appointment(models.Model):
         null=True,
         blank=True,
         verbose_name="Cita con éxito",
+    )
+
+    follow_up_action = models.CharField(
+        max_length=20,
+        choices=FOLLOW_UP_ACTION_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name="Acción tras el seguimiento",
+    )
+
+    follow_up_previous_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Precio anterior al seguimiento",
+    )
+
+    follow_up_new_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Precio tras el seguimiento",
+    )
+
+    follow_up_previous_end_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha límite anterior",
+    )
+
+    follow_up_new_end_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Nueva fecha límite",
     )
 
     status = models.CharField(

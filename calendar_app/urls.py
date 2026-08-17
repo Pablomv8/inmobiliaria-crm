@@ -60,6 +60,11 @@ urlpatterns = [
         name="appointment_add_result"
     ),
     path(
+        "appointments/<int:pk>/follow-up-decision/",
+        views.apply_follow_up_decision,
+        name="apply_follow_up_decision",
+    ),
+    path(
         "appointments/<int:pk>/schedule-call/",
         views.schedule_call_from_appointment,
         name="appointment_schedule_call"

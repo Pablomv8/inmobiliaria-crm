@@ -119,6 +119,7 @@ def property_detail(request, pk):
 
     return render(request, 'properties/detail.html', {
         'property': property,
+        'owners': owners,
         'comments': property.comments.select_related("user"),
         'comment_form': PropertyCommentForm(),
         'timeline': build_property_timeline(property, request.user),

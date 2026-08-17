@@ -207,11 +207,11 @@
             <!-- LISTADO -->
             <div class="space-y-2">
 
-                {% for contact in property.contacts.all %}
+                {% for contact in owners %}
 
-                    {% if contact.contact_type == "owner" %}
-
-                        <div class="flex justify-between items-center bg-gray-50 p-3 rounded-xl">
+                        <a href="{% url 'contact_detail' contact.id %}"
+                           class="flex justify-between items-center bg-gray-50 p-3 rounded-xl transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                           aria-label="Ver ficha de {{ contact.name }}">
 
                             <div>
 
@@ -229,9 +229,7 @@
                                 Propietario
                             </span>
 
-                        </div>
-
-                    {% endif %}
+                        </a>
 
                 {% empty %}
 

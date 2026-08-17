@@ -1,3 +1,6 @@
+from datetime import date, timedelta
+from decimal import Decimal
+
 from django import forms
 from django.contrib.auth import get_user_model
 from listings.models import Listing
@@ -59,6 +62,88 @@ class AppointmentResultForm(forms.ModelForm):
             )
 
         return comment
+
+
+class FollowUpDecisionForm(forms.Form):
+    action = forms.ChoiceField(
+        choices=Appointment.FOLLOW_UP_ACTION_CHOICES,
+        widget=forms.HiddenInput(),
+        error_messages={
+            "required": "Selecciona una acción para el encargo.",
+            "invalid_choice": "La acción seleccionada no es válida.",
+        },
+    )
+    new_price = forms.DecimalField(
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        min_value=Decimal("0.01"),
+        label="Nuevo precio acordado (€)",
+        widget=forms.NumberInput(attrs={
+            "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 focus:outline-none",
+            "min": "0.01",
+            "step": "0.01",
+        }),
+    )
+    new_end_date = forms.DateField(
+        required=False,
+        label="Nueva fecha de conclusión",
+        widget=forms.DateInput(attrs={
+            "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 focus:outline-none",
+            "type": "date",
+        }),
+    )
+
+    def __init__(self, *args, listing, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.listing = listing
+        self.fields["new_price"].widget.attrs["placeholder"] = (
+            f"Menos de {listing.agreed_price} €"
+        )
+        price_ceiling = listing.agreed_price - Decimal("0.01")
+        if price_ceiling > 0:
+            self.fields["new_price"].widget.attrs["max"] = price_ceiling
+
+        renewal_baseline = listing.end_date or max(listing.start_date, date.today())
+        self.fields["new_end_date"].widget.attrs["min"] = (
+            renewal_baseline + timedelta(days=1)
+        ).isoformat()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        action = cleaned_data.get("action")
+
+        if action == "price_reduction":
+            new_price = cleaned_data.get("new_price")
+            if new_price is None:
+                self.add_error(
+                    "new_price",
+                    "Indica el nuevo precio acordado.",
+                )
+            elif new_price >= self.listing.agreed_price:
+                self.add_error(
+                    "new_price",
+                    "El nuevo precio debe ser inferior al precio acordado actual.",
+                )
+
+        if action == "renewal":
+            new_end_date = cleaned_data.get("new_end_date")
+            renewal_baseline = self.listing.end_date or max(
+                self.listing.start_date,
+                date.today(),
+            )
+            if new_end_date is None:
+                self.add_error(
+                    "new_end_date",
+                    "Indica la nueva fecha de conclusión.",
+                )
+            elif new_end_date <= renewal_baseline:
+                self.add_error(
+                    "new_end_date",
+                    "La nueva fecha debe ampliar la vigencia actual del encargo.",
+                )
+
+        return cleaned_data
 
 
 class AppointmentEditForm(forms.ModelForm):

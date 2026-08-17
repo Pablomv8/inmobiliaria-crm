@@ -154,6 +154,11 @@ class AppointmentResultFlowTests(TestCase):
         self.appointment.refresh_from_db()
         self.assertEqual(form_response.status_code, 200)
         self.assertContains(form_response, "Completa las condiciones acordadas")
+        self.assertContains(form_response, 'name="agreed_price"', html=False)
+        self.assertEqual(
+            str(form_response.context["form"].initial["agreed_price"]),
+            "240000.00",
+        )
         self.assertFalse(Listing.objects.exists())
         self.assertIsNone(self.appointment.result_success)
 
@@ -161,6 +166,7 @@ class AppointmentResultFlowTests(TestCase):
             reverse("create_listing", args=[self.appointment.pk]),
             {
                 "owner": self.contact.pk,
+                "agreed_price": "247500.00",
                 "start_date": "2026-08-11",
                 "end_date": "2027-02-11",
                 "commission_amount": "8750.00",
@@ -178,6 +184,7 @@ class AppointmentResultFlowTests(TestCase):
         self.assertEqual(listing.source_appointment, self.appointment)
         self.assertEqual(listing.owner, self.contact)
         self.assertEqual(listing.agent, self.user)
+        self.assertEqual(str(listing.agreed_price), "247500.00")
         self.assertEqual(str(listing.commission_amount), "8750.00")
         self.assertEqual(str(listing.start_date), "2026-08-11")
         self.assertEqual(str(listing.end_date), "2027-02-11")
@@ -495,6 +502,7 @@ class SaleAppointmentFlowTests(TestCase):
             listing_type="sale",
             owner_price="245000",
             agency_price="250000",
+            agreed_price="248000",
             price_diference="5000",
             commission_amount="7500.00",
             agent=self.agent,
@@ -665,7 +673,7 @@ class SaleAppointmentFlowTests(TestCase):
         )
         self.assertEqual(proposal.order, self.order)
         self.assertEqual(proposal.listing, self.listing)
-        self.assertEqual(str(proposal.listing_price), "250000.00")
+        self.assertEqual(str(proposal.listing_price), "248000.00")
         self.assertEqual(str(proposal.offered_price), "242000.00")
         self.order.refresh_from_db()
         self.listing.refresh_from_db()
@@ -1278,6 +1286,29 @@ class AvailableSlotsTests(TestCase):
 class AppointmentResultFlowAdditionalTests(TestCase):
     setUp = AppointmentResultFlowTests.setUp
 
+    def test_listing_form_requires_an_agreed_price(self):
+        self.appointment.status = "completed"
+        self.appointment.result_comment = "El propietario acepta el encargo."
+        self.appointment.save()
+
+        response = self.client.post(
+            reverse("create_listing", args=[self.appointment.pk]),
+            {
+                "owner": self.contact.pk,
+                "start_date": "2026-08-11",
+                "end_date": "2027-02-11",
+                "commission_amount": "7500.00",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(
+            response.context["form"],
+            "agreed_price",
+            "Este campo es obligatorio.",
+        )
+        self.assertFalse(Listing.objects.exists())
+
     def test_listing_form_rejects_end_date_before_start_date(self):
         self.appointment.status = "completed"
         self.appointment.result_comment = "El propietario acepta el encargo."
@@ -1287,6 +1318,7 @@ class AppointmentResultFlowAdditionalTests(TestCase):
             reverse("create_listing", args=[self.appointment.pk]),
             {
                 "owner": self.contact.pk,
+                "agreed_price": "247500.00",
                 "start_date": "2026-08-11",
                 "end_date": "2026-08-10",
                 "commission_amount": "7500.00",
@@ -1316,6 +1348,7 @@ class AppointmentResultFlowAdditionalTests(TestCase):
             reverse("create_listing", args=[self.appointment.pk]),
             {
                 "owner": other_owner.pk,
+                "agreed_price": "247500.00",
                 "start_date": "2026-08-11",
                 "end_date": "2027-02-11",
                 "commission_amount": "7500.00",
@@ -1376,6 +1409,7 @@ class AppointmentResultFlowAdditionalTests(TestCase):
             reverse("create_listing", args=[self.appointment.pk]),
             {
                 "owner": self.contact.pk,
+                "agreed_price": "247500.00",
                 "start_date": "2026-08-11",
                 "end_date": "2027-02-11",
                 "commission_amount": "7500.00",

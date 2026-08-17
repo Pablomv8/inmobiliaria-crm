@@ -111,17 +111,22 @@ def build_property_timeline(property_obj, viewer):
         related_property=property_obj,
     ).select_related("agent", "contact")
     for appointment in appointments:
+        appointment_description = (
+            f"{appointment.time.strftime('%H:%M')}–"
+            f"{appointment.end_time.strftime('%H:%M')} · "
+            f"{appointment.get_status_display()} · "
+            f"{user_name(appointment.agent)}"
+        )
+        if appointment.follow_up_action:
+            appointment_description += (
+                f" · {appointment.get_follow_up_action_display()}"
+            )
         events.append({
             "timestamp": aware_datetime(appointment.date, appointment.time),
             "type": "appointment",
             "icon": "📅",
             "title": f"Cita de {appointment.get_appointment_type_display()}",
-            "description": (
-                f"{appointment.time.strftime('%H:%M')}–"
-                f"{appointment.end_time.strftime('%H:%M')} · "
-                f"{appointment.get_status_display()} · "
-                f"{user_name(appointment.agent)}"
-            ),
+            "description": appointment_description,
             "url": (
                 reverse("appointment_detail", args=[appointment.pk])
                 if can_open_agent_event(viewer, appointment.agent)

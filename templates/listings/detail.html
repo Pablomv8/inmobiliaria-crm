@@ -46,10 +46,22 @@
 
         <div class="grid md:grid-cols-2 gap-6">
 
+            <div class="rounded-xl border border-indigo-200 bg-indigo-50 p-4 md:col-span-2">
+
+                <p class="text-sm font-medium text-indigo-700">
+                    Precio acordado del inmueble
+                </p>
+
+                <p class="mt-1 text-2xl font-bold text-indigo-950">
+                    {{ listing.agreed_price }} €
+                </p>
+
+            </div>
+
             <div class="bg-gray-50 rounded-xl p-4">
 
                 <p class="text-sm text-gray-500">
-                    Precio propietario
+                    Precio indicado por el propietario en la noticia
                 </p>
 
                 <p class="font-semibold">
@@ -61,7 +73,7 @@
             <div class="bg-gray-50 rounded-xl p-4">
 
                 <p class="text-sm text-gray-500">
-                    Valoración agencia
+                    Valoración inicial de la agencia
                 </p>
 
                 <p class="font-semibold">
@@ -303,6 +315,9 @@
                                 <a href="{% url 'call_detail' item.object.id %}" class="text-xs text-blue-600">Ver llamada</a>
                             {% else %}
                                 <p class="font-medium text-sm">Cita de {{ item.object.get_appointment_type_display|lower }}</p>
+                                {% if item.object.follow_up_action %}
+                                    <p class="mt-1 text-xs text-cyan-700">{{ item.object.get_follow_up_action_display }}</p>
+                                {% endif %}
                                 <a href="{% url 'appointment_detail' item.object.id %}" class="text-xs text-blue-600">Ver cita</a>
                             {% endif %}
                             <p class="text-xs text-gray-400 mt-1">{{ item.date|date:"d/m/Y H:i" }}</p>

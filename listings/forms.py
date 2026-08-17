@@ -18,6 +18,7 @@ class ListingForm(forms.ModelForm):
         model = Listing
         fields = [
             "owner",
+            "agreed_price",
             "start_date",
             "end_date",
             "commission_amount",
@@ -25,6 +26,7 @@ class ListingForm(forms.ModelForm):
         ]
         labels = {
             "owner": "Propietario",
+            "agreed_price": "Precio acordado del inmueble (€)",
             "start_date": "Fecha de inicio",
             "end_date": "Fecha de conclusión",
             "commission_amount": "Comisión acordada (€)",
@@ -32,6 +34,12 @@ class ListingForm(forms.ModelForm):
         }
         widgets = {
             "owner": forms.Select(attrs={"class": INPUT_CLASS}),
+            "agreed_price": forms.NumberInput(attrs={
+                "class": INPUT_CLASS,
+                "min": "0.01",
+                "step": "0.01",
+                "placeholder": "Ej: 250000,00",
+            }),
             "start_date": forms.DateInput(attrs={
                 "class": INPUT_CLASS,
                 "type": "date",
@@ -64,6 +72,10 @@ class ListingForm(forms.ModelForm):
             "Selecciona un propietario asociado a este inmueble."
         )
         self.fields["end_date"].required = True
+        self.fields["agreed_price"].required = True
+        self.fields["agreed_price"].error_messages["required"] = (
+            "Este campo es obligatorio."
+        )
         self.fields["commission_amount"].required = True
 
         if not self.is_bound:
@@ -81,6 +93,14 @@ class ListingForm(forms.ModelForm):
             )
 
         return cleaned_data
+
+    def clean_agreed_price(self):
+        agreed_price = self.cleaned_data["agreed_price"]
+        if agreed_price <= 0:
+            raise forms.ValidationError(
+                "El precio acordado debe ser mayor que cero."
+            )
+        return agreed_price
 
 
 class ListingCommentForm(forms.ModelForm):

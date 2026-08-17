@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 from django.db import transaction
 from django.utils import timezone
@@ -62,6 +64,13 @@ class Listing(models.Model):
     agency_price = models.DecimalField(
         max_digits=12,
         decimal_places=2
+    )
+
+    agreed_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.01"))],
+        verbose_name="Precio acordado (€)",
     )
 
     price_diference = models.DecimalField(

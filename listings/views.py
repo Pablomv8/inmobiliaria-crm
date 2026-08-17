@@ -265,6 +265,7 @@ def create_listing_from_appointment(request, appointment_id):
     form = ListingForm(
         request.POST or None,
         property_obj=property_obj,
+        initial={"agreed_price": news.estimated_price},
     )
 
     if request.method == "POST" and form.is_valid():

@@ -66,6 +66,7 @@ class DashboardScopeTests(TestCase):
             listing_type="sale",
             owner_price="200000",
             agency_price="210000",
+            agreed_price="208000",
             price_diference="10000",
             owner=self.agent_owner,
             agent=self.agent,
@@ -75,6 +76,7 @@ class DashboardScopeTests(TestCase):
             listing_type="sale",
             owner_price="250000",
             agency_price="260000",
+            agreed_price="258000",
             price_diference="10000",
             agent=self.other_agent,
         )

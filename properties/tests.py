@@ -249,6 +249,20 @@ class PropertyAutomaticStatusTests(TestCase):
         self.assertContains(response, "Cita de Valoración")
         self.assertContains(response, "10:00–11:00")
 
+    def test_property_owner_links_to_contact_detail(self):
+        self.owner.properties.add(self.property)
+
+        response = self.client.get(
+            reverse("property_detail", args=[self.property.pk])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            f'href="{reverse("contact_detail", args=[self.owner.pk])}"',
+        )
+        self.assertContains(response, self.owner.name)
+
     def test_contact_older_than_30_days_is_refreshed_automatically(self):
         comment = PropertyComment.objects.create(
             property=self.property,
@@ -307,6 +321,7 @@ class PropertyAutomaticStatusTests(TestCase):
             listing_type="sale",
             owner_price="245000",
             agency_price="250000",
+            agreed_price="248000",
             price_diference="5000",
             agent=self.agent,
         )

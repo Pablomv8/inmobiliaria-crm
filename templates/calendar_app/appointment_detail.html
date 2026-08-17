@@ -174,11 +174,75 @@
             {% endif %}
 
             {% if appointment.appointment_type == "follow_up" and appointment.status == "completed" and appointment.result_comment %}
-                <div class="mt-6 rounded-2xl border border-green-200 bg-green-50 p-6">
-                    <h3 class="font-semibold text-green-800">Seguimiento completado</h3>
-                    <p class="text-sm text-green-700 mt-1">
-                        El comentario ha quedado registrado en el historial del encargo.
-                    </p>
+                <div class="mt-6 rounded-2xl border border-cyan-200 bg-cyan-50 p-6">
+                    {% if appointment.follow_up_action %}
+                        <h3 class="font-semibold text-cyan-900">Decisión del seguimiento registrada</h3>
+                        {% if appointment.follow_up_action == "price_reduction" %}
+                            <p class="mt-2 text-sm text-cyan-800">
+                                Se rebajó el precio acordado de
+                                <strong>{{ appointment.follow_up_previous_price }} €</strong> a
+                                <strong>{{ appointment.follow_up_new_price }} €</strong>.
+                            </p>
+                        {% elif appointment.follow_up_action == "renewal" %}
+                            <p class="mt-2 text-sm text-cyan-800">
+                                Se amplió la fecha de conclusión de
+                                <strong>{{ appointment.follow_up_previous_end_date|date:"d/m/Y"|default:"Sin fecha" }}</strong> a
+                                <strong>{{ appointment.follow_up_new_end_date|date:"d/m/Y" }}</strong>.
+                            </p>
+                        {% else %}
+                            <p class="mt-2 text-sm text-cyan-800">
+                                Se cerró el seguimiento sin modificar el encargo.
+                            </p>
+                        {% endif %}
+                    {% elif follow_up_form %}
+                        <h3 class="text-lg font-semibold text-gray-900">¿Qué quieres hacer con el encargo?</h3>
+                        <p class="mt-1 text-sm text-gray-600">
+                            Registra la decisión tomada después de la cita de seguimiento.
+                        </p>
+
+                        <form method="post" action="{% url 'apply_follow_up_decision' appointment.id %}" class="mt-5 grid gap-4 lg:grid-cols-3">
+                            {% csrf_token %}
+
+                            <div class="flex flex-col rounded-2xl border border-red-200 bg-white p-5">
+                                <p class="font-semibold text-red-800">Rebajar encargo</p>
+                                <p class="mt-1 text-sm text-gray-500">Precio actual: {{ appointment.listing.agreed_price }} €</p>
+                                <label class="mt-4 mb-2 text-sm font-medium text-gray-700" for="{{ follow_up_form.new_price.id_for_label }}">
+                                    {{ follow_up_form.new_price.label }}
+                                </label>
+                                {{ follow_up_form.new_price }}
+                                <button type="submit" name="action" value="price_reduction"
+                                        class="mt-4 w-full rounded-xl bg-red-600 px-4 py-3 font-medium text-white transition hover:bg-red-700">
+                                    Confirmar rebaja
+                                </button>
+                            </div>
+
+                            <div class="flex flex-col rounded-2xl border border-blue-200 bg-white p-5">
+                                <p class="font-semibold text-blue-800">Renovar encargo</p>
+                                <p class="mt-1 text-sm text-gray-500">Fin actual: {{ appointment.listing.end_date|date:"d/m/Y"|default:"Sin fecha" }}</p>
+                                <label class="mt-4 mb-2 text-sm font-medium text-gray-700" for="{{ follow_up_form.new_end_date.id_for_label }}">
+                                    {{ follow_up_form.new_end_date.label }}
+                                </label>
+                                {{ follow_up_form.new_end_date }}
+                                <button type="submit" name="action" value="renewal"
+                                        class="mt-4 w-full rounded-xl bg-blue-600 px-4 py-3 font-medium text-white transition hover:bg-blue-700">
+                                    Confirmar renovación
+                                </button>
+                            </div>
+
+                            <div class="flex flex-col rounded-2xl border border-gray-200 bg-white p-5">
+                                <p class="font-semibold text-gray-900">No realizar cambios</p>
+                                <p class="mt-1 flex-1 text-sm text-gray-500">
+                                    Mantiene el precio y la fecha de conclusión actuales.
+                                </p>
+                                <button type="submit" name="action" value="none"
+                                        class="mt-4 w-full rounded-xl bg-gray-900 px-4 py-3 font-medium text-white transition hover:bg-black">
+                                    Cerrar sin cambios
+                                </button>
+                            </div>
+                        </form>
+                    {% else %}
+                        <p class="text-sm text-cyan-800">La cita no tiene un encargo relacionado sobre el que actuar.</p>
+                    {% endif %}
                 </div>
             {% endif %}
 
