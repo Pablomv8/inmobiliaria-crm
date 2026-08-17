@@ -19,6 +19,7 @@ from .models import (
     CallComment,
     CounterOffer,
     ProposalAppointment,
+    ProposalComment,
 )
 
 
@@ -685,6 +686,48 @@ class SaleAppointmentFlowTests(TestCase):
         )
         self.assertContains(listing_response, "Propuestas de compra")
         self.assertContains(listing_response, "242000.00")
+
+    def test_proposal_accepts_comments_with_author_and_date(self):
+        proposal = self.create_registered_proposal()
+
+        response = self.client.post(
+            reverse("proposal_add_comment", args=[proposal.pk]),
+            {"text": "El comprador confirma que mantiene la oferta."},
+        )
+
+        comment = ProposalComment.objects.get()
+        self.assertRedirects(
+            response,
+            reverse("proposal_appointment_detail", args=[proposal.pk]),
+        )
+        self.assertEqual(comment.proposal, proposal)
+        self.assertEqual(comment.user, self.agent)
+        self.assertEqual(
+            comment.text,
+            "El comprador confirma que mantiene la oferta.",
+        )
+
+        detail_response = self.client.get(
+            reverse("proposal_appointment_detail", args=[proposal.pk])
+        )
+        self.assertContains(detail_response, "Comentarios de la propuesta")
+        self.assertContains(
+            detail_response,
+            "El comprador confirma que mantiene la oferta.",
+        )
+        self.assertContains(detail_response, self.agent.username)
+
+    def test_proposal_rejects_an_empty_comment(self):
+        proposal = self.create_registered_proposal()
+
+        response = self.client.post(
+            reverse("proposal_add_comment", args=[proposal.pk]),
+            {"text": "   "},
+            follow=True,
+        )
+
+        self.assertFalse(ProposalComment.objects.exists())
+        self.assertContains(response, "El comentario no puede estar vacío.")
 
     def test_declining_proposal_records_decision(self):
         _, appointment = self.create_sale_appointment()

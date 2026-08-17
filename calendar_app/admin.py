@@ -6,6 +6,7 @@ from .models import (
     CallComment,
     CounterOffer,
     ProposalAppointment,
+    ProposalComment,
 )
 
 # Register your models here.
@@ -14,5 +15,6 @@ from .models import (
 admin.site.register(Call)
 admin.site.register(Appointment)
 admin.site.register(ProposalAppointment)
+admin.site.register(ProposalComment)
 admin.site.register(CounterOffer)
 admin.site.register(CallComment)

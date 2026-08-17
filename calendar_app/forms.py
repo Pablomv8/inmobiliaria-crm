@@ -13,6 +13,7 @@ from .models import (
     CallComment,
     CounterOffer,
     ProposalAppointment,
+    ProposalComment,
 )
 
 
@@ -532,6 +533,29 @@ class ProposalAppointmentForm(forms.ModelForm):
             )
 
         return cleaned_data
+
+
+class ProposalCommentForm(forms.ModelForm):
+    class Meta:
+        model = ProposalComment
+        fields = ["text"]
+        widgets = {
+            "text": forms.Textarea(attrs={
+                "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-green-500 focus:ring-4 focus:ring-green-100 focus:outline-none",
+                "rows": 3,
+                "maxlength": 1000,
+                "placeholder": "Añade una observación, acuerdo o actualización de la propuesta...",
+            }),
+        }
+        error_messages = {
+            "text": {"required": "El comentario no puede estar vacío."},
+        }
+
+    def clean_text(self):
+        text = self.cleaned_data["text"].strip()
+        if not text:
+            raise forms.ValidationError("El comentario no puede estar vacío.")
+        return text
 
 
 class CounterOfferForm(forms.ModelForm):

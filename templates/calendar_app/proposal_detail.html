@@ -38,6 +38,42 @@
     </div>
 
     <section class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8 mt-6">
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold text-gray-900">Comentarios de la propuesta</h2>
+            <p class="text-sm text-gray-500 mt-1">Registra conversaciones, acuerdos y cualquier cambio relacionado con la oferta.</p>
+        </div>
+
+        <form method="post" action="{% url 'proposal_add_comment' proposal.id %}" class="mb-8">
+            {% csrf_token %}
+            {{ comment_form.text }}
+            {% if comment_form.text.errors %}
+                <p class="mt-2 text-sm text-red-600">{{ comment_form.text.errors.0 }}</p>
+            {% endif %}
+            <div class="mt-3 flex justify-end">
+                <button type="submit" class="rounded-xl bg-gray-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-black">
+                    Añadir comentario
+                </button>
+            </div>
+        </form>
+
+        <div class="space-y-3">
+            {% for comment in comments %}
+                <article class="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                    <div class="mb-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                        <span class="font-medium text-gray-900">{{ comment.user|default:"Usuario eliminado" }}</span>
+                        <time class="text-xs text-gray-400">{{ comment.created_at|date:"d/m/Y H:i" }}</time>
+                    </div>
+                    <p class="whitespace-pre-line text-sm text-gray-700">{{ comment.text }}</p>
+                </article>
+            {% empty %}
+                <div class="rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">
+                    Todavía no hay comentarios en esta propuesta.
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8 mt-6">
         <div class="flex items-center justify-between gap-4 mb-5">
             <div>
                 <h2 class="text-xl font-semibold text-gray-900">Citas relacionadas</h2>

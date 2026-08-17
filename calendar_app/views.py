@@ -13,6 +13,7 @@ from .forms import (
     CallCommentForm,
     CounterOfferForm,
     ProposalAppointmentForm,
+    ProposalCommentForm,
     SaleAppointmentForm,
 )
 from news.models import News
@@ -784,8 +785,31 @@ def proposal_appointment_detail(request, pk):
             "proposal": proposal,
             "appointments": appointments,
             "counteroffers": proposal.counteroffers.all(),
+            "comments": proposal.comments.select_related("user"),
+            "comment_form": ProposalCommentForm(),
         },
     )
+
+
+@login_required
+@require_POST
+def add_proposal_comment(request, pk):
+    proposal = get_user_proposal_or_404(request.user, pk)
+    form = ProposalCommentForm(request.POST)
+
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.proposal = proposal
+        comment.user = request.user
+        comment.save()
+        messages.success(request, "Comentario añadido a la propuesta.")
+    else:
+        messages.error(
+            request,
+            form.errors["text"][0],
+        )
+
+    return redirect("proposal_appointment_detail", pk=proposal.pk)
 
 
 @login_required

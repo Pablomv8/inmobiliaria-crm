@@ -167,8 +167,13 @@ def build_property_timeline(property_obj, viewer):
 
     proposals = ProposalAppointment.objects.filter(
         listing__property=property_obj,
-    ).select_related("buyer", "agent")
+    ).select_related("buyer", "agent").prefetch_related("comments__user")
     for proposal in proposals:
+        proposal_url = (
+            reverse("proposal_appointment_detail", args=[proposal.pk])
+            if can_open_agent_event(viewer, proposal.agent)
+            else ""
+        )
         events.append({
             "timestamp": aware_datetime(proposal.proposal_date),
             "type": "proposal",
@@ -178,12 +183,17 @@ def build_property_timeline(property_obj, viewer):
                 f"{proposal.offered_price} € · "
                 f"{proposal.get_status_display()} · {proposal.buyer}"
             ),
-            "url": (
-                reverse("proposal_appointment_detail", args=[proposal.pk])
-                if can_open_agent_event(viewer, proposal.agent)
-                else ""
-            ),
+            "url": proposal_url,
         })
+        for comment in proposal.comments.all():
+            events.append({
+                "timestamp": comment.created_at,
+                "type": "comment",
+                "icon": "💬",
+                "title": "Comentario en la propuesta",
+                "description": f"{comment.text} · {user_name(comment.user)}",
+                "url": proposal_url,
+            })
 
     counteroffers = CounterOffer.objects.filter(
         proposal__listing__property=property_obj,

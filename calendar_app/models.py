@@ -351,6 +351,31 @@ class ProposalAppointment(models.Model):
         return f"Propuesta de {self.buyer} para {self.listing.property}"
 
 
+class ProposalComment(models.Model):
+    proposal = models.ForeignKey(
+        ProposalAppointment,
+        on_delete=models.CASCADE,
+        related_name="comments",
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="proposal_comments",
+    )
+    text = models.TextField(verbose_name="Comentario")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Comentario de propuesta"
+        verbose_name_plural = "Comentarios de propuesta"
+
+    def __str__(self):
+        return f"Comentario de la propuesta {self.proposal_id}"
+
+
 class CounterOffer(models.Model):
     proposal = models.ForeignKey(
         ProposalAppointment,

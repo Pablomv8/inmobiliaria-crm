@@ -90,6 +90,11 @@ urlpatterns = [
         name="proposal_appointment_detail",
     ),
     path(
+        "proposals/<int:pk>/comments/add/",
+        views.add_proposal_comment,
+        name="proposal_add_comment",
+    ),
+    path(
         "proposals/<int:proposal_id>/acceptance/create/",
         views.create_acceptance_appointment,
         name="create_acceptance_appointment",
