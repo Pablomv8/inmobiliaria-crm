@@ -104,7 +104,7 @@
             </div>
             <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                 <div class="flex items-center justify-between"><h3 class="font-bold text-gray-900">Pedidos</h3><a href="{% url 'order_list' %}?agent={{ worker.id }}" class="text-sm text-indigo-700 hover:underline">Ver todos</a></div>
-                <div class="mt-4 divide-y divide-gray-100">{% for order in recent_orders %}<a href="{% url 'order_detail' order.id %}" class="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"><span class="min-w-0"><span class="block truncate text-sm font-medium text-gray-900">{{ order.buyer }}</span><span class="mt-1 block text-xs text-gray-500">{{ order.get_property_type_display }} · {{ order.get_status_display }}</span></span><span class="shrink-0 text-sm font-semibold text-gray-900">{{ order.max_price|floatformat:0 }} €</span></a>{% empty %}<p class="py-6 text-center text-sm text-gray-500">Sin pedidos asignados.</p>{% endfor %}</div>
+                <div class="mt-4 divide-y divide-gray-100">{% for order in recent_orders %}<a href="{% url 'order_detail' order.id %}" class="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"><span class="min-w-0"><span class="block truncate text-sm font-medium text-gray-900">{{ order.buyer }}</span><span class="mt-1 block text-xs text-gray-500">{{ order.get_operation_type_display }} · {{ order.get_property_type_display }} · {{ order.get_status_display }}</span></span><span class="shrink-0 text-sm font-semibold text-gray-900">{{ order.max_price|floatformat:0 }} €</span></a>{% empty %}<p class="py-6 text-center text-sm text-gray-500">Sin pedidos asignados.</p>{% endfor %}</div>
             </div>
         </div>
     </section>

@@ -337,7 +337,7 @@ def create_order_sale_appointment(request, order_id):
         appointment.related_property = appointment.listing.property
         appointment.agent = assigned_agent
         appointment.save()
-        messages.success(request, "Cita de venta programada correctamente.")
+        messages.success(request, "Cita de visita programada correctamente.")
         return redirect("order_detail", pk=order.pk)
 
     return render(
@@ -346,7 +346,10 @@ def create_order_sale_appointment(request, order_id):
         {
             "form": form,
             "order": order,
-            "page_title": "Nueva cita de venta",
+            "page_title": (
+                "Nueva cita de visita para "
+                f"{order.get_operation_type_display().lower()}"
+            ),
             "schedule_agent": assigned_agent,
         },
     )

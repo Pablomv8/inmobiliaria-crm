@@ -510,6 +510,7 @@ class SaleAppointmentFlowTests(TestCase):
         )
         self.order = Order.objects.create(
             buyer=self.buyer,
+            operation_type="sale",
             zone=self.zone,
             max_price="275000",
             payment_type="financing",
@@ -558,6 +559,40 @@ class SaleAppointmentFlowTests(TestCase):
             proposal_date=date(2026, 8, 24),
             end_date=date(2026, 8, 29),
         )
+
+    def test_rental_order_only_offers_rental_listings_for_the_visit(self):
+        rental_listing = Listing.objects.create(
+            property=self.property,
+            owner=self.owner,
+            listing_type="rent",
+            owner_price="1600",
+            agency_price="1500",
+            agreed_price="1550",
+            price_diference="100",
+            commission_amount="1550",
+            agent=self.agent,
+        )
+        rental_order = Order.objects.create(
+            buyer=self.buyer,
+            operation_type="rent",
+            zone=self.zone,
+            max_price="1700",
+            payment_type="cash",
+            property_type="flat",
+        )
+
+        response = self.client.get(
+            reverse("create_order_sale_appointment", args=[rental_order.pk])
+        )
+        listing_ids = set(
+            response.context["form"].fields["listing"].queryset.values_list(
+                "pk",
+                flat=True,
+            )
+        )
+
+        self.assertIn(rental_listing.pk, listing_ids)
+        self.assertNotIn(self.listing.pk, listing_ids)
 
     def test_order_creates_sale_appointment_linked_to_listing(self):
         response, appointment = self.create_sale_appointment()

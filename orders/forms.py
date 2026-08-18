@@ -18,6 +18,7 @@ class OrderForm(forms.ModelForm):
         model = Order
         fields = [
             "buyer",
+            "operation_type",
             "zone",
             "max_price",
             "payment_type",
@@ -28,6 +29,7 @@ class OrderForm(forms.ModelForm):
         ]
         widgets = {
             "buyer": forms.Select(attrs={"class": INPUT_CLASS}),
+            "operation_type": forms.Select(attrs={"class": INPUT_CLASS}),
             "zone": forms.Select(attrs={"class": INPUT_CLASS}),
             "max_price": forms.NumberInput(attrs={
                 "class": f"{INPUT_CLASS} pr-12",
@@ -62,6 +64,13 @@ class OrderForm(forms.ModelForm):
         self.fields["buyer"].queryset = buyers
         self.fields["buyer"].empty_label = "Selecciona un comprador"
         self.fields["zone"].empty_label = "Cualquier zona"
+        self.fields["operation_type"].choices = [
+            ("", "Selecciona compra o alquiler"),
+            *Order.OPERATION_TYPE_CHOICES,
+        ]
+        self.fields["operation_type"].error_messages["required"] = (
+            "Este campo es obligatorio."
+        )
         self.fields["payment_type"].choices = [
             ("", "Selecciona el tipo de pago"),
             *Order.PAYMENT_TYPE_CHOICES,

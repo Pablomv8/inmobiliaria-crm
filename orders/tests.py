@@ -31,6 +31,7 @@ class OrderCrudTests(TestCase):
     def order_data(self):
         return {
             "buyer": self.buyer.pk,
+            "operation_type": "sale",
             "zone": self.zone.pk,
             "max_price": "275000",
             "payment_type": "financing",
@@ -60,6 +61,44 @@ class OrderCrudTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(Order.objects.exists())
 
+    def test_order_requires_purchase_or_rental_operation(self):
+        data = self.order_data()
+        data.pop("operation_type")
+
+        response = self.client.post(reverse("order_create"), data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(
+            response.context["form"],
+            "operation_type",
+            "Este campo es obligatorio.",
+        )
+        self.assertFalse(Order.objects.exists())
+
+    def test_rental_order_is_saved_displayed_and_filterable(self):
+        data = self.order_data()
+        data["operation_type"] = "rent"
+        data["max_price"] = "1500"
+
+        response = self.client.post(reverse("order_create"), data)
+        order = Order.objects.get()
+
+        self.assertRedirects(response, reverse("order_detail", args=[order.pk]))
+        self.assertEqual(order.operation_type, "rent")
+
+        detail_response = self.client.get(reverse("order_detail", args=[order.pk]))
+        list_response = self.client.get(
+            reverse("order_list"),
+            {"operation_type": "rent"},
+        )
+        purchase_response = self.client.get(
+            reverse("order_list"),
+            {"operation_type": "sale"},
+        )
+        self.assertContains(detail_response, "Alquiler")
+        self.assertContains(list_response, self.buyer.name)
+        self.assertNotContains(purchase_response, self.buyer.name)
+
     def test_order_forms_use_grouped_recent_style(self):
         general_response = self.client.get(reverse("order_create"))
         buyer_response = self.client.get(
@@ -69,7 +108,7 @@ class OrderCrudTests(TestCase):
         for response in (general_response, buyer_response):
             with self.subTest(path=response.request["PATH_INFO"]):
                 self.assertEqual(response.status_code, 200)
-                self.assertContains(response, "1. Persona compradora")
+                self.assertContains(response, "1. Cliente")
                 self.assertContains(response, "2. Criterios de búsqueda")
                 self.assertContains(response, "3. Preferencias adicionales")
                 self.assertContains(response, "rounded-3xl")
@@ -81,6 +120,7 @@ class OrderCrudTests(TestCase):
     def test_update_and_delete_order(self):
         order = Order.objects.create(
             buyer=self.buyer,
+            operation_type="sale",
             max_price="200000",
             payment_type="cash",
             property_type="local",
@@ -99,6 +139,7 @@ class OrderCrudTests(TestCase):
     def test_add_comment_to_order(self):
         order = Order.objects.create(
             buyer=self.buyer,
+            operation_type="sale",
             max_price="250000",
             payment_type="financing",
             property_type="flat",
@@ -123,6 +164,7 @@ class OrderCrudTests(TestCase):
     def test_empty_order_comment_is_rejected(self):
         order = Order.objects.create(
             buyer=self.buyer,
+            operation_type="rent",
             max_price="250000",
             payment_type="cash",
             property_type="house",

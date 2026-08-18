@@ -433,7 +433,7 @@ class SaleAppointmentForm(forms.ModelForm):
         self.user = user
         listings = Listing.objects.filter(
             status="active",
-            listing_type="sale",
+            listing_type=order.operation_type,
         ).select_related("property", "owner").order_by("property__street")
 
         self.fields["listing"].queryset = listings

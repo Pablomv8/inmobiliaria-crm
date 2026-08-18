@@ -5,6 +5,11 @@ from properties.models import Property, Zone
 
 
 class Order(models.Model):
+    OPERATION_TYPE_CHOICES = [
+        ("sale", "Compra"),
+        ("rent", "Alquiler"),
+    ]
+
     STATUS_CHOICES = [
         ("active", "Activo"),
         ("sale_appointment", "Cita de venta programada"),
@@ -28,6 +33,11 @@ class Order(models.Model):
         on_delete=models.PROTECT,
         related_name="orders",
         limit_choices_to={"contact_type": "buyer"},
+    )
+    operation_type = models.CharField(
+        max_length=10,
+        choices=OPERATION_TYPE_CHOICES,
+        verbose_name="Operación",
     )
     status = models.CharField(
         max_length=30,
@@ -77,7 +87,10 @@ class Order(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"Pedido de {self.buyer} · {self.get_property_type_display()}"
+        return (
+            f"Pedido de {self.get_operation_type_display().lower()} de "
+            f"{self.buyer} · {self.get_property_type_display()}"
+        )
 
 
 class OrderComment(models.Model):

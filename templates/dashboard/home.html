@@ -164,7 +164,7 @@
             <div class="divide-y divide-gray-100">
                 {% for order in recent_orders %}
                     <a href="{% url 'order_detail' order.id %}" class="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
-                        <div class="min-w-0"><p class="truncate font-medium text-gray-900">{{ order.buyer }}</p><p class="text-sm text-gray-500 mt-1">{{ order.get_property_type_display }} · {{ order.zone|default:"Cualquier zona" }}</p></div>
+                        <div class="min-w-0"><p class="truncate font-medium text-gray-900">{{ order.buyer }}</p><p class="text-sm text-gray-500 mt-1">{{ order.get_operation_type_display }} · {{ order.get_property_type_display }} · {{ order.zone|default:"Cualquier zona" }}</p></div>
                         <span class="shrink-0 font-semibold text-gray-900">{{ order.max_price|floatformat:0 }} €</span>
                     </a>
                 {% empty %}<p class="py-6 text-center text-sm text-gray-500">No tienes pedidos asignados.</p>{% endfor %}

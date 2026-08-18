@@ -20,6 +20,7 @@ def order_list(request):
     )
     search = request.GET.get("search", "").strip()
     payment_type = request.GET.get("payment_type", "")
+    operation_type = request.GET.get("operation_type", "")
     property_type = request.GET.get("property_type", "")
     zone = request.GET.get("zone", "")
     agent = request.GET.get("agent", "")
@@ -39,6 +40,8 @@ def order_list(request):
         )
     if payment_type:
         orders = orders.filter(payment_type=payment_type)
+    if operation_type:
+        orders = orders.filter(operation_type=operation_type)
     if property_type:
         orders = orders.filter(property_type=property_type)
     if zone:
@@ -52,6 +55,7 @@ def order_list(request):
         {
             "orders": orders,
             "payment_choices": Order.PAYMENT_TYPE_CHOICES,
+            "operation_choices": Order.OPERATION_TYPE_CHOICES,
             "status_choices": Order.STATUS_CHOICES,
             "property_type_choices": Property.PROPERTY_TYPE_CHOICES,
             "zones": Zone.objects.all(),
