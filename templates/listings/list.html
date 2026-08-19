@@ -38,14 +38,14 @@
                     name="search"
                     value="{{ request.GET.search }}"
                     placeholder="Buscar encargo..."
-                    class="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 text-sm">
+                    class="w-full rounded-xl border border-gray-200 bg-white py-2 pl-10 pr-4 text-sm text-gray-700 transition hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100">
 
             </div>
 
             <select
                 name="status"
                 onchange="this.form.submit()"
-                class="px-3 py-2 rounded-xl text-sm bg-blue-50 text-blue-700">
+                class="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 transition hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100">
 
                 <option value="">
                     Estado
@@ -67,7 +67,7 @@
             <select
                 name="listing_type"
                 onchange="this.form.submit()"
-                class="px-3 py-2 rounded-xl text-sm bg-green-50 text-green-700">
+                class="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 transition hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100">
 
                 <option value="">
                     Tipo
@@ -89,7 +89,7 @@
             <select
                 name="workflow_status"
                 onchange="this.form.submit()"
-                class="px-3 py-2 rounded-xl text-sm bg-violet-50 text-violet-700">
+                class="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 transition hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100">
                 <option value="">Estado del proceso</option>
                 {% for value,label in workflow_status_choices %}
                     <option value="{{ value }}" {% if request.GET.workflow_status == value %}selected{% endif %}>{{ label }}</option>
@@ -100,7 +100,7 @@
                 <select
                     name="agent"
                     onchange="this.form.submit()"
-                    class="px-3 py-2 rounded-xl text-sm bg-orange-50 text-orange-700">
+                    class="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 transition hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100">
 
                     <option value="">
                         Todos los agentes

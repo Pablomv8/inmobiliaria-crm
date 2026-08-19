@@ -13,7 +13,10 @@
 
     <form method="get" class="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 mb-6">
         <div class="flex flex-wrap gap-3">
-            <input type="search" name="search" value="{{ request.GET.search }}" placeholder="Buscar comprador..." class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm">
+            <div class="relative w-64">
+                <span class="absolute inset-y-0 left-3 flex items-center text-gray-400">🔍</span>
+                <input type="search" name="search" value="{{ request.GET.search }}" placeholder="Buscar comprador..." class="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-700">
+            </div>
             <select name="operation_type" class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm">
                 <option value="">Compra y alquiler</option>
                 {% for value, label in operation_choices %}<option value="{{ value }}" {% if request.GET.operation_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
@@ -40,6 +43,13 @@
                     {% for agent in agents %}<option value="{{ agent.id }}" {% if request.GET.agent == agent.id|stringformat:"s" %}selected{% endif %}>{{ agent.get_full_name|default:agent.username }}</option>{% endfor %}
                 </select>
             {% endif %}
+            <select name="ordering" class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700">
+                <option value="recent" {% if request.GET.ordering == "recent" or not request.GET.ordering %}selected{% endif %}>Más recientes</option>
+                <option value="oldest" {% if request.GET.ordering == "oldest" %}selected{% endif %}>Más antiguos</option>
+                <option value="budget_desc" {% if request.GET.ordering == "budget_desc" %}selected{% endif %}>Mayor presupuesto</option>
+                <option value="budget_asc" {% if request.GET.ordering == "budget_asc" %}selected{% endif %}>Menor presupuesto</option>
+                <option value="buyer" {% if request.GET.ordering == "buyer" %}selected{% endif %}>Comprador A-Z</option>
+            </select>
             <button class="px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm">Filtrar</button>
             <a href="{% url 'order_list' %}" class="px-4 py-2.5 rounded-xl bg-gray-100 text-sm">Limpiar</a>
         </div>

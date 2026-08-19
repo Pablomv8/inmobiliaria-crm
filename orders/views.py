@@ -26,6 +26,7 @@ def order_list(request):
     zone = request.GET.get("zone", "")
     agent = request.GET.get("agent", "")
     status = request.GET.get("status", "")
+    ordering = request.GET.get("ordering", "recent")
 
     if request.user.is_superuser or request.user.role in ["admin", "manager"]:
         if agent:
@@ -50,7 +51,17 @@ def order_list(request):
     if status:
         orders = orders.filter(status=status)
 
-    orders = paginate(request, orders.order_by("-created_at"))
+    ordering_options = {
+        "recent": "-created_at",
+        "oldest": "created_at",
+        "budget_desc": "-max_price",
+        "budget_asc": "max_price",
+        "buyer": "buyer__name",
+    }
+    orders = paginate(
+        request,
+        orders.order_by(ordering_options.get(ordering, "-created_at")),
+    )
 
     return render(
         request,

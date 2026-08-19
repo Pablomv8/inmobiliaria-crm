@@ -26,6 +26,7 @@ def news_list(request):
     motivation = request.GET.get("motivation", "")
     status = request.GET.get("status", "")
     agent = request.GET.get("agent", "")
+    ordering = request.GET.get("ordering", "recent")
     open_only = request.GET.get("open") == "1"
 
     if request.user.is_superuser or request.user.role in ["admin", "manager"]:
@@ -49,7 +50,15 @@ def news_list(request):
     elif open_only:
         news_items = news_items.exclude(status="closed")
 
-    news_items = paginate(request, news_items.order_by("-created_at"))
+    ordering_options = {
+        "recent": "-created_at",
+        "oldest": "created_at",
+        "address": "related_property__street",
+    }
+    news_items = paginate(
+        request,
+        news_items.order_by(ordering_options.get(ordering, "-created_at")),
+    )
 
     return render(
         request,

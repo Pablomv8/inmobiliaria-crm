@@ -42,7 +42,7 @@
                     name="search"
                     value="{{ request.GET.search }}"
                     placeholder="Buscar inmueble..."
-                    class="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 text-sm">
+                    class="w-full rounded-xl border border-gray-200 bg-white py-2 pl-10 pr-4 text-sm text-gray-700 transition hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100">
 
             </div>
 
@@ -50,7 +50,7 @@
             <select
                 name="status"
                 onchange="this.form.submit()"
-                class="px-3 py-2 rounded-xl text-sm bg-blue-50 text-blue-700">
+                class="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 transition hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100">
 
                 <option value="">
                     Estado
@@ -73,7 +73,7 @@
             <select
                 name="type"
                 onchange="this.form.submit()"
-                class="px-3 py-2 rounded-xl text-sm bg-green-50 text-green-700">
+                class="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 transition hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100">
 
                 <option value="">
                     Tipo
@@ -95,7 +95,7 @@
             <select
                 name="zone"
                 onchange="this.form.submit()"
-                class="px-3 py-2 rounded-xl text-sm bg-gray-50 text-black-700"
+                class="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 transition hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100"
             >
 
                 <option value="">
@@ -125,20 +125,20 @@
                 name="city"
                 value="{{ request.GET.city }}"
                 placeholder="Ciudad"
-                class="px-4 py-2 rounded-xl border border-gray-200 text-sm w-40">
+                class="w-40 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 transition hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100">
 
             <input type="number"
                 name="bathrooms"
                 min="1"
                 value="{{ request.GET.bathrooms }}"
                 placeholder="Nº Baños mín."
-                class="px-4 py-2 rounded-xl border border-gray-200 text-sm w-32">
+                class="w-32 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 transition hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100">
             
 
             <!-- ORDEN -->
             <select
                 name="ordering"
-                class="px-3 py-2 rounded-xl text-sm bg-purple-50 text-purple-700">
+                class="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 transition hover:border-gray-300 focus:border-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-100">
 
                 <option value="">
                     Ordenar

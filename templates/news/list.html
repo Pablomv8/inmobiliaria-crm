@@ -18,12 +18,15 @@
 
     <form method="get" class="bg-white border border-gray-200 shadow-sm rounded-2xl p-4 mb-6">
         <div class="flex flex-wrap items-center gap-3">
-            <input
-                type="search"
-                name="search"
-                value="{{ request.GET.search }}"
-                placeholder="Buscar por dirección..."
-                class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm min-w-64">
+            <div class="relative w-64">
+                <span class="absolute inset-y-0 left-3 flex items-center text-gray-400">🔍</span>
+                <input
+                    type="search"
+                    name="search"
+                    value="{{ request.GET.search }}"
+                    placeholder="Buscar por dirección..."
+                    class="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm text-gray-700">
+            </div>
 
             <select name="motivation" class="px-4 py-2.5 rounded-xl border border-gray-200 text-sm">
                 <option value="">Todas las motivaciones</option>
@@ -49,6 +52,12 @@
                     {% for agent in agents %}<option value="{{ agent.id }}" {% if request.GET.agent == agent.id|stringformat:"s" %}selected{% endif %}>{{ agent.get_full_name|default:agent.username }}</option>{% endfor %}
                 </select>
             {% endif %}
+
+            <select name="ordering" class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700">
+                <option value="recent" {% if request.GET.ordering == "recent" or not request.GET.ordering %}selected{% endif %}>Más recientes</option>
+                <option value="oldest" {% if request.GET.ordering == "oldest" %}selected{% endif %}>Más antiguas</option>
+                <option value="address" {% if request.GET.ordering == "address" %}selected{% endif %}>Dirección A-Z</option>
+            </select>
 
             {% if request.GET.open == "1" %}<input type="hidden" name="open" value="1">{% endif %}
 

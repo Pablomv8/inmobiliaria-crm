@@ -99,6 +99,31 @@ class OrderCrudTests(TestCase):
         self.assertContains(list_response, self.buyer.name)
         self.assertNotContains(purchase_response, self.buyer.name)
 
+    def test_orders_can_be_ordered_by_highest_budget(self):
+        lower_budget = Order.objects.create(
+            buyer=self.buyer,
+            operation_type="sale",
+            max_price="150000",
+            payment_type="cash",
+            property_type="flat",
+        )
+        higher_budget = Order.objects.create(
+            buyer=self.buyer,
+            operation_type="sale",
+            max_price="450000",
+            payment_type="financing",
+            property_type="house",
+        )
+
+        response = self.client.get(
+            reverse("order_list"),
+            {"ordering": "budget_desc"},
+        )
+
+        self.assertEqual(response.context["orders"][0], higher_budget)
+        self.assertNotEqual(response.context["orders"][0], lower_budget)
+        self.assertContains(response, 'option value="budget_desc" selected', html=False)
+
     def test_order_forms_use_grouped_recent_style(self):
         general_response = self.client.get(reverse("order_create"))
         buyer_response = self.client.get(

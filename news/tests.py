@@ -39,6 +39,27 @@ class NewsCrudTests(TestCase):
         self.assertContains(response, "Noticias")
         self.assertContains(response, reverse("news_create_general"))
 
+    def test_news_list_can_be_ordered_by_property_address(self):
+        self.create_news()
+        other_property = Property.objects.create(
+            street="Avenida Abad",
+            number="2",
+            city="Madrid",
+            property_type="flat",
+        )
+        other_news = News.objects.create(
+            related_property=other_property,
+            agent=self.user,
+            motivation="sale",
+            client_price="200000",
+            estimated_price="195000",
+        )
+
+        response = self.client.get(reverse("news_list"), {"ordering": "address"})
+
+        self.assertEqual(response.context["news_items"][0], other_news)
+        self.assertContains(response, 'option value="address" selected', html=False)
+
     def test_create_news_from_general_form(self):
         response = self.client.post(
             reverse("news_create_general"),
