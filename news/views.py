@@ -9,6 +9,7 @@ from django.views.decorators.http import require_POST
 from calendar_app.models import Appointment, Call
 from properties.models import Property
 from users.models import User
+from config.pagination import paginate
 
 from .forms import NewsCommentForm, NewsForm
 from .models import News
@@ -48,11 +49,14 @@ def news_list(request):
     elif open_only:
         news_items = news_items.exclude(status="closed")
 
+    news_items = paginate(request, news_items.order_by("-created_at"))
+
     return render(
         request,
         "news/list.html",
         {
-            "news_items": news_items.order_by("-created_at"),
+            "news_items": news_items,
+            "page_obj": news_items,
             "motivation_choices": News.MOTIVATION_CHOICES,
             "status_choices": News.STATUS_CHOICES,
             "agents": User.objects.filter(is_active=True).order_by("username"),

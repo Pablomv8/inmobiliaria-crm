@@ -11,6 +11,7 @@ from .timeline import build_property_timeline
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
+from config.pagination import paginate
 
 
 from django.db.models import Q
@@ -91,11 +92,14 @@ def property_list(request):
     else:
         properties = properties.order_by("-created_at")
 
+    properties = paginate(request, properties)
+
     return render(
         request,
         "properties/list.html",
         {
             "properties": properties,
+            "page_obj": properties,
             "zones": zones,
             "property_types": Property.PROPERTY_TYPE_CHOICES,
             "status_choices": Property.STATUS_CHOICES,

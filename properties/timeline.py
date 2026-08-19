@@ -222,7 +222,24 @@ def build_property_timeline(property_obj, viewer):
                 f"{sale.sale_price} € · {sale.get_status_display()} · "
                 f"{sale.buyer}"
             ),
-            "url": reverse("sale_list"),
+            "url": reverse("sale_detail", args=[sale.pk]),
+        })
+
+    for contract in property_obj.rental_contracts.select_related(
+        "tenant",
+        "owner",
+        "agent",
+    ):
+        events.append({
+            "timestamp": aware_datetime(contract.contract_date),
+            "type": "rental",
+            "icon": "🔑",
+            "title": "Contrato de alquiler registrado",
+            "description": (
+                f"{contract.rent_price} €/mes · {contract.get_status_display()} · "
+                f"{contract.tenant}"
+            ),
+            "url": reverse("rental_contract_detail", args=[contract.pk]),
         })
 
     return sorted(

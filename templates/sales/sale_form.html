@@ -66,14 +66,29 @@
                     </div>
                 </div>
 
-                <!-- COMISIÓN -->
+                <!-- COMISIONES -->
                 <div>
                     <label class="text-sm font-medium text-gray-700">
-                        Comisión (€)
+                        Comisión del vendedor (€)
                     </label>
                     <div class="mt-2">
-                        {{ form.commission_amount }}
+                        {{ form.seller_commission }}
                     </div>
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium text-gray-700">Comisión del comprador (€)</label>
+                    <div class="mt-2">{{ form.buyer_commission }}</div>
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium text-gray-700">Señal entregada (€)</label>
+                    <div class="mt-2">{{ form.deposit_amount }}</div>
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium text-gray-700">Aportación de arras (€)</label>
+                    <div class="mt-2">{{ form.earnest_money_amount }}</div>
                 </div>
 
                 <!-- FECHA -->
@@ -84,6 +99,11 @@
                     <div class="mt-2">
                         {{ form.sale_date }}
                     </div>
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium text-gray-700">Referencia del contrato</label>
+                    <div class="mt-2">{{ form.contract_reference }}</div>
                 </div>
 
             </div>

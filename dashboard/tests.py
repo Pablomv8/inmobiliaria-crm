@@ -277,6 +277,26 @@ class DashboardScopeTests(TestCase):
             reverse("team_member_detail", args=[self.agent.pk]),
         )
 
+    def test_worker_tracking_is_paginated_without_changing_office_totals(self):
+        get_user_model().objects.bulk_create([
+            get_user_model()(
+                username=f"worker-page-{index:02d}",
+                role="agent",
+                is_active=True,
+            )
+            for index in range(9)
+        ])
+        self.client.force_login(self.manager)
+
+        response = self.client.get(reverse("team_overview"), {"page": 2})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["worker_count"], 11)
+        self.assertEqual(response.context["page_obj"].number, 2)
+        self.assertEqual(response.context["page_obj"].paginator.count, 11)
+        self.assertEqual(len(response.context["worker_rows"]), 1)
+        self.assertContains(response, "Mostrando")
+
     def test_manager_sees_selected_worker_detail_and_recent_portfolio(self):
         self.client.force_login(self.manager)
 

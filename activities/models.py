@@ -54,6 +54,8 @@ class Activity(models.Model):
             "contact_created": "👤",
             "contact_updated": "🔄",
             "contact_deleted": "🗑️",
+            "sale_created": "🤝",
+            "rental_created": "🔑",
         }
 
         return icons.get(self.action, "📌")

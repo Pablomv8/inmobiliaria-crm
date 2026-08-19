@@ -225,6 +225,22 @@
 
     </div>
 
+    {% if completed_sale or rental_contract %}
+        <section class="mt-6 rounded-3xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
+            {% if completed_sale %}
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div><p class="text-sm font-semibold text-emerald-700">Operación cerrada</p><h2 class="mt-1 text-xl font-bold text-emerald-950">Compraventa formalizada por {{ completed_sale.sale_price }} €</h2><p class="mt-2 text-sm text-emerald-800">{{ completed_sale.former_owner|default:"Propietario anterior no registrado" }} → {{ completed_sale.buyer }} · {{ completed_sale.sale_date|date:"d/m/Y" }}</p></div>
+                    <a href="{% url 'sale_detail' completed_sale.id %}" class="shrink-0 rounded-xl bg-emerald-700 px-5 py-3 text-center font-semibold text-white hover:bg-emerald-800">Ver compraventa</a>
+                </div>
+            {% else %}
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div><p class="text-sm font-semibold text-violet-700">Operación cerrada</p><h2 class="mt-1 text-xl font-bold text-violet-950">Contrato de alquiler formalizado</h2><p class="mt-2 text-sm text-violet-800">{{ rental_contract.owner }} → {{ rental_contract.tenant }} · {{ rental_contract.rent_price }} €/mes</p></div>
+                    <a href="{% url 'rental_contract_detail' rental_contract.id %}" class="shrink-0 rounded-xl bg-violet-700 px-5 py-3 text-center font-semibold text-white hover:bg-violet-800">Ver alquiler</a>
+                </div>
+            {% endif %}
+        </section>
+    {% endif %}
+
     <section class="bg-white rounded-2xl shadow-sm border p-6 mt-6">
         <div class="mb-5">
             <h2 class="text-lg font-semibold">Propuestas de compra</h2>

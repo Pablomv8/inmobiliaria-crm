@@ -48,7 +48,10 @@
 
                         {% else %}
 
-                            {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type=event.object.appointment_type label=event.object.get_appointment_type_display %}
+                            <div class="flex items-center gap-2">
+                                {% include "calendar_app/partials/appointment_status_icon.html" with status=event.object.status %}
+                                {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type=event.object.appointment_type label=event.object.get_appointment_type_display %}
+                            </div>
 
                             <p class="mt-1">
                                 {{ event.object.related_property }}
@@ -90,6 +93,7 @@
 
     </div>
 
+    {% include "partials/pagination.html" %}
 </div>
 
 {% endblock %}

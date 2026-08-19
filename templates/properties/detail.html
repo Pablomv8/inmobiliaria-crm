@@ -307,7 +307,7 @@
                                 <div class="flex flex-wrap items-center gap-2">
                                     <h3 class="font-semibold text-gray-900">{{ event.title }}</h3>
                                     <span class="rounded-full bg-white px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                                        {% if event.type == "creation" %}Creación{% elif event.type == "status" %}Estado{% elif event.type == "comment" %}Comentario{% elif event.type == "news" %}Noticia{% elif event.type == "listing" %}Encargo{% elif event.type == "appointment" %}Cita{% elif event.type == "call" %}Llamada{% elif event.type == "proposal" %}Propuesta{% elif event.type == "counteroffer" %}Contraoferta{% elif event.type == "sale" %}Venta{% else %}Actividad{% endif %}
+                                        {% if event.type == "creation" %}Creación{% elif event.type == "status" %}Estado{% elif event.type == "comment" %}Comentario{% elif event.type == "news" %}Noticia{% elif event.type == "listing" %}Encargo{% elif event.type == "appointment" %}Cita{% elif event.type == "call" %}Llamada{% elif event.type == "proposal" %}Propuesta{% elif event.type == "counteroffer" %}Contraoferta{% elif event.type == "sale" %}Venta{% elif event.type == "rental" %}Alquiler{% else %}Actividad{% endif %}
                                     </span>
                                 </div>
                                 <time class="mt-2 text-xs font-medium text-gray-400">{{ event.timestamp|date:"d/m/Y H:i" }}</time>

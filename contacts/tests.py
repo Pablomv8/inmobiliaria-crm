@@ -108,6 +108,33 @@ class ContactRelatedWorkflowTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Tipo de contacto")
+
+    def test_contact_list_is_paginated_and_keeps_filters(self):
+        for index in range(17):
+            Contact.objects.create(
+                name=f"Comprador paginado {index:02d}",
+                phone=f"611000{index:03d}",
+                contact_type="buyer",
+                assigned_agent=self.agent,
+            )
+        Contact.objects.create(
+            name="Propietario fuera del filtro",
+            phone="622000000",
+            contact_type="owner",
+            assigned_agent=self.agent,
+        )
+
+        response = self.client.get(
+            reverse("contact_list"),
+            {"contact_type": "buyer", "page": 2},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["page_obj"].number, 2)
+        self.assertEqual(response.context["page_obj"].paginator.count, 17)
+        self.assertEqual(len(response.context["contacts"]), 2)
+        self.assertContains(response, "contact_type=buyer")
+        self.assertContains(response, "Mostrando")
         self.assertContains(response, "Propietario")
         self.assertContains(response, "Comprador")
 
@@ -129,6 +156,47 @@ class ContactRelatedWorkflowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, contact.name)
         self.assertContains(response, "Sin asignar")
+
+    def test_agent_sees_all_contacts_and_can_filter_by_responsible(self):
+        other_agent = get_user_model().objects.create_user(
+            username="contact-other-agent",
+            password="test-password",
+            role="agent",
+        )
+        own_contact = Contact.objects.create(
+            name="Contacto propio visible",
+            phone="600555401",
+            contact_type="buyer",
+            assigned_agent=self.agent,
+        )
+        other_contact = Contact.objects.create(
+            name="Contacto de otro agente visible",
+            phone="600555402",
+            contact_type="owner",
+            assigned_agent=other_agent,
+        )
+        unassigned_contact = Contact.objects.create(
+            name="Contacto sin responsable visible",
+            phone="600555403",
+            contact_type="owner",
+        )
+
+        response = self.client.get(reverse("contact_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(own_contact, response.context["contacts"])
+        self.assertIn(other_contact, response.context["contacts"])
+        self.assertIn(unassigned_contact, response.context["contacts"])
+        self.assertContains(response, "Todos los responsables")
+
+        filtered_response = self.client.get(
+            reverse("contact_list"),
+            {"agent": other_agent.pk},
+        )
+        self.assertQuerySetEqual(
+            filtered_response.context["contacts"],
+            [other_contact],
+        )
 
     def test_contact_list_can_filter_by_contact_type(self):
         owner = Contact.objects.create(

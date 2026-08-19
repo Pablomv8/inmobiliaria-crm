@@ -11,8 +11,10 @@ from activities.models import Activity
 from listings.models import Listing
 from news.models import News
 from orders.models import Order
+from sales.models import RentalContract, Sale
 
 from activities.utils import log_activity
+from config.pagination import paginate
 
 
 User = get_user_model()
@@ -42,11 +44,8 @@ def contact_list(request):
     if contact_type in dict(Contact.CONTACT_TYPE_CHOICES):
         contacts = contacts.filter(contact_type=contact_type)
 
-    if request.user.is_superuser or request.user.role in ["admin", "manager"]:
-        if agent:
-            contacts = contacts.filter(assigned_agent_id=agent)
-    else:
-        contacts = contacts.filter(assigned_agent=request.user)
+    if agent:
+        contacts = contacts.filter(assigned_agent_id=agent)
 
     ordering_options = {
         "oldest": "created_at",
@@ -54,9 +53,11 @@ def contact_list(request):
         "city": "city",
     }
     contacts = contacts.order_by(ordering_options.get(ordering, "-created_at"))
+    contacts = paginate(request, contacts)
 
     return render(request, "contacts/list.html", {
         "contacts": contacts,
+        "page_obj": contacts,
         "agents": User.objects.filter(
             role="agent",
             is_active=True,
@@ -250,6 +251,13 @@ def contact_detail(request, pk):
             "buyer__assigned_agent",
         ).order_by("-created_at")
 
+    completed_sales = Sale.objects.filter(
+        Q(buyer=contact) | Q(former_owner=contact),
+    ).select_related("related_property", "buyer", "former_owner").distinct()
+    rental_contracts = RentalContract.objects.filter(
+        Q(tenant=contact) | Q(owner=contact),
+    ).select_related("related_property", "tenant", "owner").distinct()
+
     return render(
         request,
         "contacts/detail.html",
@@ -259,5 +267,7 @@ def contact_detail(request, pk):
             "news_items": news_items,
             "listings": listings,
             "orders": orders,
+            "completed_sales": completed_sales,
+            "rental_contracts": rental_contracts,
         }
     )

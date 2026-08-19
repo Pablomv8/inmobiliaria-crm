@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-4 sm:p-6">
+    <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">Alquileres</h1>
+            <p class="mt-1 text-gray-500">Gestiona los contratos de alquiler y consulta su trazabilidad.</p>
+        </div>
+        <a href="{% url 'sale_list' %}" class="rounded-xl bg-gray-100 px-5 py-3 text-center font-medium text-gray-700 transition hover:bg-gray-200">Ver ventas</a>
+    </div>
+
+    <form method="get" class="mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div class="flex flex-wrap items-center gap-3">
+            <div class="relative w-64">
+                <span class="absolute inset-y-0 left-3 flex items-center text-gray-400">🔍</span>
+                <input type="search" name="search" value="{{ request.GET.search }}" placeholder="Buscar alquiler..." class="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 text-sm">
+            </div>
+            <select name="status" class="rounded-xl border border-gray-200 px-4 py-2.5 text-sm">
+                <option value="">Todos los estados</option>
+                {% for value, label in status_choices %}<option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+            {% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" %}
+                <select name="agent" class="rounded-xl border border-gray-200 px-4 py-2.5 text-sm">
+                    <option value="">Todos los agentes</option>
+                    {% for agent in agents %}<option value="{{ agent.id }}" {% if request.GET.agent == agent.id|stringformat:"s" %}selected{% endif %}>{{ agent.get_full_name|default:agent.username }}</option>{% endfor %}
+                </select>
+            {% endif %}
+            <select name="ordering" class="rounded-xl border border-gray-200 px-4 py-2.5 text-sm">
+                <option value="date_desc" {% if request.GET.ordering == "date_desc" or not request.GET.ordering %}selected{% endif %}>Más recientes</option>
+                <option value="date_asc" {% if request.GET.ordering == "date_asc" %}selected{% endif %}>Más antiguos</option>
+                <option value="price_desc" {% if request.GET.ordering == "price_desc" %}selected{% endif %}>Mayor renta</option>
+                <option value="price_asc" {% if request.GET.ordering == "price_asc" %}selected{% endif %}>Menor renta</option>
+            </select>
+            <button type="submit" class="rounded-xl bg-gray-900 px-4 py-2.5 text-sm text-white transition hover:bg-black">Filtrar</button>
+            <a href="{% url 'rental_contract_list' %}" class="rounded-xl bg-gray-100 px-4 py-2.5 text-sm text-gray-700 transition hover:bg-gray-200">Limpiar</a>
+        </div>
+    </form>
+
+    <p class="mb-4 text-sm text-gray-500">{{ contracts.paginator.count }} alquiler{{ contracts.paginator.count|pluralize:"es" }}</p>
+
+    <div class="space-y-3 sm:hidden">
+        {% for contract in contracts %}
+            <a href="{% url 'rental_contract_detail' contract.id %}" class="block rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0"><h2 class="truncate font-semibold text-gray-900">{{ contract.related_property.full_address }}</h2><p class="mt-1 text-xs text-gray-500">{{ contract.contract_date|date:"d/m/Y" }} · {{ contract.tenant }}</p></div>
+                    <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium {% if contract.status == 'signed' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">{{ contract.get_status_display }}</span>
+                </div>
+                <div class="mt-4 grid grid-cols-2 gap-3">
+                    <div class="rounded-xl bg-gray-50 p-3"><p class="text-xs text-gray-500">Renta mensual</p><p class="mt-1 text-sm font-semibold text-gray-900">{{ contract.rent_price }} €</p></div>
+                    <div class="rounded-xl bg-gray-50 p-3 text-right"><p class="text-xs text-gray-500">Comisión</p><p class="mt-1 text-sm font-semibold text-gray-900">{{ contract.commission_amount }} €</p></div>
+                </div>
+                <p class="mt-4 border-t border-gray-100 pt-3 text-xs text-gray-500">Agente: <span class="font-medium text-gray-700">{{ contract.agent.get_full_name|default:contract.agent.username }}</span></p>
+            </a>
+        {% empty %}
+            <div class="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-500">No hay alquileres que coincidan con los filtros.</div>
+        {% endfor %}
+    </div>
+
+    <div class="hidden overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm sm:block">
+        <table class="w-full min-w-[1050px]">
+            <thead class="border-b border-gray-200 bg-gray-50">
+                <tr>
+                    <th class="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500">Fecha</th>
+                    <th class="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500">Inmueble</th>
+                    <th class="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500">Inquilino</th>
+                    <th class="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500">Agente</th>
+                    <th class="whitespace-nowrap px-6 py-4 text-right text-xs font-semibold uppercase text-gray-500">Renta mensual</th>
+                    <th class="whitespace-nowrap px-6 py-4 text-right text-xs font-semibold uppercase text-gray-500">Comisión</th>
+                    <th class="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500">Estado</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for contract in contracts %}
+                    <tr class="transition hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-6 py-4 text-gray-500">{{ contract.contract_date|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4"><a href="{% url 'rental_contract_detail' contract.id %}" class="font-semibold text-gray-900 hover:text-blue-600">{{ contract.related_property.full_address }}</a></td>
+                        <td class="px-6 py-4 text-gray-700">{{ contract.tenant }}</td>
+                        <td class="px-6 py-4 text-gray-600">{{ contract.agent.get_full_name|default:contract.agent.username }}</td>
+                        <td class="whitespace-nowrap px-6 py-4 text-right font-semibold text-gray-900">{{ contract.rent_price }} €</td>
+                        <td class="whitespace-nowrap px-6 py-4 text-right font-semibold text-gray-900">{{ contract.commission_amount }} €</td>
+                        <td class="px-6 py-4"><span class="inline-flex rounded-full px-3 py-1 text-xs font-medium {% if contract.status == 'signed' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">{{ contract.get_status_display }}</span></td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="7" class="px-6 py-16 text-center text-gray-500">No hay alquileres que coincidan con los filtros.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

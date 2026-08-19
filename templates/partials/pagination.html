@@ -1,0 +1,29 @@
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+<nav class="mt-6 flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between" aria-label="Paginación">
+    <p class="text-center text-sm text-gray-500 sm:text-left">
+        Mostrando <span class="font-semibold text-gray-800">{{ page_obj.start_index }}–{{ page_obj.end_index }}</span>
+        de <span class="font-semibold text-gray-800">{{ page_obj.paginator.count }}</span>
+    </p>
+    <div class="flex flex-wrap items-center justify-center gap-2">
+        {% if page_obj.has_previous %}
+            <a href="{% querystring page=1 %}" class="rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50" aria-label="Primera página">«</a>
+            <a href="{% querystring page=page_obj.previous_page_number %}" class="rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">Anterior</a>
+        {% else %}
+            <span class="cursor-not-allowed rounded-xl border border-gray-100 px-3 py-2 text-sm text-gray-300" aria-hidden="true">«</span>
+            <span class="cursor-not-allowed rounded-xl border border-gray-100 px-3 py-2 text-sm text-gray-300">Anterior</span>
+        {% endif %}
+
+        <span class="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white">
+            {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+        </span>
+
+        {% if page_obj.has_next %}
+            <a href="{% querystring page=page_obj.next_page_number %}" class="rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">Siguiente</a>
+            <a href="{% querystring page=page_obj.paginator.num_pages %}" class="rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50" aria-label="Última página">»</a>
+        {% else %}
+            <span class="cursor-not-allowed rounded-xl border border-gray-100 px-3 py-2 text-sm text-gray-300">Siguiente</span>
+            <span class="cursor-not-allowed rounded-xl border border-gray-100 px-3 py-2 text-sm text-gray-300" aria-hidden="true">»</span>
+        {% endif %}
+    </div>
+</nav>
+{% endif %}

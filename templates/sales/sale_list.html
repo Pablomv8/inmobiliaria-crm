@@ -1,350 +1,131 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block content %}
-
-<div class="p-6">
-
-    <!-- HEADER -->
-    <div class="flex items-center justify-between mb-6">
-
+<div class="p-4 sm:p-6">
+    <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">
-                Ventas
-            </h1>
-
-            <p class="text-gray-500 text-sm mt-1">
-                Historial de operaciones
-            </p>
+            <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">Ventas</h1>
+            <p class="mt-1 text-gray-500">Gestiona las compraventas y consulta su trazabilidad.</p>
         </div>
-
-        <a href="{% url 'sale_create' %}"
-           class="bg-gray-900 text-white px-5 py-3 rounded-xl hover:bg-gray-800 transition">
-
-            + Nueva venta
-
-        </a>
-
+        <div class="flex flex-col gap-2 sm:flex-row">
+            <a href="{% url 'rental_contract_list' %}" class="rounded-xl bg-gray-100 px-5 py-3 text-center font-medium text-gray-700 transition hover:bg-gray-200">Ver alquileres</a>
+            <a href="{% url 'sale_create' %}" class="rounded-xl bg-gray-900 px-5 py-3 text-center text-white transition hover:bg-black">+ Nueva venta</a>
+        </div>
     </div>
 
-
-    <form method="get"
-      class="bg-white border border-gray-100 shadow-sm rounded-2xl p-4 mb-6">
-
+    <form method="get" class="mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
         <div class="flex flex-wrap items-center gap-3">
-
-            <!-- BUSCADOR -->
-            <div class="relative w-56">
-
-                <div class="absolute inset-y-0 left-3 flex items-center text-gray-400">
-                    🔍
-                </div>
-
-                <input
-                    type="text"
-                    name="search"
-                    value="{{ request.GET.search }}"
-                    placeholder="Buscar..."
-                    class="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 text-sm">
-
+            <div class="relative w-64">
+                <span class="absolute inset-y-0 left-3 flex items-center text-gray-400">🔍</span>
+                <input type="search" name="search" value="{{ request.GET.search }}" placeholder="Buscar venta..." class="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 text-sm">
             </div>
-
-            <!-- ESTADO -->
-            <select
-                name="status"
-                class="px-3 py-2 rounded-xl text-sm
-                    bg-blue-50 text-blue-700">
-
-                <option value="">
-                    Estado
-                </option>
-
-                {% for value,label in sales.model.STATUS_CHOICES %}
-
-                    <option value="{{ value }}"
-                        {% if request.GET.status == value %}selected{% endif %}>
-
-                        {{ label }}
-
-                    </option>
-
-                {% endfor %}
-
+            <select name="status" class="rounded-xl border border-gray-200 px-4 py-2.5 text-sm">
+                <option value="">Todos los estados</option>
+                {% for value, label in status_choices %}<option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
             </select>
-
-            <!-- AGENTE -->
-            {% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" %}<select
-                name="agent"
-                class="px-3 py-2 rounded-xl text-sm
-                    bg-green-50 text-green-700">
-
-                <option value="">
-                    Agente
-                </option>
-
-                {% for agent in agents %}
-
-                    <option value="{{ agent.id }}"
-                        {% if request.GET.agent == agent.id|stringformat:"s" %}
-                            selected
-                        {% endif %}
-                    >
-
-                        {{ agent.username }}
-
-                    </option>
-
-                {% endfor %}
-
-            </select>{% endif %}
-
-            <!-- ORDEN -->
-            <select
-                name="ordering"
-                class="px-3 py-2 rounded-xl text-sm
-                    bg-purple-50 text-purple-700">
-
-                <option value="">
-                    Ordenar
-                </option>
-
-                <option value="date_desc"
-                    {% if request.GET.ordering == "date_desc" %}selected{% endif %}>
-                    Más recientes
-                </option>
-
-                <option value="date_asc"
-                    {% if request.GET.ordering == "date_asc" %}selected{% endif %}>
-                    Más antiguas
-                </option>
-
-                <option value="price_desc"
-                    {% if request.GET.ordering == "price_desc" %}selected{% endif %}>
-                    Mayor importe
-                </option>
-
-                <option value="price_asc"
-                    {% if request.GET.ordering == "price_asc" %}selected{% endif %}>
-                    Menor importe
-                </option>
-
+            {% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" %}
+                <select name="agent" class="rounded-xl border border-gray-200 px-4 py-2.5 text-sm">
+                    <option value="">Todos los agentes</option>
+                    {% for agent in agents %}<option value="{{ agent.id }}" {% if request.GET.agent == agent.id|stringformat:"s" %}selected{% endif %}>{{ agent.get_full_name|default:agent.username }}</option>{% endfor %}
+                </select>
+            {% endif %}
+            <select name="ordering" class="rounded-xl border border-gray-200 px-4 py-2.5 text-sm">
+                <option value="date_desc" {% if request.GET.ordering == "date_desc" or not request.GET.ordering %}selected{% endif %}>Más recientes</option>
+                <option value="date_asc" {% if request.GET.ordering == "date_asc" %}selected{% endif %}>Más antiguas</option>
+                <option value="price_desc" {% if request.GET.ordering == "price_desc" %}selected{% endif %}>Mayor importe</option>
+                <option value="price_asc" {% if request.GET.ordering == "price_asc" %}selected{% endif %}>Menor importe</option>
             </select>
-
-            <!-- FILTRAR -->
-            <button
-                type="submit"
-                class="px-4 py-2 rounded-xl
-                    bg-gray-900 text-white">
-
-                Filtrar
-
-            </button>
-
-            <!-- LIMPIAR -->
-            <a href="{% url 'sale_list' %}"
-            class="ml-2 px-4 py-2 rounded-xl
-                    bg-gray-100 hover:bg-gray-200">
-
-                Limpiar
-
-            </a>
-
+            <button type="submit" class="rounded-xl bg-gray-900 px-4 py-2.5 text-sm text-white transition hover:bg-black">Filtrar</button>
+            <a href="{% url 'sale_list' %}" class="rounded-xl bg-gray-100 px-4 py-2.5 text-sm text-gray-700 transition hover:bg-gray-200">Limpiar</a>
         </div>
-
     </form>
 
-    <!-- CARDS / TABLE WRAPPER -->
-    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+    <p class="mb-4 text-sm text-gray-500">{{ sales.paginator.count }} venta{{ sales.paginator.count|pluralize }}</p>
 
-        <!-- HEADER TABLE -->
-        <div class="grid grid-cols-7 bg-gray-50 text-xs font-semibold text-gray-500 uppercase px-6 py-4">
-
-            <div>Fecha</div>
-            <div>Inmueble</div>
-            <div>Comprador</div>
-            <div>Agente encargado</div>
-            <div>Estado</div>
-            <div>Importe</div>
-            <div>Comisión</div>
-
-        </div>
-
-        <!-- ROWS -->
-        <div class="divide-y divide-gray-100">
-
-            {% for sale in sales %}
-
-                <div class="grid grid-cols-7 px-6 py-4 items-center hover:bg-gray-50 transition">
-                    <!-- FECHA -->
-                    <div class="text-sm text-gray-600">
-
-                        {{ sale.sale_date }}
-
+    <div class="space-y-3 sm:hidden">
+        {% for sale in sales %}
+            <a href="{% url 'sale_detail' sale.id %}" class="block rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <h2 class="truncate font-semibold text-gray-900">{{ sale.related_property.full_address }}</h2>
+                        <p class="mt-1 text-xs text-gray-500">{{ sale.sale_date|date:"d/m/Y" }} · {{ sale.buyer }}</p>
                     </div>
-
-                    <!-- INMUEBLE -->
-                    <div class="font-medium text-gray-900">
-
-                        {{ sale.related_property.full_address }}
-
-                    </div>
-
-                    <!-- COMPRADOR -->
-                    <div class="text-sm text-gray-700">
-
-                        {{ sale.buyer.name }}
-
-                    </div>
-
-                    <!-- AGENTE -->
-                    <div class="text-sm text-gray-700">
-
-                        {{ sale.agent.username }}
-
-                    </div>
-
-                    <!-- ESTADO -->
-                    <div class="text-sm text-gray-700">
-
-                        <div
-                            id="sale-status-wrapper-{{ sale.id }}"
-                            class="inline-block rounded-full px-3 py-1 text-xs font-medium
-
-                            {% if sale.status == 'draft' %}
-                                bg-yellow-100 text-yellow-700
-                            {% elif sale.status == 'signed' %}
-                                bg-green-100 text-green-700
-                            {% elif sale.status == 'cancelled' %}
-                                bg-red-100 text-red-700
-                            {% endif %}
-                        ">
-
-                            <select
-                                data-sale-id="{{ sale.id }}"
-                                data-url="{% url 'sale_update_status' sale.id %}"
-                                onchange="updateSaleStatus(this)"
-                                class="bg-transparent border-0 text-xs font-medium focus:ring-0 cursor-pointer">
-
-                                {% for value, label in sale.STATUS_CHOICES %}
-
-                                    <option value="{{ value }}"
-                                        {% if sale.status == value %}selected{% endif %}>
-
-                                        {{ label }}
-
-                                    </option>
-
-                                {% endfor %}
-
-                            </select>
-
-                        </div>
-
-                    </div>
-
-                    <!-- PRECIO -->
-                    <div>
-
-                        <span class="inline-flex items-center px-3 py-1 rounded-full
-                                     bg-green-100 text-green-700 text-sm font-semibold">
-
-                            {{ sale.sale_price }} €
-
-                        </span>
-
-                    </div>
-
-                    <!-- COMISIÓN -->
-                    <div class="text-sm font-semibold text-gray-700">
-                        {{ sale.commission_amount }} €
-                    </div>
-
+                    <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium {% if sale.status == 'signed' %}bg-green-100 text-green-700{% elif sale.status == 'draft' %}bg-yellow-100 text-yellow-700{% else %}bg-red-100 text-red-700{% endif %}">{{ sale.get_status_display }}</span>
                 </div>
-
-            {% empty %}
-
-                <div class="p-10 text-center text-gray-400">
-
-                    No hay ventas registradas
-
+                <div class="mt-4 grid grid-cols-2 gap-3">
+                    <div class="rounded-xl bg-gray-50 p-3"><p class="text-xs text-gray-500">Precio</p><p class="mt-1 text-sm font-semibold text-gray-900">{{ sale.sale_price }} €</p></div>
+                    <div class="rounded-xl bg-gray-50 p-3 text-right"><p class="text-xs text-gray-500">Comisión</p><p class="mt-1 text-sm font-semibold text-gray-900">{{ sale.commission_amount }} €</p></div>
                 </div>
-
-            {% endfor %}
-
-        </div>
-
+                <p class="mt-4 border-t border-gray-100 pt-3 text-xs text-gray-500">Agente: <span class="font-medium text-gray-700">{{ sale.agent.get_full_name|default:sale.agent.username }}</span></p>
+            </a>
+        {% empty %}
+            <div class="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-500">No hay ventas que coincidan con los filtros.</div>
+        {% endfor %}
     </div>
 
-</div>
+    <div class="hidden overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm sm:block">
+        <table class="w-full min-w-[1050px]">
+            <thead class="border-b border-gray-200 bg-gray-50">
+                <tr>
+                    <th class="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500">Fecha</th>
+                    <th class="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500">Inmueble</th>
+                    <th class="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500">Comprador</th>
+                    <th class="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500">Agente</th>
+                    <th class="whitespace-nowrap px-6 py-4 text-right text-xs font-semibold uppercase text-gray-500">Precio</th>
+                    <th class="whitespace-nowrap px-6 py-4 text-right text-xs font-semibold uppercase text-gray-500">Comisión</th>
+                    <th class="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500">Estado</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for sale in sales %}
+                    <tr class="transition hover:bg-gray-50">
+                        <td class="whitespace-nowrap px-6 py-4 text-gray-500">{{ sale.sale_date|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4"><a href="{% url 'sale_detail' sale.id %}" class="font-semibold text-gray-900 hover:text-blue-600">{{ sale.related_property.full_address }}</a></td>
+                        <td class="px-6 py-4 text-gray-700">{{ sale.buyer }}</td>
+                        <td class="px-6 py-4 text-gray-600">{{ sale.agent.get_full_name|default:sale.agent.username }}</td>
+                        <td class="whitespace-nowrap px-6 py-4 text-right font-semibold text-gray-900">{{ sale.sale_price }} €</td>
+                        <td class="whitespace-nowrap px-6 py-4 text-right font-semibold text-gray-900">{{ sale.commission_amount }} €</td>
+                        <td class="px-6 py-4">
+                            <div data-sale-status-wrapper="{{ sale.id }}" class="inline-flex rounded-full px-3 py-1 text-xs font-medium {% if sale.status == 'signed' %}bg-green-100 text-green-700{% elif sale.status == 'draft' %}bg-yellow-100 text-yellow-700{% else %}bg-red-100 text-red-700{% endif %}">
+                                <select data-sale-id="{{ sale.id }}" data-url="{% url 'sale_update_status' sale.id %}" data-previous-value="{{ sale.status }}" onchange="updateSaleStatus(this)" class="cursor-pointer border-0 bg-transparent p-0 text-xs font-medium focus:ring-0">
+                                    {% for value, label in sale.STATUS_CHOICES %}<option value="{{ value }}" {% if sale.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                                </select>
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="7" class="px-6 py-16 text-center text-gray-500">No hay ventas que coincidan con los filtros.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
+    {% include "partials/pagination.html" %}
+</div>
 {% endblock %}
 
 {% block extra_js %}
-
 <script>
-    function getCookie(name) {
-
-        let cookieValue = null;
-
-        if (document.cookie && document.cookie !== '') {
-
-            const cookies = document.cookie.split(';');
-
-            for (let i = 0; i < cookies.length; i++) {
-
-                const cookie = cookies[i].trim();
-
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-
-                    cookieValue = decodeURIComponent(
-                        cookie.substring(name.length + 1)
-                    );
-
-                    break;
-                }
-            }
-        }
-
-        return cookieValue;
-    }
-function getSaleStatusClasses(status) {
-
-    const classes = {
-        draft: "bg-yellow-100 text-yellow-700",
-        signed: "bg-green-100 text-green-700",
-        cancelled: "bg-red-100 text-red-700"
-    };
-
-    return classes[status] || "";
+function getCookie(name) {
+    const cookie = document.cookie.split(";").map(item => item.trim()).find(item => item.startsWith(name + "="));
+    return cookie ? decodeURIComponent(cookie.substring(name.length + 1)) : null;
 }
-
+function saleStatusClasses(status) {
+    return {draft: "bg-yellow-100 text-yellow-700", signed: "bg-green-100 text-green-700", cancelled: "bg-red-100 text-red-700"}[status] || "bg-gray-100 text-gray-700";
+}
 async function updateSaleStatus(select) {
-
-    const url = select.dataset.url;
-
-    const response = await fetch(url, {
+    const response = await fetch(select.dataset.url, {
         method: "POST",
-        headers: {
-            "X-CSRFToken": getCookie("csrftoken"),
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: new URLSearchParams({
-            status: select.value
-        })
+        headers: {"X-CSRFToken": getCookie("csrftoken"), "Content-Type": "application/x-www-form-urlencoded"},
+        body: new URLSearchParams({status: select.value})
     });
-
     if (!response.ok) {
+        select.value = select.dataset.previousValue;
         return;
     }
-
-    const wrapper =
-        document.getElementById(
-            `sale-status-wrapper-${select.dataset.saleId}`
-        );
-
-    wrapper.className =
-        "inline-block rounded-full px-3 py-1 text-xs font-medium " +
-        getSaleStatusClasses(select.value);
+    select.dataset.previousValue = select.value;
+    const wrapper = select.closest("[data-sale-status-wrapper]");
+    wrapper.className = "inline-flex rounded-full px-3 py-1 text-xs font-medium " + saleStatusClasses(select.value);
 }
-
 </script>
 {% endblock %}

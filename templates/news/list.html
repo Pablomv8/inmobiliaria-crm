@@ -63,7 +63,7 @@
     </form>
 
     <p class="text-sm text-gray-500 mb-4">
-        {{ news_items|length }} noticia{{ news_items|length|pluralize }}
+        {{ news_items.paginator.count }} noticia{{ news_items.paginator.count|pluralize }}
     </p>
 
     <!-- MOBILE CARDS -->
@@ -182,6 +182,7 @@
         </table>
     </div>
 
+    {% include "partials/pagination.html" %}
 </div>
 
 {% endblock %}

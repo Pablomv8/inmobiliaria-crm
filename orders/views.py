@@ -9,6 +9,7 @@ from users.models import User
 
 from .forms import OrderCommentForm, OrderForm
 from .models import Order
+from config.pagination import paginate
 
 
 @login_required
@@ -49,11 +50,14 @@ def order_list(request):
     if status:
         orders = orders.filter(status=status)
 
+    orders = paginate(request, orders.order_by("-created_at"))
+
     return render(
         request,
         "orders/list.html",
         {
             "orders": orders,
+            "page_obj": orders,
             "payment_choices": Order.PAYMENT_TYPE_CHOICES,
             "operation_choices": Order.OPERATION_TYPE_CHOICES,
             "status_choices": Order.STATUS_CHOICES,

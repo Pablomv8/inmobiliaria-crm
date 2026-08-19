@@ -22,6 +22,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.views.decorators.cache import never_cache
+from config.pagination import paginate
 from collections import defaultdict
 
 
@@ -400,6 +401,12 @@ def appointment_detail(request, pk):
                 None,
             ),
             "counteroffer": getattr(appointment, "counteroffer", None),
+            "completed_sale": getattr(appointment, "completed_sale", None),
+            "completed_rental_contract": getattr(
+                appointment,
+                "completed_rental_contract",
+                None,
+            ),
             "resulting_appointments": resulting_appointments,
             "contract_appointment": next(
                 (
@@ -492,7 +499,11 @@ def add_appointment_result(request, pk):
             success_message = (
                 "Comentario guardado. Indica si la propuesta ha sido aceptada."
             )
-        elif appointment.appointment_type in ["contract", "signing"]:
+        elif appointment.appointment_type == "contract":
+            success_message = (
+                "Comentario guardado. Indica ahora si el contrato se ha firmado."
+            )
+        elif appointment.appointment_type == "signing":
             success_message = "Comentario guardado y cita completada."
         else:
             success_message = "Comentario guardado y cita completada."
@@ -1248,7 +1259,6 @@ def calendar_view(request):
         status__in=ACTIVE_TASK_STATUSES,
     ).select_related("zone", "assigned_to")
     calls = calls.exclude(status="cancelled")
-    appointments = appointments.exclude(status="cancelled")
 
     if selected_agent_ids:
         calls = calls.filter(agent_id__in=selected_agent_ids)
@@ -1331,7 +1341,7 @@ def calendar_events(request):
 
     agent_ids = request.GET.getlist("agents")
 
-    appointments = Appointment.objects.exclude(status="cancelled").select_related(
+    appointments = Appointment.objects.select_related(
         "related_property",
         "agent",
     )
@@ -1353,10 +1363,16 @@ def calendar_events(request):
     
     for appointment in appointments:
 
+        status_icon = {
+            "completed": "✓",
+            "cancelled": "✕",
+        }.get(appointment.status, "")
+        title_prefix = f"{status_icon} " if status_icon else ""
+
         event = {
             "id": f"appointment-{appointment.id}",
             "title": (
-                f"📅 Cita de {appointment.get_appointment_type_display()}\n"
+                f"{title_prefix}📅 Cita de {appointment.get_appointment_type_display()}\n"
                 f"{appointment.related_property.full_address}\n"
                 f"👤 {user_display_name(appointment.agent)}"
             ),
@@ -1371,6 +1387,8 @@ def calendar_events(request):
                 f"{appointment.end_time}"
             ),
             "color": appointment_calendar_color(appointment.appointment_type),
+            "classNames": [f"appointment-status-{appointment.status}"],
+            "extendedProps": {"status": appointment.status},
         }
         if can_open_calendar_item(request.user, appointment.agent):
             event["url"] = reverse(
@@ -1428,7 +1446,7 @@ def calendar_events(request):
 @login_required
 def agenda(request):
 
-    appointments = Appointment.objects.exclude(status="cancelled").select_related(
+    appointments = Appointment.objects.select_related(
         "related_property",
         "agent",
     )
@@ -1484,11 +1502,14 @@ def agenda(request):
         )
     )
 
+    events = paginate(request, events)
+
     return render(
         request,
         "calendar_app/agenda.html",
         {
-            "events": events
+            "events": events,
+            "page_obj": events,
         }
     )
 

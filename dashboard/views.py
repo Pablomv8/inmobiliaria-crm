@@ -8,6 +8,7 @@ from django.db.models.functions import TruncDate
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
+from config.pagination import paginate
 
 from activities.models import Activity
 from calendar_app.models import Appointment, Call, ProposalAppointment
@@ -369,20 +370,27 @@ def team_overview(request):
         raise PermissionDenied
 
     worker_rows = build_worker_rows()
+    worker_count = len(worker_rows)
+    total_contacts = sum(row["contacts"] for row in worker_rows)
+    total_active_listings = sum(
+        row["active_listings"] for row in worker_rows
+    )
+    total_open_orders = sum(row["open_orders"] for row in worker_rows)
+    total_pending_workload = sum(
+        row["pending_workload"] for row in worker_rows
+    )
+    worker_rows = paginate(request, worker_rows, per_page=10)
     return render(
         request,
         "dashboard/team_overview.html",
         {
             "worker_rows": worker_rows,
-            "worker_count": len(worker_rows),
-            "total_contacts": sum(row["contacts"] for row in worker_rows),
-            "total_active_listings": sum(
-                row["active_listings"] for row in worker_rows
-            ),
-            "total_open_orders": sum(row["open_orders"] for row in worker_rows),
-            "total_pending_workload": sum(
-                row["pending_workload"] for row in worker_rows
-            ),
+            "page_obj": worker_rows,
+            "worker_count": worker_count,
+            "total_contacts": total_contacts,
+            "total_active_listings": total_active_listings,
+            "total_open_orders": total_open_orders,
+            "total_pending_workload": total_pending_workload,
         },
     )
 

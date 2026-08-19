@@ -1,4 +1,4 @@
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -1072,7 +1072,27 @@ class CallFlowTests(TestCase):
                 )
                 self.assertEqual(self.call.status, status)
 
-    def test_cancelled_events_are_hidden_but_active_and_completed_remain(self):
+    def test_agenda_list_is_paginated(self):
+        Call.objects.bulk_create([
+            Call(
+                contact=self.contact,
+                agent=self.agent,
+                date=date(2026, 9, 2),
+                time=time(8 + (index // 2), 30 * (index % 2)),
+                status="pending",
+            )
+            for index in range(15)
+        ])
+
+        response = self.client.get(reverse("agenda"), {"page": 2})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["page_obj"].number, 2)
+        self.assertEqual(response.context["page_obj"].paginator.count, 16)
+        self.assertEqual(len(response.context["events"]), 1)
+        self.assertContains(response, "Mostrando")
+
+    def test_cancelled_appointments_are_marked_but_cancelled_calls_stay_hidden(self):
         completed_call = Call.objects.create(
             contact=self.contact,
             agent=self.agent,
@@ -1107,6 +1127,16 @@ class CallFlowTests(TestCase):
             end_time=time(12, 0),
             status="cancelled",
         )
+        completed_appointment = Appointment.objects.create(
+            related_property=self.property,
+            contact=self.contact,
+            agent=self.agent,
+            appointment_type="contract",
+            date=date(2026, 9, 2),
+            time=time(12, 0),
+            end_time=time(13, 0),
+            status="completed",
+        )
 
         calendar_response = self.client.get(reverse("calendar"))
         calendar_objects = {
@@ -1118,21 +1148,37 @@ class CallFlowTests(TestCase):
         self.assertIn(("call", completed_call.pk), calendar_objects)
         self.assertIn(("appointment", active_appointment.pk), calendar_objects)
         self.assertNotIn(("call", cancelled_call.pk), calendar_objects)
-        self.assertNotIn(
+        self.assertIn(
             ("appointment", cancelled_appointment.pk),
             calendar_objects,
         )
+        self.assertIn(
+            ("appointment", completed_appointment.pk),
+            calendar_objects,
+        )
+        self.assertContains(calendar_response, "Cita completada")
+        self.assertContains(calendar_response, "Cita cancelada")
 
-        event_ids = {
-            event["id"]
+        calendar_events = {
+            event["id"]: event
             for event in self.client.get(reverse("calendar_events")).json()
         }
-        self.assertIn(f"call-{self.call.pk}", event_ids)
-        self.assertIn(f"call-{completed_call.pk}", event_ids)
-        self.assertNotIn(f"call-{cancelled_call.pk}", event_ids)
-        self.assertNotIn(
-            f"appointment-{cancelled_appointment.pk}",
-            event_ids,
+        self.assertIn(f"call-{self.call.pk}", calendar_events)
+        self.assertIn(f"call-{completed_call.pk}", calendar_events)
+        self.assertNotIn(f"call-{cancelled_call.pk}", calendar_events)
+        self.assertEqual(
+            calendar_events[f"appointment-{cancelled_appointment.pk}"]["classNames"],
+            ["appointment-status-cancelled"],
+        )
+        self.assertTrue(
+            calendar_events[f"appointment-{cancelled_appointment.pk}"]["title"].startswith("✕")
+        )
+        self.assertEqual(
+            calendar_events[f"appointment-{completed_appointment.pk}"]["classNames"],
+            ["appointment-status-completed"],
+        )
+        self.assertTrue(
+            calendar_events[f"appointment-{completed_appointment.pk}"]["title"].startswith("✓")
         )
 
         agenda_response = self.client.get(reverse("agenda"))
@@ -1142,10 +1188,16 @@ class CallFlowTests(TestCase):
         }
         self.assertIn(("call", completed_call.pk), agenda_objects)
         self.assertNotIn(("call", cancelled_call.pk), agenda_objects)
-        self.assertNotIn(
+        self.assertIn(
             ("appointment", cancelled_appointment.pk),
             agenda_objects,
         )
+        self.assertIn(
+            ("appointment", completed_appointment.pk),
+            agenda_objects,
+        )
+        self.assertContains(agenda_response, "Cita completada")
+        self.assertContains(agenda_response, "Cita cancelada")
 
 
 class AvailableSlotsTests(TestCase):
@@ -1360,6 +1412,69 @@ class AvailableSlotsTests(TestCase):
             calendar_events[f"appointment-{acquisition.pk}"]["color"],
             calendar_events[f"appointment-{proposal.pk}"]["color"],
         )
+
+    def test_contract_form_considers_every_scheduled_appointment_type(self):
+        selected_date = date(2026, 8, 27)
+        property_obj = Property.objects.first()
+        contact = Contact.objects.first()
+        first_start = datetime.combine(selected_date, time(6, 0))
+
+        for index, (appointment_type, _) in enumerate(Appointment.TYPE_CHOICES):
+            start = first_start + timedelta(minutes=30 * index)
+            end = start + timedelta(minutes=30)
+            if end.date() != selected_date:
+                end = datetime.combine(selected_date, time(23, 59))
+            Appointment.objects.create(
+                related_property=property_obj,
+                contact=contact,
+                agent=self.agent,
+                appointment_type=appointment_type,
+                date=selected_date,
+                time=start.time(),
+                end_time=end.time(),
+                status="scheduled",
+            )
+
+        self.client.force_login(self.agent)
+        response = self.client.get(
+            reverse("available_slots"),
+            {"date": selected_date.isoformat(), "agent_id": self.agent.pk},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()["occupied"],
+            [
+                "06:00",
+                "06:30",
+                "07:00",
+                "07:30",
+                "08:00",
+                "08:30",
+                "09:00",
+                "09:30",
+            ],
+        )
+        self.assertEqual(
+            {interval["label"] for interval in response.json()["intervals"]},
+            {
+                f"Cita de {label}"
+                for _, label in Appointment.TYPE_CHOICES
+            },
+        )
+
+        contract_form = AppointmentForm(
+            data={
+                "date": selected_date.isoformat(),
+                "time": "08:15",
+                "end_time": "08:45",
+                "notes": "Contrato solapado con otro tipo de cita.",
+            },
+            user=self.agent,
+            appointment_type="contract",
+        )
+        self.assertFalse(contract_form.is_valid())
+        self.assertIn("se solapa", contract_form.non_field_errors()[0])
 
 class AppointmentResultFlowAdditionalTests(TestCase):
     setUp = AppointmentResultFlowTests.setUp

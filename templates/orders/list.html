@@ -45,7 +45,7 @@
         </div>
     </form>
 
-    <p class="text-sm text-gray-500 mb-4">{{ orders|length }} pedido{{ orders|length|pluralize }}</p>
+    <p class="text-sm text-gray-500 mb-4">{{ orders.paginator.count }} pedido{{ orders.paginator.count|pluralize }}</p>
 
     <div class="sm:hidden space-y-3">
         {% for order in orders %}
@@ -92,6 +92,7 @@
             </tbody>
         </table>
     </div>
+    {% include "partials/pagination.html" %}
 </div>
 
 {% endblock %}

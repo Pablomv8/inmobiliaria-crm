@@ -10,6 +10,7 @@ from users.models import User
 from django.db.models import Q
 from django.contrib import messages
 from .forms import ListingCommentForm, ListingForm
+from config.pagination import paginate
 
 def get_user_listings(user):
 
@@ -110,6 +111,7 @@ def listing_list(request):
     ).order_by(
         "-created_at"
     )
+    listings = paginate(request, listings)
 
     # ------------------------
     # CONTEXT
@@ -117,6 +119,7 @@ def listing_list(request):
     context = {
 
         "listings": listings,
+        "page_obj": listings,
 
         "status_choices": Listing.STATUS_CHOICES,
         "workflow_status_choices": Listing.WORKFLOW_STATUS_CHOICES,
@@ -185,6 +188,14 @@ def listing_detail(request, listing_id):
             "comment_form": ListingCommentForm(),
             "timeline": timeline,
             "proposals": proposals,
+            "completed_sale": listing.completed_sales.select_related(
+                "buyer",
+                "former_owner",
+            ).first(),
+            "rental_contract": listing.rental_contracts.select_related(
+                "tenant",
+                "owner",
+            ).first(),
         }
     )
 

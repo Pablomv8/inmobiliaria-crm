@@ -56,7 +56,7 @@
                     Estado
                 </option>
 
-                {% for value,label in properties.model.STATUS_CHOICES %}
+                {% for value,label in status_choices %}
 
                     <option value="{{ value }}"
                         {% if request.GET.status == value %}selected{% endif %}>
@@ -79,7 +79,7 @@
                     Tipo
                 </option>
 
-                {% for value,label in properties.model.PROPERTY_TYPE_CHOICES %}
+                {% for value,label in property_types %}
 
                     <option value="{{ value }}"
                         {% if request.GET.type == value %}selected{% endif %}>
@@ -185,7 +185,7 @@
     <div class="flex justify-between items-center mb-4">
 
         <p class="text-sm text-gray-500">
-            {{ properties|length }} inmueble{{ properties|length|pluralize }} encontrado{{ properties|length|pluralize }}
+            {{ properties.paginator.count }} inmueble{{ properties.paginator.count|pluralize }} encontrado{{ properties.paginator.count|pluralize }}
         </p>
 
     </div>
@@ -274,6 +274,7 @@
 
     </div>
 
+    {% include "partials/pagination.html" %}
 
 </div>
 

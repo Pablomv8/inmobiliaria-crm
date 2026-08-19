@@ -560,6 +560,16 @@
                 </div>
             {% endif %}
 
+            {% if completed_sales or rental_contracts %}
+                <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+                    <div class="mb-6"><h2 class="text-xl font-semibold text-gray-900">Operaciones formalizadas</h2><p class="mt-1 text-sm text-gray-500">Historial en el que esta persona figura como comprador, vendedor, propietario o inquilino.</p></div>
+                    <div class="grid gap-4 md:grid-cols-2">
+                        {% for sale in completed_sales %}<a href="{% url 'sale_detail' sale.id %}" class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 transition hover:bg-emerald-100"><p class="font-semibold text-emerald-950">Compraventa · {{ sale.related_property.full_address }}</p><p class="mt-1 text-sm text-emerald-800">{{ sale.sale_date|date:"d/m/Y" }} · {{ sale.sale_price }} €</p><p class="mt-2 text-xs text-emerald-700">Vendedor: {{ sale.former_owner|default:"No registrado" }} · Comprador: {{ sale.buyer }}</p></a>{% endfor %}
+                        {% for contract in rental_contracts %}<a href="{% url 'rental_contract_detail' contract.id %}" class="rounded-xl border border-violet-200 bg-violet-50 p-4 transition hover:bg-violet-100"><p class="font-semibold text-violet-950">Alquiler · {{ contract.related_property.full_address }}</p><p class="mt-1 text-sm text-violet-800">{{ contract.contract_date|date:"d/m/Y" }} · {{ contract.rent_price }} €/mes</p><p class="mt-2 text-xs text-violet-700">Propietario: {{ contract.owner }} · Inquilino: {{ contract.tenant }}</p></a>{% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+
             <!-- NOTAS -->
             <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
 

@@ -18,6 +18,19 @@
     min-height: 55px;
     padding: 4px;
 }
+
+.fc-event.appointment-status-completed {
+    opacity: .72;
+}
+
+.fc-event.appointment-status-cancelled {
+    opacity: .58;
+    filter: grayscale(.45);
+}
+
+.fc-event.appointment-status-cancelled .fc-event-title {
+    text-decoration: line-through;
+}
 </style>
 
 <div class="w-full px-4 sm:px-6 lg:px-10">
@@ -87,7 +100,10 @@
                                 </span>
 
                                 {% if event.type == "appointment" %}
-                                    {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type=event.object.appointment_type label=event.object.get_appointment_type_display %}
+                                    <div class="flex items-center gap-2">
+                                        {% include "calendar_app/partials/appointment_status_icon.html" with status=event.object.status %}
+                                        {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type=event.object.appointment_type label=event.object.get_appointment_type_display %}
+                                    </div>
                                 {% else %}
                                     <span class="text-xs px-2 py-1 rounded-full bg-gray-100">{% if event.type == "call" %}Llamada{% else %}Tarea{% endif %}</span>
                                 {% endif %}
@@ -179,7 +195,8 @@
                             Hasta las {{ event.end_time|time:"H:i" }}
                         </div>
                     {% else %}
-                        <div class="mb-2">
+                        <div class="mb-2 flex items-center gap-2">
+                            {% include "calendar_app/partials/appointment_status_icon.html" with status=event.object.status %}
                             {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type=event.object.appointment_type label=event.object.get_appointment_type_display %}
                         </div>
                         <div class="text-sm text-gray-600">
@@ -225,7 +242,8 @@
                             Hasta las {{ event.end_time|time:"H:i" }}
                         </div>
                     {% else %}
-                        <div class="mb-2">
+                        <div class="mb-2 flex items-center gap-2">
+                            {% include "calendar_app/partials/appointment_status_icon.html" with status=event.object.status %}
                             {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type=event.object.appointment_type label=event.object.get_appointment_type_display %}
                         </div>
                         <div class="text-sm text-gray-600">
@@ -262,6 +280,13 @@
                     {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type="proposal_acceptance" label="Aceptación de propuesta" %}
                     {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type="contract" label="Contrato" %}
                     {% include "calendar_app/partials/appointment_type_badge.html" with appointment_type="signing" label="Escrituración" %}
+                </div>
+                <div class="mt-5 border-t border-gray-100 pt-4">
+                    <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">Estado</p>
+                    <div class="flex flex-wrap gap-4 text-sm text-gray-600">
+                        <span class="flex items-center gap-2">{% include "calendar_app/partials/appointment_status_icon.html" with status="completed" %} Completada</span>
+                        <span class="flex items-center gap-2">{% include "calendar_app/partials/appointment_status_icon.html" with status="cancelled" %} Cancelada</span>
+                    </div>
                 </div>
             </div>
 

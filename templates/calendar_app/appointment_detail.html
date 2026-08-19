@@ -367,6 +367,44 @@
                 </div>
             {% endif %}
 
+            {% if appointment.appointment_type == "contract" and appointment.status == "completed" and appointment.result_comment %}
+                <div class="mt-6 rounded-2xl border border-orange-300 bg-orange-100 p-6 shadow-sm">
+                    {% if completed_sale %}
+                        <h3 class="font-semibold text-emerald-900">Compraventa formalizada</h3>
+                        <p class="mt-1 text-sm text-emerald-800">La operación económica y el cambio de propietario ya están registrados.</p>
+                        <a href="{% url 'sale_detail' completed_sale.id %}" class="mt-4 inline-flex rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Ver compraventa</a>
+                    {% elif completed_rental_contract %}
+                        <h3 class="font-semibold text-emerald-900">Contrato de alquiler formalizado</h3>
+                        <p class="mt-1 text-sm text-emerald-800">El alquiler y sus condiciones económicas ya están registrados.</p>
+                        <a href="{% url 'rental_contract_detail' completed_rental_contract.id %}" class="mt-4 inline-flex rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Ver contrato de alquiler</a>
+                    {% elif appointment.result_success is None %}
+                        <h3 class="text-lg font-semibold text-gray-900">¿Se ha firmado el contrato?</h3>
+                        <p class="mt-1 text-sm text-gray-600">La respuesta positiva abrirá el formulario económico de compraventa o alquiler.</p>
+                        <div class="mt-5 flex flex-col gap-3 sm:flex-row">
+                            <form method="post" action="{% url 'contract_signing_decision' appointment.id %}" class="flex-1">
+                                {% csrf_token %}
+                                <button type="submit" name="signed" value="yes" class="w-full rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white hover:bg-emerald-700">Sí, contrato firmado</button>
+                            </form>
+                            <form method="post" action="{% url 'contract_signing_decision' appointment.id %}" class="flex-1">
+                                {% csrf_token %}
+                                <button type="submit" name="signed" value="no" class="w-full rounded-xl bg-gray-900 px-5 py-3 font-semibold text-white hover:bg-black">No, no se ha firmado</button>
+                            </form>
+                        </div>
+                    {% elif appointment.result_success %}
+                        <h3 class="font-semibold text-emerald-900">Contrato firmado</h3>
+                        <p class="mt-1 text-sm text-emerald-800">Falta registrar las condiciones económicas y cerrar la operación.</p>
+                        <a href="{% url 'create_closing_from_contract' appointment.id %}" class="mt-4 inline-flex rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white hover:bg-emerald-700">Registrar operación</a>
+                    {% else %}
+                        <h3 class="font-semibold text-gray-900">Contrato no firmado</h3>
+                        <p class="mt-1 text-sm text-gray-600">La cita queda completada, pero la operación no se ha cerrado.</p>
+                        <form method="post" action="{% url 'contract_signing_decision' appointment.id %}" class="mt-4">
+                            {% csrf_token %}
+                            <button type="submit" name="signed" value="yes" class="rounded-xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50">Finalmente sí se firmó</button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% endif %}
+
             {% if appointment.appointment_type == "acquisition" and appointment.status == "completed" and appointment.result_comment %}
                 <div class="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-6">
                     {% if appointment.result_success is None %}
