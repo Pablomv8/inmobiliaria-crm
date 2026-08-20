@@ -1,4 +1,4 @@
-from datetime import date, time
+from datetime import date, time, timedelta
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -245,6 +245,47 @@ class DashboardScopeTests(TestCase):
         self.assertTrue(combined_response.context["show_office_dashboard"])
         self.assertContains(combined_response, "Resumen personal")
         self.assertContains(combined_response, "Vista global de la oficina")
+
+    def test_office_dashboard_limits_goals_to_three_nearest_deadlines(self):
+        today = timezone.localdate()
+        goals = []
+        for index in range(5):
+            goal = Goal.objects.create(
+                name=f"Objetivo oficina {index}",
+                scope="individual",
+                metric="news",
+                target_count=2,
+                start_date=today,
+                end_date=today + timedelta(days=index + 1),
+                created_by=self.manager,
+            )
+            goal.assignees.add(self.agent)
+            goals.append(goal)
+        self.client.force_login(self.manager)
+
+        response = self.client.get(
+            reverse("dashboard"),
+            {"view": "office"},
+        )
+
+        displayed_goals = [
+            row["goal"] for row in response.context["office_goal_rows"]
+        ]
+        self.assertEqual(displayed_goals, goals[:3])
+        self.assertContains(response, "Los tres objetivos más próximos a vencer")
+        self.assertNotContains(response, goals[3].name)
+
+        administration_response = self.client.get(reverse("administration"))
+        administration_goals = [
+            row["goal"]
+            for row in administration_response.context["office_goal_rows"]
+        ]
+        self.assertEqual(administration_goals, goals[:3])
+        self.assertContains(
+            administration_response,
+            "Los tres objetivos más próximos a vencer",
+        )
+        self.assertNotContains(administration_response, goals[3].name)
 
     def test_manager_can_open_extended_administration(self):
         self.client.force_login(self.manager)

@@ -597,7 +597,7 @@ def dashboard(request):
                 start_date__lte=today,
                 end_date__gte=today,
             ).distinct(),
-            limit=5,
+            limit=3,
         )
         office_action_items = build_action_items(
             user=user,
@@ -730,7 +730,7 @@ def administration(request):
                     start_date__lte=today,
                     end_date__gte=today,
                 ).distinct(),
-                limit=8,
+                limit=3,
             ),
             "property_status_rows": property_status_rows,
             "occupancy_rows": occupancy_rows,
