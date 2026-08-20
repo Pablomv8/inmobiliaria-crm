@@ -3,9 +3,11 @@ from datetime import date, time
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from calendar_app.models import Appointment
 from contacts.models import Contact
+from goals.models import Goal
 from listings.models import Listing
 from news.models import News
 from orders.models import Order
@@ -152,6 +154,42 @@ class DashboardScopeTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["my_commission"], 8400)
+        self.assertEqual(response.context["personal_economics"]["commission"], 8400)
+        self.assertEqual(response.context["personal_economics"]["sale_volume"], 250000)
+
+    def test_personal_dashboard_shows_actions_funnel_and_active_goals(self):
+        today = timezone.localdate()
+        goal = Goal.objects.create(
+            name="Objetivo visible en dashboard",
+            scope="individual",
+            metric="news",
+            target_count=3,
+            start_date=today,
+            end_date=today,
+            created_by=self.manager,
+        )
+        goal.assignees.add(self.agent)
+        self.client.force_login(self.agent)
+
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Centro de acciones")
+        self.assertContains(response, "Mi embudo comercial")
+        self.assertContains(response, "Mi resumen económico")
+        self.assertContains(response, "Mis objetivos activos")
+        self.assertContains(response, goal.name)
+        funnel_counts = [
+            stage["count"]
+            for stage in response.context["personal_funnel"]["stages"]
+        ]
+        self.assertEqual(funnel_counts, [1, 1, 1, 0, 0, 0])
+        order_alert = next(
+            item
+            for item in response.context["personal_action_items"]
+            if item["label"] == "Pedidos sin cita de venta"
+        )
+        self.assertEqual(order_alert["count"], 1)
 
     def test_base_layout_has_no_search_and_only_one_scrollable_sidebar(self):
         self.client.force_login(self.agent)
@@ -179,6 +217,10 @@ class DashboardScopeTests(TestCase):
         self.assertContains(response, "Vista global de la oficina")
         self.assertContains(response, "dashboard-agent")
         self.assertContains(response, "dashboard-other")
+        self.assertContains(response, "Acciones de la oficina")
+        self.assertContains(response, "Embudo comercial global")
+        self.assertContains(response, "Resumen económico global")
+        self.assertIn("office_goal_rows", response.context)
 
     def test_personal_cards_link_to_logged_user_filters(self):
         self.client.force_login(self.manager)

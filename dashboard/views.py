@@ -3,21 +3,24 @@ from datetime import datetime, timedelta
 from itertools import chain
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Sum
+from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 from django.utils import timezone
 from config.pagination import paginate
 
 from activities.models import Activity
 from calendar_app.models import Appointment, Call, ProposalAppointment
 from contacts.models import Contact
+from goals.models import Goal
+from goals.services import build_goal_progress
 from listings.models import Listing
 from news.models import News
 from orders.models import Order
 from properties.models import Property
-from sales.models import Sale
+from sales.models import RentalContract, Sale
 from tasks.models import Task
 from users.models import User
 
@@ -36,6 +39,198 @@ def grouped_counts(queryset, field):
         for item in queryset.values(field).annotate(total=Count("id"))
         if item[field] is not None
     }
+
+
+def conversion_percentage(current, previous):
+    if not previous:
+        return 0
+    return min(100, round(current * 100 / previous))
+
+
+def build_commercial_funnel(
+    news,
+    listings,
+    appointments,
+    proposals,
+    sales,
+    rentals,
+    *,
+    user=None,
+):
+    counts = [
+        news.count(),
+        listings.count(),
+        appointments.filter(appointment_type="sale")
+        .exclude(status="cancelled")
+        .count(),
+        proposals.count(),
+        appointments.filter(appointment_type="contract")
+        .exclude(status="cancelled")
+        .count(),
+        sales.filter(status="signed").count()
+        + rentals.filter(status="signed").count(),
+    ]
+    labels = [
+        "Noticias",
+        "Encargos",
+        "Citas de venta",
+        "Propuestas",
+        "Contratos",
+        "Cierres",
+    ]
+    agent_query = f"?agent={user.pk}" if user is not None else ""
+    calendar_query = f"?agents={user.pk}" if user is not None else ""
+    urls = [
+        f"{reverse('news_list')}{agent_query}",
+        f"{reverse('listing_list')}{agent_query}",
+        f"{reverse('calendar')}{calendar_query}",
+        f"{reverse('listing_list')}{agent_query}",
+        f"{reverse('calendar')}{calendar_query}",
+        f"{reverse('sale_list')}{agent_query}",
+    ]
+    stages = []
+    for index, (label, count) in enumerate(zip(labels, counts)):
+        stages.append({
+            "label": label,
+            "count": count,
+            "url": urls[index],
+            "conversion": (
+                conversion_percentage(count, counts[index - 1])
+                if index
+                else 100
+            ),
+        })
+    return {
+        "stages": stages,
+        "closing_rate": conversion_percentage(counts[-1], counts[0]),
+    }
+
+
+def build_economic_summary(sales, rentals, *, user=None):
+    signed_sales = sales.filter(status="signed")
+    signed_rentals = rentals.filter(status="signed")
+    sale_totals = signed_sales.aggregate(
+        volume=Sum("sale_price"),
+        commission=Sum("commission_amount"),
+    )
+    rental_totals = signed_rentals.aggregate(
+        monthly_rent=Sum("rent_price"),
+        owner_commission=Sum("owner_commission"),
+        tenant_commission=Sum("tenant_commission"),
+    )
+    sale_commission = sale_totals["commission"] or 0
+    rental_commission = (
+        (rental_totals["owner_commission"] or 0)
+        + (rental_totals["tenant_commission"] or 0)
+    )
+    agent_query = f"?agent={user.pk}" if user is not None else ""
+    return {
+        "closed_operations": signed_sales.count() + signed_rentals.count(),
+        "signed_sales": signed_sales.count(),
+        "signed_rentals": signed_rentals.count(),
+        "sale_volume": sale_totals["volume"] or 0,
+        "monthly_rent": rental_totals["monthly_rent"] or 0,
+        "commission": sale_commission + rental_commission,
+        "sales_url": f"{reverse('sale_list')}{agent_query}",
+        "rentals_url": f"{reverse('rental_contract_list')}{agent_query}",
+    }
+
+
+def build_goal_rows(queryset, limit=4):
+    goals = queryset.prefetch_related("assignees").order_by("end_date")[:limit]
+    return [build_goal_progress(goal) for goal in goals]
+
+
+def build_action_items(
+    *,
+    user,
+    appointments,
+    listings,
+    orders,
+    tasks,
+    properties,
+    office=False,
+):
+    today = timezone.localdate()
+    now = timezone.now()
+    agent_query = "" if office else f"?agent={user.pk}"
+    calendar_query = "" if office else f"?agents={user.pk}"
+    orders_without_visit = orders.exclude(
+        status__in=["closed", "cancelled"]
+    ).annotate(
+        sale_visit_count=Count(
+            "sale_appointments",
+            filter=(
+                Q(sale_appointments__appointment_type="sale")
+                & ~Q(sale_appointments__status="cancelled")
+            ),
+        )
+    ).filter(sale_visit_count=0).count()
+    return [
+        {
+            "label": "Tareas vencidas",
+            "count": tasks.filter(
+                status__in=["pending", "in_progress"],
+                due_date__lt=now,
+            ).count(),
+            "url": f"{reverse('task_list')}{agent_query}",
+            "tone": "red",
+        },
+        {
+            "label": "Adquisiciones por decidir",
+            "count": appointments.filter(
+                appointment_type="acquisition",
+                status="completed",
+                result_success__isnull=True,
+            ).count(),
+            "url": f"{reverse('calendar')}{calendar_query}",
+            "tone": "amber",
+        },
+        {
+            "label": "Visitas de venta por decidir",
+            "count": appointments.filter(
+                appointment_type="sale",
+                status="completed",
+                result_success__isnull=True,
+            ).count(),
+            "url": f"{reverse('calendar')}{calendar_query}",
+            "tone": "amber",
+        },
+        {
+            "label": "Ofertas por registrar",
+            "count": appointments.filter(
+                appointment_type="proposal",
+                status="completed",
+                proposal__isnull=True,
+            ).count(),
+            "url": f"{reverse('calendar')}{calendar_query}",
+            "tone": "violet",
+        },
+        {
+            "label": "Pedidos sin cita de venta",
+            "count": orders_without_visit,
+            "url": f"{reverse('order_list')}{agent_query}",
+            "tone": "blue",
+        },
+        {
+            "label": "Encargos que vencen en 30 días",
+            "count": listings.filter(
+                status="active",
+                end_date__gte=today,
+                end_date__lte=today + timedelta(days=30),
+            ).count(),
+            "url": f"{reverse('listing_list')}{agent_query}",
+            "tone": "orange",
+        },
+        {
+            "label": "Inmuebles sin contacto reciente",
+            "count": properties.filter(
+                status__in=["never_contacted", "contacted_30"],
+            ).count(),
+            "url": reverse("properties"),
+            "tone": "gray",
+        },
+    ]
 
 
 def build_user_rows():
@@ -205,9 +400,42 @@ def dashboard(request):
     personal_calls = Call.objects.filter(agent=user)
     personal_proposals = ProposalAppointment.objects.filter(agent=user)
     personal_sales = Sale.objects.filter(agent=user)
+    personal_rentals = RentalContract.objects.filter(agent=user)
     personal_properties = Property.objects.filter(
-        listings__agent=user,
+        Q(created_by=user)
+        | Q(listings__agent=user)
+        | Q(contacts__assigned_agent=user)
     ).distinct()
+
+    personal_funnel = build_commercial_funnel(
+        personal_news,
+        personal_listings,
+        personal_appointments,
+        personal_proposals,
+        personal_sales,
+        personal_rentals,
+        user=user,
+    )
+    personal_economics = build_economic_summary(
+        personal_sales,
+        personal_rentals,
+        user=user,
+    )
+    personal_goal_rows = build_goal_rows(
+        Goal.objects.filter(
+            assignees=user,
+            start_date__lte=today,
+            end_date__gte=today,
+        ).distinct()
+    )
+    personal_action_items = build_action_items(
+        user=user,
+        appointments=personal_appointments,
+        listings=personal_listings,
+        orders=personal_orders,
+        tasks=personal_tasks,
+        properties=personal_properties,
+    )
 
     signed_sales = personal_sales.filter(status="signed")
     personal_revenue = signed_sales.aggregate(total=Sum("sale_price"))["total"] or 0
@@ -305,8 +533,13 @@ def dashboard(request):
         "my_overdue_tasks": overdue_tasks.count(),
         "my_proposals": personal_proposals.count(),
         "my_signed_sales": signed_sales.count(),
+        "my_signed_rentals": personal_rentals.filter(status="signed").count(),
         "my_revenue": personal_revenue,
         "my_commission": personal_commission,
+        "personal_funnel": personal_funnel,
+        "personal_economics": personal_economics,
+        "personal_goal_rows": personal_goal_rows,
+        "personal_action_items": personal_action_items,
         "upcoming_events": upcoming_events,
         "upcoming_tasks": upcoming_tasks,
         "acquisition_decisions": acquisition_decisions,
@@ -331,6 +564,34 @@ def dashboard(request):
 
     if is_office_viewer:
         all_signed_sales = Sale.objects.filter(status="signed")
+        office_funnel = build_commercial_funnel(
+            News.objects.all(),
+            Listing.objects.all(),
+            Appointment.objects.all(),
+            ProposalAppointment.objects.all(),
+            Sale.objects.all(),
+            RentalContract.objects.all(),
+        )
+        office_economics = build_economic_summary(
+            Sale.objects.all(),
+            RentalContract.objects.all(),
+        )
+        office_goal_rows = build_goal_rows(
+            Goal.objects.filter(
+                start_date__lte=today,
+                end_date__gte=today,
+            ).distinct(),
+            limit=5,
+        )
+        office_action_items = build_action_items(
+            user=user,
+            appointments=Appointment.objects.all(),
+            listings=Listing.objects.all(),
+            orders=Order.objects.all(),
+            tasks=Task.objects.all(),
+            properties=Property.objects.all(),
+            office=True,
+        )
         context.update({
             "office_users": User.objects.filter(is_active=True).count(),
             "office_contacts": Contact.objects.count(),
@@ -358,6 +619,10 @@ def dashboard(request):
             "office_revenue": (
                 all_signed_sales.aggregate(total=Sum("sale_price"))["total"] or 0
             ),
+            "office_funnel": office_funnel,
+            "office_economics": office_economics,
+            "office_goal_rows": office_goal_rows,
+            "office_action_items": office_action_items,
             "user_rows": build_user_rows(),
         })
 

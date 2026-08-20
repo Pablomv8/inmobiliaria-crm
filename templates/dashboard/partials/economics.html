@@ -1,0 +1,15 @@
+<div class="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-6 shadow-sm">
+    <div class="flex items-center justify-between gap-4">
+        <div>
+            <h2 class="text-lg font-semibold text-gray-900">{{ economics_title }}</h2>
+            <p class="mt-1 text-sm text-gray-500">{{ economics_subtitle }}</p>
+        </div>
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 font-bold text-emerald-800">€</span>
+    </div>
+    <div class="mt-5 grid grid-cols-2 gap-3 2xl:grid-cols-4">
+        <a href="{{ economics.sales_url }}" class="rounded-xl border border-emerald-100 bg-white p-4 transition hover:border-emerald-300 hover:shadow-sm"><p class="text-xs text-gray-500">Operaciones cerradas</p><p class="mt-2 text-2xl font-bold text-gray-900">{{ economics.closed_operations }}</p><p class="mt-1 text-xs text-gray-500">{{ economics.signed_sales }} ventas · {{ economics.signed_rentals }} alquileres</p></a>
+        <a href="{{ economics.sales_url }}" class="rounded-xl border border-emerald-100 bg-white p-4 transition hover:border-emerald-300 hover:shadow-sm"><p class="text-xs text-gray-500">Volumen vendido</p><p class="mt-2 text-2xl font-bold text-gray-900">{{ economics.sale_volume|floatformat:0 }} €</p></a>
+        <a href="{{ economics.rentals_url }}" class="rounded-xl border border-emerald-100 bg-white p-4 transition hover:border-emerald-300 hover:shadow-sm"><p class="text-xs text-gray-500">Renta mensual cerrada</p><p class="mt-2 text-2xl font-bold text-gray-900">{{ economics.monthly_rent|floatformat:0 }} €</p></a>
+        <a href="{{ economics.sales_url }}" class="rounded-xl border border-emerald-100 bg-white p-4 transition hover:border-emerald-300 hover:shadow-sm"><p class="text-xs text-gray-500">Comisiones acordadas</p><p class="mt-2 text-2xl font-bold text-emerald-800">{{ economics.commission|floatformat:0 }} €</p></a>
+    </div>
+</div>

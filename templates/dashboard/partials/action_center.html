@@ -1,0 +1,17 @@
+<div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+    <div class="mb-5 flex items-center justify-between gap-4">
+        <div>
+            <h2 class="text-lg font-semibold text-gray-900">{{ action_title }}</h2>
+            <p class="mt-1 text-sm text-gray-500">{{ action_subtitle }}</p>
+        </div>
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-xl">⚠️</span>
+    </div>
+    <div class="grid gap-2 sm:grid-cols-2">
+        {% for item in action_items %}
+            <a href="{{ item.url }}" class="group flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 transition hover:border-indigo-200 hover:bg-indigo-50/40">
+                <span class="text-sm font-medium text-gray-700 group-hover:text-gray-900">{{ item.label }}</span>
+                <strong class="flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-sm {% if item.count %}{% if item.tone == 'red' %}bg-red-100 text-red-700{% elif item.tone == 'amber' or item.tone == 'orange' %}bg-amber-100 text-amber-800{% elif item.tone == 'violet' %}bg-violet-100 text-violet-700{% elif item.tone == 'blue' %}bg-blue-100 text-blue-700{% else %}bg-gray-200 text-gray-700{% endif %}{% else %}bg-white text-gray-400{% endif %}">{{ item.count }}</strong>
+            </a>
+        {% endfor %}
+    </div>
+</div>

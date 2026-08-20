@@ -1,0 +1,23 @@
+<div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+            <h2 class="text-lg font-semibold text-gray-900">{{ funnel_title }}</h2>
+            <p class="mt-1 text-sm text-gray-500">{{ funnel_subtitle }}</p>
+        </div>
+        <div class="w-fit rounded-xl bg-emerald-50 px-3 py-2 text-right">
+            <p class="text-xs font-medium text-emerald-700">Conversión a cierre</p>
+            <p class="text-lg font-bold text-emerald-800">{{ funnel.closing_rate }}%</p>
+        </div>
+    </div>
+    <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {% for stage in funnel.stages %}
+            <a href="{{ stage.url }}" class="relative rounded-xl border border-gray-100 bg-gray-50 p-4 transition hover:border-indigo-200 hover:bg-indigo-50/40">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ stage.label }}</p>
+                <div class="mt-2 flex items-end justify-between gap-2">
+                    <p class="text-2xl font-bold text-gray-900">{{ stage.count }}</p>
+                    {% if not forloop.first %}<span class="text-xs font-semibold text-indigo-600">{{ stage.conversion }}%</span>{% endif %}
+                </div>
+            </a>
+        {% endfor %}
+    </div>
+</div>
