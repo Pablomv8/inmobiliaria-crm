@@ -15,6 +15,7 @@ from sales.models import RentalContract, Sale
 
 from activities.utils import log_activity
 from config.pagination import paginate
+from users.permissions import assignable_agents, can_manage_assignments
 
 
 User = get_user_model()
@@ -58,10 +59,7 @@ def contact_list(request):
     return render(request, "contacts/list.html", {
         "contacts": contacts,
         "page_obj": contacts,
-        "agents": User.objects.filter(
-            role="agent",
-            is_active=True,
-        ).order_by("first_name", "last_name", "username"),
+        "agents": assignable_agents(),
         "contact_type_choices": Contact.CONTACT_TYPE_CHOICES,
     })
 
@@ -187,13 +185,12 @@ def contact_assign_agent(request, pk):
 
     contact = get_object_or_404(Contact, pk=pk)
 
-    # seguridad básica
-    if request.user.role == "agent":
+    if not can_manage_assignments(request.user):
         return JsonResponse({"success": False}, status=403)
 
     agent_id = request.POST.get("agent_id")
 
-    agent = User.objects.filter(id=agent_id, role="agent").first()
+    agent = assignable_agents().filter(id=agent_id).first()
 
     if not agent:
         return JsonResponse({"success": False}, status=400)

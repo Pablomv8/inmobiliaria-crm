@@ -14,6 +14,11 @@ urlpatterns = [
         views.listing_detail,
         name="listing_detail"
     ),
+    path(
+        "<int:listing_id>/edit/",
+        views.listing_update,
+        name="listing_update",
+    ),
 
     path(
         "create/<int:appointment_id>/",

@@ -4,6 +4,7 @@ from contacts.models import Contact
 from properties.models import Property
 
 from .models import Order, OrderComment
+from users.permissions import assignable_agents, can_manage_assignments
 
 
 INPUT_CLASS = (
@@ -18,6 +19,7 @@ class OrderForm(forms.ModelForm):
         model = Order
         fields = [
             "buyer",
+            "agent",
             "operation_type",
             "zone",
             "max_price",
@@ -29,6 +31,7 @@ class OrderForm(forms.ModelForm):
         ]
         widgets = {
             "buyer": forms.Select(attrs={"class": INPUT_CLASS}),
+            "agent": forms.Select(attrs={"class": INPUT_CLASS}),
             "operation_type": forms.Select(attrs={"class": INPUT_CLASS}),
             "zone": forms.Select(attrs={"class": INPUT_CLASS}),
             "max_price": forms.NumberInput(attrs={
@@ -56,7 +59,7 @@ class OrderForm(forms.ModelForm):
             }),
         }
 
-    def __init__(self, *args, buyer_obj=None, **kwargs):
+    def __init__(self, *args, buyer_obj=None, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         buyers = Contact.objects.filter(contact_type="buyer").order_by(
             "name", "last_name"
@@ -82,6 +85,14 @@ class OrderForm(forms.ModelForm):
 
         if buyer_obj is not None:
             self.fields.pop("buyer")
+
+        if can_manage_assignments(user):
+            self.fields["agent"].queryset = assignable_agents(
+                self.instance.agent if self.instance.pk else None
+            )
+            self.fields["agent"].empty_label = "Selecciona un responsable"
+        else:
+            self.fields.pop("agent")
 
 
 class OrderCommentForm(forms.ModelForm):

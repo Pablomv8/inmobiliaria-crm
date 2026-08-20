@@ -1,5 +1,6 @@
 from django import forms
 from .models import News, NewsComment
+from users.permissions import assignable_agents, can_manage_assignments
 
 INPUT_CLASS = """
 w-full
@@ -25,16 +26,25 @@ TEXTAREA_CLASS = INPUT_CLASS + " resize-none"
 
 class NewsForm(forms.ModelForm):
 
-    def __init__(self, *args, property_obj=None, **kwargs):
+    def __init__(self, *args, property_obj=None, user=None, **kwargs):
         super().__init__(*args, **kwargs)
 
         if property_obj is not None:
             self.fields.pop("related_property")
 
+        if can_manage_assignments(user):
+            self.fields["agent"].queryset = assignable_agents(
+                self.instance.agent if self.instance.pk else None
+            )
+            self.fields["agent"].empty_label = "Selecciona un responsable"
+        else:
+            self.fields.pop("agent")
+
     class Meta:
         model = News
         fields = [
             "related_property",
+            "agent",
             "motivation",
             "client_price",
             "estimated_price",
@@ -51,6 +61,7 @@ class NewsForm(forms.ModelForm):
             "related_property": forms.Select(attrs={
                 "class": INPUT_CLASS,
             }),
+            "agent": forms.Select(attrs={"class": INPUT_CLASS}),
             "motivation": forms.Select(attrs={
                 "class": INPUT_CLASS,
             }),

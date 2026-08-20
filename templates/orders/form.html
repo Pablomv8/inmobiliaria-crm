@@ -46,12 +46,21 @@
                     </div>
                 </div>
             {% endif %}
-            <div class="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-900">
-                <i class="fa-solid fa-user-check mr-2 text-emerald-700"></i>
-                <span class="font-semibold">Agente del pedido:</span>
-                {% if order and order.agent %}{{ order.agent.get_full_name|default:order.agent.username }}{% else %}{{ request.user.get_full_name|default:request.user.username }}{% endif %}
-                {% if not order %}<span class="ml-1 text-emerald-700">(se asignará al guardar)</span>{% endif %}
-            </div>
+            {% if form.agent %}
+                <div class="mt-5">
+                    <label for="{{ form.agent.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Agente asignado</label>
+                    {{ form.agent }}
+                    {% if form.agent.errors %}<p class="mt-1 text-sm text-red-600">{{ form.agent.errors.0 }}</p>{% endif %}
+                    <p class="mt-2 text-xs text-gray-500">Como manager o administrador puedes asignar el pedido a cualquier agente activo.</p>
+                </div>
+            {% else %}
+                <div class="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-900">
+                    <i class="fa-solid fa-user-check mr-2 text-emerald-700"></i>
+                    <span class="font-semibold">Agente del pedido:</span>
+                    {% if order and order.agent %}{{ order.agent.get_full_name|default:order.agent.username }}{% else %}{{ request.user.get_full_name|default:request.user.username }}{% endif %}
+                    {% if not order %}<span class="ml-1 text-emerald-700">(se asignará al guardar)</span>{% endif %}
+                </div>
+            {% endif %}
         </section>
 
         <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">

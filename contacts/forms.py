@@ -1,6 +1,7 @@
 from django import forms
 from .models import Contact, Property
 from django_select2.forms import Select2MultipleWidget
+from users.permissions import assignable_agents
 
 INPUT_CLASS = """
 w-full
@@ -64,6 +65,16 @@ class ContactForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        current_agent = (
+            self.instance.assigned_agent
+            if self.instance and self.instance.pk
+            else None
+        )
+        self.fields["assigned_agent"].queryset = assignable_agents(
+            current_agent
+        )
+        self.fields["assigned_agent"].empty_label = "Sin asignar"
 
         if self.instance and self.instance.pk and self.instance.phone:
 

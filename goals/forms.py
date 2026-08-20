@@ -59,7 +59,7 @@ class GoalForm(forms.ModelForm):
         User = get_user_model()
         self.fields["assignees"].queryset = User.objects.filter(
             is_active=True,
-            role="agent",
+            role__in=["agent", "manager", "admin"],
         ).order_by("first_name", "last_name", "username")
         self.fields["assignees"].required = False
         if not self.is_bound and not self.instance.pk:

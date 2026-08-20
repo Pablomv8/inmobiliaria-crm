@@ -157,6 +157,28 @@ class ContactRelatedWorkflowTests(TestCase):
         self.assertContains(response, contact.name)
         self.assertContains(response, "Sin asignar")
 
+    def test_administrator_can_assign_a_contact_to_themself(self):
+        administrator = get_user_model().objects.create_user(
+            username="contact-administrator",
+            password="test-password",
+            role="admin",
+        )
+        contact = Contact.objects.create(
+            name="Contacto del administrador",
+            phone="600555334",
+            contact_type="owner",
+        )
+        self.client.force_login(administrator)
+
+        response = self.client.post(
+            reverse("contact_assign_agent", args=[contact.pk]),
+            {"agent_id": administrator.pk},
+        )
+
+        contact.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(contact.assigned_agent, administrator)
+
     def test_agent_sees_all_contacts_and_can_filter_by_responsible(self):
         other_agent = get_user_model().objects.create_user(
             username="contact-other-agent",

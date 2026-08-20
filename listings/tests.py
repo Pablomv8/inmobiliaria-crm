@@ -17,6 +17,15 @@ class ListingFollowUpTests(TestCase):
             username="listing-agent",
             password="test-password",
         )
+        self.new_agent = get_user_model().objects.create_user(
+            username="listing-new-agent",
+            password="test-password",
+        )
+        self.manager = get_user_model().objects.create_user(
+            username="listing-manager",
+            password="test-password",
+            role="manager",
+        )
         self.property = Property.objects.create(
             street="Calle Encargo",
             number="20",
@@ -43,6 +52,36 @@ class ListingFollowUpTests(TestCase):
             agent=self.agent,
         )
         self.client.force_login(self.agent)
+
+    def test_manager_can_reassign_listing(self):
+        self.client.force_login(self.manager)
+
+        response = self.client.post(
+            reverse("listing_update", args=[self.listing.pk]),
+            {
+                "owner": self.owner.pk,
+                "agent": self.new_agent.pk,
+                "agreed_price": "245000",
+                "start_date": "2026-08-01",
+                "end_date": "2027-02-01",
+                "commission_amount": "7200",
+                "is_exclusive": "on",
+            },
+        )
+
+        self.listing.refresh_from_db()
+        self.assertRedirects(
+            response,
+            reverse("listing_detail", args=[self.listing.pk]),
+        )
+        self.assertEqual(self.listing.agent, self.new_agent)
+
+    def test_agent_cannot_open_listing_reassignment_form(self):
+        response = self.client.get(
+            reverse("listing_update", args=[self.listing.pk])
+        )
+
+        self.assertEqual(response.status_code, 403)
 
     def test_add_comment_to_listing(self):
         response = self.client.post(

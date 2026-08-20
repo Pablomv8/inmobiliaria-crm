@@ -34,6 +34,9 @@
             <div class="flex flex-wrap items-center gap-2">
                 <span class="px-3 py-2 rounded-full bg-green-100 text-green-700 text-sm">{{ listing.get_status_display }}</span>
                 <span class="px-3 py-2 rounded-full bg-violet-50 text-violet-700 text-sm">{{ listing.get_workflow_status_display }}</span>
+                {% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" %}
+                    <a href="{% url 'listing_update' listing.id %}" class="px-4 py-2 rounded-xl border border-gray-300 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-50">✏️ Editar y reasignar</a>
+                {% endif %}
                 {% if listing.owner %}
                     <a href="{% url 'create_listing_call' listing.id %}"
                        class="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm hover:bg-black">📞 Programar llamada</a>

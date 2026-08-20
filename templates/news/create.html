@@ -47,6 +47,15 @@
                 </div>
             {% endif %}
 
+            {% if form.agent %}
+                <div>
+                    <label for="{{ form.agent.id_for_label }}" class="block mb-2 text-sm font-medium text-gray-700">Agente asignado</label>
+                    {{ form.agent }}
+                    {% if form.agent.errors %}<p class="text-sm text-red-600 mt-1">{{ form.agent.errors.0 }}</p>{% endif %}
+                    <p class="mt-2 text-xs text-gray-500">La noticia y sus métricas pasarán a la cartera del agente seleccionado.</p>
+                </div>
+            {% endif %}
+
             <!-- Motivación -->
             <div>
                 <label class="block mb-2 text-sm font-medium text-gray-700">

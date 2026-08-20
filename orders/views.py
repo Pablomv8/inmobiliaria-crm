@@ -89,12 +89,13 @@ def order_create(request, buyer_id=None):
             contact_type="buyer",
         )
 
-    form = OrderForm(request.POST or None, buyer_obj=buyer)
+    form = OrderForm(request.POST or None, buyer_obj=buyer, user=request.user)
     if request.method == "POST" and form.is_valid():
         order = form.save(commit=False)
         if buyer is not None:
             order.buyer = buyer
-        order.agent = request.user
+        if "agent" not in form.fields:
+            order.agent = request.user
         order.save()
         return redirect("order_detail", pk=order.pk)
 
@@ -177,7 +178,7 @@ def order_add_comment(request, pk):
 @login_required
 def order_update(request, pk):
     order = get_object_or_404(Order, pk=pk)
-    form = OrderForm(request.POST or None, instance=order)
+    form = OrderForm(request.POST or None, instance=order, user=request.user)
 
     if request.method == "POST" and form.is_valid():
         form.save()

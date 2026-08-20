@@ -2,6 +2,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.http import JsonResponse
 from django.urls import reverse
 from django.db import transaction
+from django.core.exceptions import PermissionDenied
 
 from .models import Appointment, Call, CounterOffer, ProposalAppointment
 from .forms import (
@@ -10,6 +11,7 @@ from .forms import (
     AppointmentResultForm,
     FollowUpDecisionForm,
     CallForm,
+    CallEditForm,
     CallCommentForm,
     CounterOfferForm,
     ProposalAppointmentForm,
@@ -29,6 +31,8 @@ from collections import defaultdict
 from datetime import date, timedelta
 from itertools import groupby
 from users.models import User
+from users.forms import AgentReassignmentForm
+from users.permissions import can_manage_assignments
 from orders.models import Order
 from tasks.models import Task
 from tasks.scheduling import (
@@ -441,6 +445,7 @@ def appointment_update(request, pk):
     form = AppointmentEditForm(
         request.POST or None,
         instance=appointment,
+        can_reassign=user_can_manage_all(request.user),
     )
 
     if request.method == "POST" and form.is_valid():
@@ -460,6 +465,7 @@ def appointment_update(request, pk):
         {
             "appointment": appointment,
             "form": form,
+            "can_reassign": user_can_manage_all(request.user),
         },
     )
 
@@ -805,6 +811,45 @@ def proposal_appointment_detail(request, pk):
     )
 
 
+@login_required
+def proposal_reassign(request, pk):
+    if not can_manage_assignments(request.user):
+        raise PermissionDenied
+
+    proposal = get_object_or_404(
+        ProposalAppointment.objects.select_related(
+            "buyer",
+            "listing__property",
+            "agent",
+        ),
+        pk=pk,
+    )
+    form = AgentReassignmentForm(
+        request.POST or None,
+        current_agent=proposal.agent,
+    )
+    if request.method == "POST" and form.is_valid():
+        proposal.agent = form.cleaned_data["agent"]
+        proposal.save(update_fields=["agent"])
+        messages.success(request, "La propuesta se ha reasignado correctamente.")
+        return redirect("proposal_appointment_detail", pk=proposal.pk)
+
+    return render(
+        request,
+        "users/reassign_agent.html",
+        {
+            "form": form,
+            "object_type": "propuesta",
+            "object_label": (
+                f"{proposal.buyer} · "
+                f"{proposal.listing.property.full_address}"
+            ),
+            "return_url": reverse(
+                "proposal_appointment_detail",
+                args=[proposal.pk],
+            ),
+        },
+    )
 @login_required
 @require_POST
 def add_proposal_comment(request, pk):
@@ -1161,6 +1206,27 @@ def call_detail(request, pk):
         }
     )
 
+
+@login_required
+def call_update(request, pk):
+    call = get_object_or_404(get_user_calls(request.user), pk=pk)
+    form = CallEditForm(
+        request.POST or None,
+        instance=call,
+        can_reassign=user_can_manage_all(request.user),
+    )
+    if request.method == "POST" and form.is_valid():
+        call = form.save()
+        messages.success(request, "La llamada se ha actualizado correctamente.")
+        if can_open_calendar_item(request.user, call.agent):
+            return redirect("call_detail", pk=call.pk)
+        return redirect(f"{reverse('calendar')}?agents={call.agent_id}")
+
+    return render(
+        request,
+        "calendar_app/call_form.html",
+        {"call": call, "form": form},
+    )
 
 @login_required
 @require_POST

@@ -39,6 +39,11 @@ urlpatterns = [
         name="call_detail"
     ),
     path(
+        "calls/<int:pk>/edit/",
+        views.call_update,
+        name="call_update",
+    ),
+    path(
         "calls/<int:pk>/comments/",
         views.add_call_comment,
         name="call_add_comment",
@@ -88,6 +93,11 @@ urlpatterns = [
         "proposals/<int:pk>/",
         views.proposal_appointment_detail,
         name="proposal_appointment_detail",
+    ),
+    path(
+        "proposals/<int:pk>/reassign/",
+        views.proposal_reassign,
+        name="proposal_reassign",
     ),
     path(
         "proposals/<int:pk>/comments/add/",

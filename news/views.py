@@ -83,6 +83,7 @@ def news_create(request, property_id=None):
     form = NewsForm(
         request.POST or None,
         property_obj=property_obj,
+        user=request.user,
     )
 
     if request.method == "POST" and form.is_valid():
@@ -91,7 +92,8 @@ def news_create(request, property_id=None):
         if property_obj is not None:
             news.related_property = property_obj
 
-        news.agent = request.user
+        if "agent" not in form.fields:
+            news.agent = request.user
         news.save()
 
         return redirect("news_detail", pk=news.pk)
@@ -111,7 +113,7 @@ def news_create(request, property_id=None):
 @login_required
 def news_update(request, pk):
     news = get_object_or_404(News, pk=pk)
-    form = NewsForm(request.POST or None, instance=news)
+    form = NewsForm(request.POST or None, instance=news, user=request.user)
 
     if request.method == "POST" and form.is_valid():
         form.save()

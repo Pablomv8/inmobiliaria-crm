@@ -73,6 +73,23 @@ class GoalProgressTests(GoalTestMixin, TestCase):
 
         self.assertEqual(calculate_progress(self.goal), 1)
 
+    def test_progress_counts_records_assigned_to_an_administrator(self):
+        administrator = User.objects.create_user(
+            username="admin-progress",
+            password="test-pass-123",
+            role="admin",
+        )
+        self.goal.assignees.set([administrator])
+        News.objects.create(
+            related_property=self.property,
+            agent=administrator,
+            motivation="sale",
+            client_price=Decimal("220000"),
+            estimated_price=Decimal("215000"),
+        )
+
+        self.assertEqual(calculate_progress(self.goal), 1)
+
     def test_cancelled_sale_appointments_do_not_count(self):
         contact = Contact.objects.create(
             name="Cliente",
@@ -143,6 +160,22 @@ class GoalFormTests(GoalTestMixin, TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertIn("exactamente un agente", form.errors["assignees"][0])
+
+    def test_active_managers_are_available_as_goal_assignees(self):
+        form = GoalForm()
+
+        self.assertIn(self.manager, form.fields["assignees"].queryset)
+
+    def test_active_administrators_are_available_as_goal_assignees(self):
+        administrator = User.objects.create_user(
+            username="admin_goals",
+            password="test-pass-123",
+            role="admin",
+        )
+
+        form = GoalForm()
+
+        self.assertIn(administrator, form.fields["assignees"].queryset)
 
     def test_team_goal_requires_at_least_two_agents(self):
         data = {
@@ -216,6 +249,53 @@ class GoalPermissionTests(GoalTestMixin, TestCase):
         created = Goal.objects.get(name="Objetivo del equipo")
         self.assertRedirects(response, reverse("goal_detail", args=[created.pk]))
         self.assertEqual(created.assignees.count(), 2)
+
+    def test_manager_can_assign_an_individual_goal_to_themself(self):
+        self.client.force_login(self.manager)
+
+        response = self.client.post(
+            reverse("goal_create"),
+            {
+                "name": "Objetivo propio del manager",
+                "description": "",
+                "scope": "individual",
+                "metric": "contacts",
+                "target_count": 3,
+                "start_date": self.today,
+                "end_date": self.today + timedelta(days=10),
+                "assignees": [self.manager.pk],
+            },
+        )
+
+        created = Goal.objects.get(name="Objetivo propio del manager")
+        self.assertRedirects(response, reverse("goal_detail", args=[created.pk]))
+        self.assertEqual(list(created.assignees.all()), [self.manager])
+
+    def test_administrator_can_assign_an_individual_goal_to_themself(self):
+        administrator = User.objects.create_user(
+            username="admin-own-goal",
+            password="test-pass-123",
+            role="admin",
+        )
+        self.client.force_login(administrator)
+
+        response = self.client.post(
+            reverse("goal_create"),
+            {
+                "name": "Objetivo propio del administrador",
+                "description": "",
+                "scope": "individual",
+                "metric": "contacts",
+                "target_count": 2,
+                "start_date": self.today,
+                "end_date": self.today + timedelta(days=10),
+                "assignees": [administrator.pk],
+            },
+        )
+
+        created = Goal.objects.get(name="Objetivo propio del administrador")
+        self.assertRedirects(response, reverse("goal_detail", args=[created.pk]))
+        self.assertEqual(list(created.assignees.all()), [administrator])
 
 
 class SeedGoalsCommandTests(GoalTestMixin, TestCase):

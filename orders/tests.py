@@ -18,6 +18,11 @@ class OrderCrudTests(TestCase):
             username="buyer-contact-agent",
             password="test-password",
         )
+        self.manager = get_user_model().objects.create_user(
+            username="orders-manager",
+            password="test-password",
+            role="manager",
+        )
         self.buyer = Contact.objects.create(
             name="Compradora",
             phone="600000001",
@@ -169,6 +174,42 @@ class OrderCrudTests(TestCase):
         response = self.client.post(reverse("order_delete", args=[order.pk]))
         self.assertRedirects(response, reverse("order_list"))
         self.assertFalse(Order.objects.exists())
+
+    def test_manager_can_reassign_order(self):
+        order = Order.objects.create(
+            buyer=self.buyer,
+            agent=self.user,
+            operation_type="sale",
+            max_price="200000",
+            payment_type="cash",
+            property_type="local",
+        )
+        self.client.force_login(self.manager)
+        data = self.order_data()
+        data["agent"] = self.contact_agent.pk
+
+        response = self.client.post(reverse("order_update", args=[order.pk]), data)
+
+        order.refresh_from_db()
+        self.assertRedirects(response, reverse("order_detail", args=[order.pk]))
+        self.assertEqual(order.agent, self.contact_agent)
+
+    def test_agent_cannot_reassign_order_through_post_data(self):
+        order = Order.objects.create(
+            buyer=self.buyer,
+            agent=self.user,
+            operation_type="sale",
+            max_price="200000",
+            payment_type="cash",
+            property_type="local",
+        )
+        data = self.order_data()
+        data["agent"] = self.contact_agent.pk
+
+        self.client.post(reverse("order_update", args=[order.pk]), data)
+
+        order.refresh_from_db()
+        self.assertEqual(order.agent, self.user)
 
     def test_add_comment_to_order(self):
         order = Order.objects.create(

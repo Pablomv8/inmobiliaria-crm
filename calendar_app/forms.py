@@ -15,6 +15,7 @@ from .models import (
     ProposalAppointment,
     ProposalComment,
 )
+from users.permissions import assignable_agents
 
 
 class CallCommentForm(forms.ModelForm):
@@ -183,15 +184,9 @@ class AppointmentEditForm(forms.ModelForm):
             }),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, can_reassign=False, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["agent"].queryset = (
-            get_user_model().objects.filter(is_active=True).order_by(
-                "first_name",
-                "last_name",
-                "username",
-            )
-        )
+        self.fields["agent"].queryset = assignable_agents(self.instance.agent)
         self.fields["agent"].empty_label = None
 
     def clean(self):
@@ -395,6 +390,60 @@ class CallForm(forms.ModelForm):
                 "Ya existe una cita, llamada o tarea en esa hora."
             )
 
+        return cleaned_data
+
+
+class CallEditForm(forms.ModelForm):
+    class Meta:
+        model = Call
+        fields = ["agent", "date", "time", "notes"]
+        labels = {
+            "agent": "Agente asignado",
+            "date": "Fecha",
+            "time": "Hora",
+            "notes": "Notas",
+        }
+        widgets = {
+            "agent": forms.Select(attrs={
+                "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100",
+            }),
+            "date": forms.DateInput(attrs={
+                "type": "date",
+                "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100",
+            }),
+            "time": forms.TimeInput(attrs={
+                "type": "time",
+                "step": "1800",
+                "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100",
+            }),
+            "notes": forms.Textarea(attrs={
+                "rows": 4,
+                "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100",
+            }),
+        }
+
+    def __init__(self, *args, can_reassign=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["agent"].queryset = assignable_agents(self.instance.agent)
+        self.fields["agent"].empty_label = None
+
+    def clean(self):
+        cleaned_data = super().clean()
+        agent = cleaned_data.get("agent") or self.instance.agent
+        selected_date = cleaned_data.get("date")
+        selected_time = cleaned_data.get("time")
+        if (
+            self.instance.status == "pending"
+            and slot_has_conflict(
+                agent,
+                selected_date,
+                selected_time,
+                exclude_call_id=self.instance.pk,
+            )
+        ):
+            raise forms.ValidationError(
+                "El agente seleccionado ya tiene otra cita, llamada o tarea en esa hora."
+            )
         return cleaned_data
 
 

@@ -74,9 +74,10 @@ def goal_list(request):
         "can_manage_goals": can_manage_goals(request.user),
         "metric_choices": Goal.METRIC_CHOICES,
         "scope_choices": Goal.SCOPE_CHOICES,
-        "agents": User.objects.filter(is_active=True, role="agent").order_by(
-            "first_name", "last_name", "username"
-        ),
+        "agents": User.objects.filter(
+            is_active=True,
+            role__in=["agent", "manager", "admin"],
+        ).order_by("first_name", "last_name", "username"),
     }
     return render(request, "goals/list.html", context)
 

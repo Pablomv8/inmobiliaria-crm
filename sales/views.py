@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib import messages
 from django.db import transaction
+from django.core.exceptions import PermissionDenied
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -24,6 +25,8 @@ from activities.utils import log_activity
 
 from django.db.models import Q
 from users.models import User
+from users.forms import AgentReassignmentForm
+from users.permissions import can_manage_assignments
 from config.pagination import paginate
 from calendar_app.models import Appointment
 
@@ -406,6 +409,35 @@ def sale_detail(request, pk):
 
 
 @login_required
+def sale_reassign(request, pk):
+    if not can_manage_assignments(request.user):
+        raise PermissionDenied
+
+    sale = get_object_or_404(
+        Sale.objects.select_related("related_property", "buyer", "agent"),
+        pk=pk,
+    )
+    form = AgentReassignmentForm(
+        request.POST or None,
+        current_agent=sale.agent,
+    )
+    if request.method == "POST" and form.is_valid():
+        sale.agent = form.cleaned_data["agent"]
+        sale.save(update_fields=["agent"])
+        messages.success(request, "La venta se ha reasignado correctamente.")
+        return redirect("sale_detail", pk=sale.pk)
+
+    return render(
+        request,
+        "users/reassign_agent.html",
+        {
+            "form": form,
+            "object_type": "venta",
+            "object_label": f"{sale.related_property.full_address} · {sale.buyer}",
+            "return_url": reverse_lazy("sale_detail", args=[sale.pk]),
+        },
+    )
+@login_required
 def rental_contract_list(request):
     contracts = RentalContract.objects.select_related(
         "related_property",
@@ -491,8 +523,46 @@ def rental_contract_detail(request, pk):
         "sales/rental_contract_detail.html",
         {"contract": get_object_or_404(contracts, pk=pk)},
     )
-    
 
+
+@login_required
+def rental_contract_reassign(request, pk):
+    if not can_manage_assignments(request.user):
+        raise PermissionDenied
+
+    contract = get_object_or_404(
+        RentalContract.objects.select_related(
+            "related_property",
+            "tenant",
+            "agent",
+        ),
+        pk=pk,
+    )
+    form = AgentReassignmentForm(
+        request.POST or None,
+        current_agent=contract.agent,
+    )
+    if request.method == "POST" and form.is_valid():
+        contract.agent = form.cleaned_data["agent"]
+        contract.save(update_fields=["agent"])
+        messages.success(request, "El alquiler se ha reasignado correctamente.")
+        return redirect("rental_contract_detail", pk=contract.pk)
+
+    return render(
+        request,
+        "users/reassign_agent.html",
+        {
+            "form": form,
+            "object_type": "alquiler",
+            "object_label": (
+                f"{contract.related_property.full_address} · {contract.tenant}"
+            ),
+            "return_url": reverse_lazy(
+                "rental_contract_detail",
+                args=[contract.pk],
+            ),
+        },
+    )
 @require_POST
 @login_required
 def sale_update_status(request, pk):

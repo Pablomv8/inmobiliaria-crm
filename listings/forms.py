@@ -3,6 +3,7 @@ from django import forms
 from contacts.models import Contact
 
 from .models import Listing, ListingComment
+from users.permissions import assignable_agents, can_manage_assignments
 
 
 INPUT_CLASS = (
@@ -18,6 +19,7 @@ class ListingForm(forms.ModelForm):
         model = Listing
         fields = [
             "owner",
+            "agent",
             "agreed_price",
             "start_date",
             "end_date",
@@ -34,6 +36,7 @@ class ListingForm(forms.ModelForm):
         }
         widgets = {
             "owner": forms.Select(attrs={"class": INPUT_CLASS}),
+            "agent": forms.Select(attrs={"class": INPUT_CLASS}),
             "agreed_price": forms.NumberInput(attrs={
                 "class": INPUT_CLASS,
                 "min": "0.01",
@@ -59,7 +62,7 @@ class ListingForm(forms.ModelForm):
             }),
         }
 
-    def __init__(self, *args, property_obj, **kwargs):
+    def __init__(self, *args, property_obj, user=None, **kwargs):
         super().__init__(*args, **kwargs)
 
         owners = Contact.objects.filter(
@@ -77,6 +80,14 @@ class ListingForm(forms.ModelForm):
             "Este campo es obligatorio."
         )
         self.fields["commission_amount"].required = True
+
+        if can_manage_assignments(user):
+            self.fields["agent"].queryset = assignable_agents(
+                self.instance.agent if self.instance.pk else None
+            )
+            self.fields["agent"].empty_label = "Selecciona un responsable"
+        else:
+            self.fields.pop("agent")
 
         if not self.is_bound:
             self.fields["owner"].initial = owners.first()

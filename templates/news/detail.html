@@ -94,6 +94,13 @@
                                 </span>
                             </div>
 
+                            <div class="flex justify-between gap-4">
+                                <span class="text-gray-500">Agente asignado</span>
+                                <span class="text-right font-medium text-gray-800">
+                                    {% if news.agent %}{{ news.agent.get_full_name|default:news.agent.username }}{% else %}Sin asignar{% endif %}
+                                </span>
+                            </div>
+
                             <div class="flex justify-between">
                                 <span class="text-gray-500">Fecha de creación</span>
                                 <span class="font-medium text-gray-800">

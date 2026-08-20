@@ -28,6 +28,9 @@
         </div>
 
         <div class="flex flex-wrap gap-3 mt-8 pt-6 border-t border-gray-200">
+            {% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" %}
+                <a href="{% url 'proposal_reassign' proposal.id %}" class="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm">Reasignar agente</a>
+            {% endif %}
             <a href="{% url 'order_detail' proposal.order.id %}" class="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm">Ver pedido</a>
             <a href="{% url 'listing_detail' proposal.listing.id %}" class="px-4 py-2 rounded-xl bg-blue-50 text-blue-700 text-sm">Ver encargo</a>
             <a href="{% url 'create_acceptance_appointment' proposal.id %}" class="px-4 py-2 rounded-xl bg-violet-600 text-white text-sm">Programar cita de aceptación</a>

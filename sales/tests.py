@@ -255,4 +255,94 @@ class ContractClosingFlowTests(TestCase):
         self.assertFalse(Sale.objects.exists())
         self.assertFalse(RentalContract.objects.exists())
 
+    def test_manager_can_reassign_a_sale_and_a_rental_contract(self):
+        manager = get_user_model().objects.create_user(
+            username="closing-manager",
+            password="test-password",
+            role="manager",
+        )
+        new_agent = get_user_model().objects.create_user(
+            username="closing-new-agent",
+            password="test-password",
+            role="agent",
+        )
+        sale_property, sale_listing, sale_order, sale_appointment = (
+            self.build_contract("sale")
+        )
+        sale = Sale.objects.create(
+            related_property=sale_property,
+            buyer=self.client_contact,
+            former_owner=self.owner,
+            agent=self.agent,
+            sale_price="247000",
+            listing=sale_listing,
+            order=sale_order,
+            source_contract_appointment=sale_appointment,
+            status="signed",
+        )
+        rental_property, rental_listing, rental_order, rental_appointment = (
+            self.build_contract("rent")
+        )
+        rental = RentalContract.objects.create(
+            related_property=rental_property,
+            listing=rental_listing,
+            order=rental_order,
+            tenant=self.client_contact,
+            owner=self.owner,
+            agent=self.agent,
+            source_contract_appointment=rental_appointment,
+            rent_price="1175",
+        )
+        self.client.force_login(manager)
+
+        sale_response = self.client.post(
+            reverse("sale_reassign", args=[sale.pk]),
+            {"agent": new_agent.pk},
+        )
+        rental_response = self.client.post(
+            reverse("rental_contract_reassign", args=[rental.pk]),
+            {"agent": new_agent.pk},
+        )
+
+        sale.refresh_from_db()
+        rental.refresh_from_db()
+        self.assertRedirects(
+            sale_response,
+            reverse("sale_detail", args=[sale.pk]),
+        )
+        self.assertRedirects(
+            rental_response,
+            reverse("rental_contract_detail", args=[rental.pk]),
+        )
+        self.assertEqual(sale.agent, new_agent)
+        self.assertEqual(rental.agent, new_agent)
+
+    def test_agent_cannot_use_the_sale_reassignment_endpoint(self):
+        property_obj = Property.objects.create(
+            street="Calle protegida",
+            number="3",
+            city="Madrid",
+            property_type="flat",
+        )
+        sale = Sale.objects.create(
+            related_property=property_obj,
+            buyer=self.client_contact,
+            agent=self.agent,
+            sale_price="180000",
+        )
+        other_agent = get_user_model().objects.create_user(
+            username="unauthorised-agent",
+            password="test-password",
+            role="agent",
+        )
+
+        response = self.client.post(
+            reverse("sale_reassign", args=[sale.pk]),
+            {"agent": other_agent.pk},
+        )
+
+        sale.refresh_from_db()
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(sale.agent, self.agent)
+
 # Create your tests here.

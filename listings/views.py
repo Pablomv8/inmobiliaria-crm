@@ -9,8 +9,10 @@ from calendar_app.models import Appointment
 from users.models import User
 from django.db.models import Q
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from .forms import ListingCommentForm, ListingForm
 from config.pagination import paginate
+from users.permissions import can_manage_assignments
 
 def get_user_listings(user):
 
@@ -201,6 +203,39 @@ def listing_detail(request, listing_id):
 
 
 @login_required
+def listing_update(request, listing_id):
+    if not can_manage_assignments(request.user):
+        raise PermissionDenied
+
+    listing = get_object_or_404(
+        Listing.objects.select_related("property", "owner", "agent"),
+        pk=listing_id,
+    )
+    form = ListingForm(
+        request.POST or None,
+        instance=listing,
+        property_obj=listing.property,
+        user=request.user,
+    )
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "El encargo se ha actualizado correctamente.")
+        return redirect("listing_detail", listing_id=listing.pk)
+
+    return render(
+        request,
+        "listings/form.html",
+        {
+            "form": form,
+            "listing": listing,
+            "property": listing.property,
+            "agent": listing.agent,
+            "has_owners": form.fields["owner"].queryset.exists(),
+        },
+    )
+
+
+@login_required
 @require_POST
 def listing_add_comment(request, listing_id):
     listing = get_object_or_404(
@@ -276,7 +311,11 @@ def create_listing_from_appointment(request, appointment_id):
     form = ListingForm(
         request.POST or None,
         property_obj=property_obj,
-        initial={"agreed_price": news.estimated_price},
+        user=request.user,
+        initial={
+            "agreed_price": news.estimated_price,
+            "agent": appointment.agent or request.user,
+        },
     )
 
     if request.method == "POST" and form.is_valid():
@@ -285,7 +324,8 @@ def create_listing_from_appointment(request, appointment_id):
         listing.listing_type = news.motivation
         listing.owner_price = news.client_price
         listing.agency_price = news.estimated_price
-        listing.agent = appointment.agent or request.user
+        if "agent" not in form.fields:
+            listing.agent = appointment.agent or request.user
         listing.source_appointment = appointment
         listing.status = "active"
         listing.price_diference = news.client_price - news.estimated_price

@@ -167,6 +167,7 @@ class AppointmentResultFlowTests(TestCase):
             reverse("create_listing", args=[self.appointment.pk]),
             {
                 "owner": self.contact.pk,
+                "agent": self.user.pk,
                 "agreed_price": "247500.00",
                 "start_date": "2026-08-11",
                 "end_date": "2027-02-11",
@@ -208,6 +209,11 @@ class AppointmentEditTests(TestCase):
             username="edit-appointment-new-agent",
             password="test-password",
             role="agent",
+        )
+        self.manager = user_model.objects.create_user(
+            username="edit-appointment-manager",
+            password="test-password",
+            role="manager",
         )
         self.property = Property.objects.create(
             street="Calle Edición",
@@ -304,6 +310,51 @@ class AppointmentEditTests(TestCase):
         )
         self.assertEqual(self.appointment.agent, self.agent)
         self.assertEqual(self.appointment.date, date(2026, 10, 5))
+
+    def test_manager_can_reassign_another_agents_appointment(self):
+        self.client.force_login(self.manager)
+
+        response = self.client.post(
+            reverse("appointment_update", args=[self.appointment.pk]),
+            {
+                "agent": self.new_agent.pk,
+                "date": "2026-10-06",
+                "time": "14:00",
+                "end_time": "15:00",
+                "notes": "Reasignada por dirección.",
+            },
+        )
+
+        self.appointment.refresh_from_db()
+        self.assertRedirects(
+            response,
+            reverse("appointment_detail", args=[self.appointment.pk]),
+        )
+        self.assertEqual(self.appointment.agent, self.new_agent)
+
+    def test_manager_can_reassign_another_agents_call(self):
+        call = Call.objects.create(
+            contact=self.contact,
+            agent=self.agent,
+            date=date(2026, 10, 7),
+            time=time(9, 0),
+            notes="Llamada inicial.",
+        )
+        self.client.force_login(self.manager)
+
+        response = self.client.post(
+            reverse("call_update", args=[call.pk]),
+            {
+                "agent": self.new_agent.pk,
+                "date": "2026-10-07",
+                "time": "10:00",
+                "notes": "Reasignada por dirección.",
+            },
+        )
+
+        call.refresh_from_db()
+        self.assertRedirects(response, reverse("call_detail", args=[call.pk]))
+        self.assertEqual(call.agent, self.new_agent)
 
     def test_an_agent_cannot_edit_another_agents_appointment(self):
         self.client.force_login(self.new_agent)
@@ -769,6 +820,44 @@ class SaleAppointmentFlowTests(TestCase):
 
         self.assertFalse(ProposalComment.objects.exists())
         self.assertContains(response, "El comentario no puede estar vacío.")
+
+    def test_manager_can_reassign_a_proposal(self):
+        proposal = self.create_registered_proposal()
+        manager = get_user_model().objects.create_user(
+            username="proposal-manager",
+            password="test-password",
+            role="manager",
+        )
+        new_agent = get_user_model().objects.create_user(
+            username="proposal-new-agent",
+            password="test-password",
+            role="agent",
+        )
+        self.client.force_login(manager)
+
+        response = self.client.post(
+            reverse("proposal_reassign", args=[proposal.pk]),
+            {"agent": new_agent.pk},
+        )
+
+        proposal.refresh_from_db()
+        self.assertRedirects(
+            response,
+            reverse("proposal_appointment_detail", args=[proposal.pk]),
+        )
+        self.assertEqual(proposal.agent, new_agent)
+
+    def test_agent_cannot_use_the_proposal_reassignment_endpoint(self):
+        proposal = self.create_registered_proposal()
+
+        response = self.client.post(
+            reverse("proposal_reassign", args=[proposal.pk]),
+            {"agent": self.contact_agent.pk},
+        )
+
+        proposal.refresh_from_db()
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(proposal.agent, self.agent)
 
     def test_declining_proposal_records_decision(self):
         _, appointment = self.create_sale_appointment()
@@ -1608,6 +1697,7 @@ class AppointmentResultFlowAdditionalTests(TestCase):
             reverse("create_listing", args=[self.appointment.pk]),
             {
                 "owner": self.contact.pk,
+                "agent": self.user.pk,
                 "agreed_price": "247500.00",
                 "start_date": "2026-08-11",
                 "end_date": "2027-02-11",

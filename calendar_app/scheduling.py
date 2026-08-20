@@ -14,7 +14,12 @@ def intervals_overlap(first_start, first_end, second_start, second_end):
     return first_start < second_end and second_start < first_end
 
 
-def occupied_intervals(agent, selected_date, exclude_appointment_id=None):
+def occupied_intervals(
+    agent,
+    selected_date,
+    exclude_appointment_id=None,
+    exclude_call_id=None,
+):
     from tasks.models import Task
     from tasks.scheduling import ACTIVE_TASK_STATUSES, task_occurrences
 
@@ -27,7 +32,7 @@ def occupied_intervals(agent, selected_date, exclude_appointment_id=None):
         agent=agent,
         date=selected_date,
         status="pending",
-    )
+    ).exclude(pk=exclude_call_id)
     tasks = Task.objects.filter(
         assigned_to=agent,
         status__in=ACTIVE_TASK_STATUSES,
@@ -84,7 +89,13 @@ def schedule_has_conflict(
     )
 
 
-def slot_has_conflict(agent, selected_date, start_time, minutes=30):
+def slot_has_conflict(
+    agent,
+    selected_date,
+    start_time,
+    minutes=30,
+    exclude_call_id=None,
+):
     if not all([agent, selected_date, start_time]):
         return False
 
@@ -92,7 +103,11 @@ def slot_has_conflict(agent, selected_date, start_time, minutes=30):
     end = start + timedelta(minutes=minutes)
     return any(
         intervals_overlap(start, end, item["start"], item["end"])
-        for item in occupied_intervals(agent, selected_date)
+        for item in occupied_intervals(
+            agent,
+            selected_date,
+            exclude_call_id=exclude_call_id,
+        )
     )
 
 
