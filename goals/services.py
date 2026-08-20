@@ -5,6 +5,7 @@ from news.models import News
 from orders.models import Order
 from properties.models import Property
 from sales.models import RentalContract, Sale
+from django.db.models import Q
 
 
 def _metric_queryset(goal, agent_ids):
@@ -51,9 +52,14 @@ def _metric_queryset(goal, agent_ids):
         "tenant_properties",
     }:
         queryset = Property.objects.filter(
-            contacts__contact_type="owner",
-            contacts__assigned_agent_id__in=agent_ids,
             created_at__date__range=period,
+        ).filter(
+            Q(created_by_id__in=agent_ids)
+            | Q(
+                created_by__isnull=True,
+                contacts__contact_type="owner",
+                contacts__assigned_agent_id__in=agent_ids,
+            )
         )
         if goal.metric == "vacant_properties":
             queryset = queryset.filter(occupied_by="vacant")

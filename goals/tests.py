@@ -90,6 +90,25 @@ class GoalProgressTests(GoalTestMixin, TestCase):
 
         self.assertEqual(calculate_progress(self.goal), 1)
 
+    def test_property_progress_counts_the_administrator_who_created_it(self):
+        administrator = User.objects.create_user(
+            username="admin-property-progress",
+            password="test-pass-123",
+            role="admin",
+        )
+        self.goal.metric = "properties"
+        self.goal.save(update_fields=["metric"])
+        self.goal.assignees.set([administrator])
+        Property.objects.create(
+            street="Calle creada por administración",
+            number="8",
+            city="Madrid",
+            property_type="flat",
+            created_by=administrator,
+        )
+
+        self.assertEqual(calculate_progress(self.goal), 1)
+
     def test_cancelled_sale_appointments_do_not_count(self):
         contact = Contact.objects.create(
             name="Cliente",

@@ -143,7 +143,10 @@ def property_create(request):
 
         if form.is_valid():
 
-            form.save()
+            property_obj = form.save(commit=False)
+            property_obj.created_by = request.user
+            property_obj.save()
+            form.save_m2m()
 
             return redirect('properties')
 

@@ -120,6 +120,7 @@ class PropertyFormViewTests(TestCase):
         self.assertEqual(created_property.zone, self.second_zone)
         self.assertEqual(created_property.occupied_by, "vacant")
         self.assertEqual(created_property.status, "vacant")
+        self.assertEqual(created_property.created_by, self.user)
 
     def test_edit_form_changes_property_zone(self):
         response = self.client.post(

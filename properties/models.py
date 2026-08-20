@@ -1,6 +1,7 @@
 from django.db import models
 from django.db.models import Max
 from django.utils import timezone
+from django.conf import settings
 
 from datetime import timedelta
 
@@ -98,6 +99,15 @@ class Property(models.Model):
     description = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_properties",
+        verbose_name="Creado por",
+    )
 
 
     status = models.CharField(
