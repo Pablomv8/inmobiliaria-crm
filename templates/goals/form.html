@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mx-auto max-w-5xl space-y-6">
+    <div>
+        <a href="{% if object %}{% url 'goal_detail' object.pk %}{% else %}{% url 'goal_list' %}{% endif %}" class="text-sm font-medium text-gray-500 hover:text-gray-900">← Volver a objetivos</a>
+        <h1 class="mt-3 text-3xl font-bold text-gray-900">{% if object %}Editar objetivo{% else %}Nuevo objetivo{% endif %}</h1>
+        <p class="mt-2 text-sm text-gray-500">Define qué debe conseguirse, quién participa y el periodo que se tendrá en cuenta.</p>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{{ form.non_field_errors }}</div>{% endif %}
+
+        <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+            <div class="mb-6">
+                <p class="text-sm font-semibold text-indigo-700">1. Definición</p>
+                <h2 class="mt-1 text-xl font-bold text-gray-900">¿Qué se quiere conseguir?</h2>
+            </div>
+            <div class="grid gap-5 md:grid-cols-2">
+                <div class="md:col-span-2">
+                    <label for="{{ form.name.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Nombre del objetivo</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="md:col-span-2">
+                    <label for="{{ form.description.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Descripción <span class="font-normal text-gray-400">(opcional)</span></label>
+                    {{ form.description }}
+                    {% if form.description.errors %}<p class="mt-1 text-sm text-red-600">{{ form.description.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.metric.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Elemento que se debe conseguir</label>
+                    {{ form.metric }}
+                    {% if form.metric.errors %}<p class="mt-1 text-sm text-red-600">{{ form.metric.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.target_count.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Cantidad objetivo</label>
+                    {{ form.target_count }}
+                    {% if form.target_count.errors %}<p class="mt-1 text-sm text-red-600">{{ form.target_count.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+            <div class="mb-6">
+                <p class="text-sm font-semibold text-indigo-700">2. Participantes</p>
+                <h2 class="mt-1 text-xl font-bold text-gray-900">¿Es individual o grupal?</h2>
+            </div>
+            <div class="grid gap-4 md:grid-cols-2">
+                {% for choice in form.scope %}
+                    <label class="goal-scope-card flex cursor-pointer gap-4 rounded-2xl border border-gray-200 p-5 transition hover:border-indigo-300 hover:bg-indigo-50/40">
+                        <span class="mt-1">{{ choice.tag }}</span>
+                        <span>
+                            <span class="block font-bold text-gray-900">{{ choice.choice_label }}</span>
+                            <span class="mt-1 block text-sm text-gray-500">{% if choice.data.value == "individual" %}El progreso corresponde a un único agente.{% else %}El equipo comparte una misma meta y suma sus resultados.{% endif %}</span>
+                        </span>
+                    </label>
+                {% endfor %}
+            </div>
+            {% if form.scope.errors %}<p class="mt-2 text-sm text-red-600">{{ form.scope.errors.0 }}</p>{% endif %}
+
+            <div class="mt-7">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <label class="block text-sm font-semibold text-gray-700">Agentes participantes</label>
+                    <button id="select-all-agents" type="button" class="hidden text-left text-sm font-semibold text-indigo-700 hover:text-indigo-900">Seleccionar todos</button>
+                </div>
+                <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {% for choice in form.assignees %}
+                        <label class="agent-choice flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 transition hover:border-indigo-300 hover:bg-indigo-50/40">
+                            {{ choice.tag }}
+                            <span class="text-sm font-semibold text-gray-700">{{ choice.choice_label }}</span>
+                        </label>
+                    {% empty %}
+                        <p class="text-sm text-gray-500">No hay agentes activos disponibles.</p>
+                    {% endfor %}
+                </div>
+                {% if form.assignees.errors %}<p class="mt-2 text-sm text-red-600">{{ form.assignees.errors.0 }}</p>{% endif %}
+                <p id="assignee-help" class="mt-3 text-xs text-gray-500">Selecciona exactamente un agente.</p>
+            </div>
+        </section>
+
+        <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+            <div class="mb-6">
+                <p class="text-sm font-semibold text-indigo-700">3. Periodo</p>
+                <h2 class="mt-1 text-xl font-bold text-gray-900">¿Cuándo debe cumplirse?</h2>
+            </div>
+            <div class="grid gap-5 md:grid-cols-2">
+                <div>
+                    <label for="{{ form.start_date.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Fecha de inicio</label>
+                    {{ form.start_date }}
+                    {% if form.start_date.errors %}<p class="mt-1 text-sm text-red-600">{{ form.start_date.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.end_date.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Fecha de finalización</label>
+                    {{ form.end_date }}
+                    {% if form.end_date.errors %}<p class="mt-1 text-sm text-red-600">{{ form.end_date.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+            <div class="mt-5 rounded-2xl bg-gray-50 p-4 text-sm text-gray-600">
+                <i class="fa-solid fa-circle-info mr-2 text-indigo-600"></i>El avance se recalcula automáticamente con los registros del periodo. Las citas canceladas no cuentan.
+            </div>
+        </section>
+
+        <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <a href="{% if object %}{% url 'goal_detail' object.pk %}{% else %}{% url 'goal_list' %}{% endif %}" class="rounded-xl border border-gray-300 px-5 py-3 text-center font-semibold text-gray-700 hover:bg-gray-50">Cancelar</a>
+            <button type="submit" class="rounded-xl bg-gray-900 px-6 py-3 font-semibold text-white hover:bg-black">Guardar objetivo</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const scopeInputs = document.querySelectorAll('input[name="scope"]');
+    const assigneeInputs = document.querySelectorAll('input[name="assignees"]');
+    const selectAllButton = document.getElementById('select-all-agents');
+    const assigneeHelp = document.getElementById('assignee-help');
+
+    function updateGoalScope() {
+        const selectedScope = document.querySelector('input[name="scope"]:checked')?.value || 'individual';
+        const isTeam = selectedScope === 'team';
+        selectAllButton.classList.toggle('hidden', !isTeam);
+        assigneeHelp.textContent = isTeam ? 'Selecciona al menos dos agentes que compartirán el progreso.' : 'Selecciona exactamente un agente.';
+        if (!isTeam) {
+            let firstChecked = null;
+            assigneeInputs.forEach(input => {
+                if (input.checked && firstChecked) input.checked = false;
+                else if (input.checked) firstChecked = input;
+            });
+        }
+        document.querySelectorAll('.goal-scope-card').forEach(card => {
+            const input = card.querySelector('input');
+            card.classList.toggle('border-indigo-500', input.checked);
+            card.classList.toggle('bg-indigo-50', input.checked);
+        });
+        updateAgentCards();
+    }
+
+    function updateAgentCards() {
+        document.querySelectorAll('.agent-choice').forEach(card => {
+            const input = card.querySelector('input');
+            card.classList.toggle('border-indigo-500', input.checked);
+            card.classList.toggle('bg-indigo-50', input.checked);
+        });
+    }
+
+    scopeInputs.forEach(input => input.addEventListener('change', updateGoalScope));
+    assigneeInputs.forEach(input => input.addEventListener('change', event => {
+        const isIndividual = document.querySelector('input[name="scope"]:checked')?.value === 'individual';
+        if (isIndividual && event.target.checked) {
+            assigneeInputs.forEach(input => { if (input !== event.target) input.checked = false; });
+        }
+        updateAgentCards();
+    }));
+    selectAllButton.addEventListener('click', () => {
+        assigneeInputs.forEach(input => { input.checked = true; });
+        updateAgentCards();
+    });
+    updateGoalScope();
+</script>
+{% endblock %}

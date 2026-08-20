@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mx-auto max-w-xl">
+    <div class="rounded-3xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+        <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-700"><i class="fa-solid fa-trash"></i></span>
+        <h1 class="mt-5 text-2xl font-bold text-gray-900">Eliminar objetivo</h1>
+        <p class="mt-3 text-sm leading-6 text-gray-600">¿Seguro que quieres eliminar <strong>{{ goal.name }}</strong>? Esta acción no elimina ninguno de los elementos contabilizados, pero el objetivo dejará de estar disponible.</p>
+        <form method="post" class="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-center">
+            {% csrf_token %}
+            <a href="{% url 'goal_detail' goal.pk %}" class="rounded-xl border border-gray-300 px-5 py-3 font-semibold text-gray-700 hover:bg-gray-50">Cancelar</a>
+            <button type="submit" class="rounded-xl bg-red-700 px-5 py-3 font-semibold text-white hover:bg-red-800">Sí, eliminar objetivo</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

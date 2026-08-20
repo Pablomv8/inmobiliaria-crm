@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mx-auto max-w-6xl space-y-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <a href="{% url 'goal_list' %}" class="text-sm font-medium text-gray-500 hover:text-gray-900">← Volver a objetivos</a>
+            <div class="mt-3 flex flex-wrap items-center gap-2">
+                <span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">{{ goal.get_metric_display }}</span>
+                <span class="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-700">{{ goal.get_scope_display }}</span>
+                {% if is_achieved %}<span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">Conseguido</span>{% else %}<span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">{{ goal.period_status_display }}</span>{% endif %}
+            </div>
+            <h1 class="mt-3 text-3xl font-bold text-gray-900">{{ goal.name }}</h1>
+            {% if goal.description %}<p class="mt-2 max-w-3xl text-sm text-gray-600">{{ goal.description }}</p>{% endif %}
+        </div>
+        {% if can_manage_goals %}
+            <div class="flex gap-3">
+                <a href="{% url 'goal_update' goal.pk %}" class="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"><i class="fa-solid fa-pen mr-2"></i>Editar</a>
+                <a href="{% url 'goal_delete' goal.pk %}" class="rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50"><i class="fa-solid fa-trash mr-2"></i>Eliminar</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <section class="overflow-hidden rounded-3xl bg-gray-900 p-6 text-white shadow-lg sm:p-8">
+        <div class="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
+            <div>
+                <p class="text-sm font-semibold text-gray-300">Progreso total</p>
+                <p class="mt-2"><span class="text-5xl font-bold">{{ current }}</span><span class="ml-2 text-2xl font-semibold text-gray-400">/ {{ goal.target_count }} {{ goal.get_metric_display|lower }}</span></p>
+                <div class="mt-6 h-3 overflow-hidden rounded-full bg-white/15">
+                    <div class="h-full rounded-full {% if is_achieved %}bg-emerald-400{% else %}bg-indigo-400{% endif %}" style="width: {{ percentage }}%"></div>
+                </div>
+                <p class="mt-3 text-sm text-gray-300">{% if is_achieved %}El objetivo ya se ha conseguido.{% else %}Quedan {{ remaining }} para alcanzar la meta.{% endif %}</p>
+            </div>
+            <div class="flex h-28 w-28 shrink-0 items-center justify-center rounded-full border-8 {% if is_achieved %}border-emerald-400 text-emerald-300{% else %}border-indigo-400 text-indigo-200{% endif %}">
+                <span class="text-2xl font-bold">{{ percentage }}%</span>
+            </div>
+        </div>
+    </section>
+
+    <div class="grid gap-6 lg:grid-cols-3">
+        <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm lg:col-span-2">
+            <h2 class="text-lg font-bold text-gray-900">Participantes</h2>
+            <p class="mt-1 text-sm text-gray-500">{% if goal.scope == "team" %}Aportación individual al objetivo compartido.{% else %}Agente responsable de este objetivo.{% endif %}</p>
+            <div class="mt-5 space-y-3">
+                {% for contribution in contributions %}
+                    <div class="flex items-center justify-between gap-4 rounded-2xl bg-gray-50 p-4">
+                        <div class="flex min-w-0 items-center gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 font-bold text-indigo-700">{% if contribution.user.first_name %}{{ contribution.user.first_name|first|upper }}{% else %}{{ contribution.user.username|first|upper }}{% endif %}</span>
+                            <div class="min-w-0"><p class="truncate font-semibold text-gray-900">{{ contribution.user.get_full_name|default:contribution.user.username }}</p><p class="text-xs text-gray-500">{{ contribution.user.get_role_display }}</p></div>
+                        </div>
+                        <p class="shrink-0 text-lg font-bold text-gray-900">{{ contribution.current }} <span class="text-xs font-medium text-gray-400">aportados</span></p>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+        <aside class="space-y-6">
+            <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h2 class="text-lg font-bold text-gray-900">Periodo</h2>
+                <dl class="mt-5 space-y-4 text-sm">
+                    <div><dt class="text-xs font-bold uppercase tracking-wide text-gray-400">Inicio</dt><dd class="mt-1 font-semibold text-gray-800">{{ goal.start_date|date:"d/m/Y" }}</dd></div>
+                    <div><dt class="text-xs font-bold uppercase tracking-wide text-gray-400">Finalización</dt><dd class="mt-1 font-semibold text-gray-800">{{ goal.end_date|date:"d/m/Y" }}</dd></div>
+                    <div><dt class="text-xs font-bold uppercase tracking-wide text-gray-400">Creado por</dt><dd class="mt-1 font-semibold text-gray-800">{{ goal.created_by.get_full_name|default:goal.created_by.username }}</dd></div>
+                </dl>
+            </section>
+            <section class="rounded-2xl border border-indigo-100 bg-indigo-50 p-5 text-sm text-indigo-900">
+                <p class="font-bold"><i class="fa-solid fa-rotate mr-2"></i>Cálculo automático</p>
+                <p class="mt-2 leading-6">Se cuentan los {{ goal.get_metric_display|lower }} del periodo vinculados a los agentes participantes. Las citas canceladas quedan excluidas.</p>
+            </section>
+        </aside>
+    </div>
+</div>
+{% endblock %}

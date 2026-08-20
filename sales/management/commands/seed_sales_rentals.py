@@ -261,12 +261,13 @@ class Command(BaseCommand):
         )
         return listing
 
-    def create_order(self, data, client, zone, operation_type):
+    def create_order(self, data, client, zone, operation_type, agent):
         order, _ = Order.objects.update_or_create(
             buyer=client,
             operation_type=operation_type,
             notes=f"{self.marker} Pedido de {data['reference']}",
             defaults={
+                "agent": agent,
                 "status": "closed",
                 "zone": zone,
                 "max_price": Decimal(data.get("listing_price", data.get("rent"))),
@@ -304,7 +305,7 @@ class Command(BaseCommand):
         property_obj = self.create_property(data, zone)
         property_obj.contacts.add(owner)
         listing = self.create_listing(data, property_obj, owner, agent, "sale")
-        order = self.create_order(data, buyer, zone, "sale")
+        order = self.create_order(data, buyer, zone, "sale", agent)
         appointment = self.create_contract_appointment(
             data, property_obj, buyer, listing, order, agent, index
         )
@@ -346,7 +347,7 @@ class Command(BaseCommand):
         property_obj = self.create_property(data, zone)
         property_obj.contacts.add(owner, tenant)
         listing = self.create_listing(data, property_obj, owner, agent, "rent")
-        order = self.create_order(data, tenant, zone, "rent")
+        order = self.create_order(data, tenant, zone, "rent", agent)
         appointment = self.create_contract_appointment(
             data, property_obj, tenant, listing, order, agent, index
         )

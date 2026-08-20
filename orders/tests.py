@@ -14,11 +14,15 @@ class OrderCrudTests(TestCase):
             username="orders-agent",
             password="test-password",
         )
+        self.contact_agent = get_user_model().objects.create_user(
+            username="buyer-contact-agent",
+            password="test-password",
+        )
         self.buyer = Contact.objects.create(
             name="Compradora",
             phone="600000001",
             contact_type="buyer",
-            assigned_agent=self.user,
+            assigned_agent=self.contact_agent,
         )
         self.owner = Contact.objects.create(
             name="Propietario",
@@ -52,6 +56,8 @@ class OrderCrudTests(TestCase):
         order = Order.objects.get()
         self.assertRedirects(response, reverse("order_detail", args=[order.pk]))
         self.assertEqual(order.buyer, self.buyer)
+        self.assertEqual(order.agent, self.user)
+        self.assertNotEqual(order.agent, self.buyer.assigned_agent)
 
     def test_general_form_rejects_owner_as_buyer(self):
         data = self.order_data()
@@ -102,6 +108,7 @@ class OrderCrudTests(TestCase):
     def test_orders_can_be_ordered_by_highest_budget(self):
         lower_budget = Order.objects.create(
             buyer=self.buyer,
+            agent=self.user,
             operation_type="sale",
             max_price="150000",
             payment_type="cash",
@@ -109,6 +116,7 @@ class OrderCrudTests(TestCase):
         )
         higher_budget = Order.objects.create(
             buyer=self.buyer,
+            agent=self.user,
             operation_type="sale",
             max_price="450000",
             payment_type="financing",
@@ -145,6 +153,7 @@ class OrderCrudTests(TestCase):
     def test_update_and_delete_order(self):
         order = Order.objects.create(
             buyer=self.buyer,
+            agent=self.user,
             operation_type="sale",
             max_price="200000",
             payment_type="cash",
@@ -164,6 +173,7 @@ class OrderCrudTests(TestCase):
     def test_add_comment_to_order(self):
         order = Order.objects.create(
             buyer=self.buyer,
+            agent=self.user,
             operation_type="sale",
             max_price="250000",
             payment_type="financing",
@@ -189,6 +199,7 @@ class OrderCrudTests(TestCase):
     def test_empty_order_comment_is_rejected(self):
         order = Order.objects.create(
             buyer=self.buyer,
+            agent=self.user,
             operation_type="rent",
             max_price="250000",
             payment_type="cash",

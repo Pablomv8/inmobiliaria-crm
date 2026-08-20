@@ -551,6 +551,7 @@
                                     <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs text-blue-700">{{ order.get_status_display }}</span>
                                 </div>
                                 <p class="text-sm text-gray-500 mt-2">{{ order.zone|default:"Cualquier zona" }} · {{ order.get_payment_type_display }}</p>
+                                <p class="mt-1 text-xs text-gray-500">Agente: {% if order.agent %}{{ order.agent.get_full_name|default:order.agent.username }}{% else %}Sin asignar{% endif %}</p>
                                 <p class="font-semibold text-gray-900 mt-3">Hasta {{ order.max_price }} €</p>
                             </a>
                         {% empty %}

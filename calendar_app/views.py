@@ -123,7 +123,7 @@ def build_task_events(tasks, viewer=None):
 def get_user_order_or_404(user, order_id):
     orders = Order.objects.select_related(
         "buyer",
-        "buyer__assigned_agent",
+        "agent",
         "zone",
     )
     return get_object_or_404(orders, pk=order_id)
@@ -323,7 +323,7 @@ def create_listing_call(request, listing_id):
 @login_required
 def create_order_sale_appointment(request, order_id):
     order = get_user_order_or_404(request.user, order_id)
-    assigned_agent = order.buyer.assigned_agent or request.user
+    assigned_agent = order.agent or request.user
     form = SaleAppointmentForm(
         request.POST or None,
         user=assigned_agent,

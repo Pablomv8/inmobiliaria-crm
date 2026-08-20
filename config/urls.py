@@ -32,6 +32,7 @@ urlpatterns = [
     path("calendar/", include("calendar_app.urls")),
     path("listings/", include("listings.urls")),
     path("orders/", include("orders.urls")),
+    path("goals/", include("goals.urls")),
     path("select2/", include("django_select2.urls")),
 ]
 

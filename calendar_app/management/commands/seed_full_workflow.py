@@ -280,6 +280,7 @@ class Command(BaseCommand):
             buyer=buyer,
             property_type="flat",
             defaults={
+                "agent": agent,
                 "operation_type": "sale",
                 "zone": zone,
                 "max_price": "325000.00",

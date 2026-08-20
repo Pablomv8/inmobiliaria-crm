@@ -45,7 +45,7 @@ def build_user_rows():
         Listing.objects.filter(status="active"),
         "agent_id",
     )
-    order_counts = grouped_counts(Order.objects.all(), "buyer__assigned_agent_id")
+    order_counts = grouped_counts(Order.objects.all(), "agent_id")
     contact_counts = grouped_counts(Contact.objects.all(), "assigned_agent_id")
     news_counts = grouped_counts(
         News.objects.exclude(status="closed"),
@@ -96,10 +96,10 @@ def build_worker_rows():
         Listing.objects.filter(status="active"),
         "agent_id",
     )
-    order_counts = grouped_counts(Order.objects.all(), "buyer__assigned_agent_id")
+    order_counts = grouped_counts(Order.objects.all(), "agent_id")
     open_order_counts = grouped_counts(
         Order.objects.exclude(status__in=["closed", "cancelled"]),
-        "buyer__assigned_agent_id",
+        "agent_id",
     )
     scheduled_appointment_counts = grouped_counts(
         Appointment.objects.filter(status="scheduled"),
@@ -199,7 +199,7 @@ def dashboard(request):
     personal_contacts = Contact.objects.filter(assigned_agent=user)
     personal_tasks = Task.objects.filter(assigned_to=user)
     personal_listings = Listing.objects.filter(agent=user)
-    personal_orders = Order.objects.filter(buyer__assigned_agent=user)
+    personal_orders = Order.objects.filter(agent=user)
     personal_news = News.objects.filter(agent=user)
     personal_appointments = Appointment.objects.filter(agent=user)
     personal_calls = Call.objects.filter(agent=user)
@@ -407,7 +407,7 @@ def team_member_detail(request, pk):
     contacts = Contact.objects.filter(assigned_agent=worker)
     news = News.objects.filter(agent=worker)
     listings = Listing.objects.filter(agent=worker)
-    orders = Order.objects.filter(buyer__assigned_agent=worker)
+    orders = Order.objects.filter(agent=worker)
     appointments = Appointment.objects.filter(agent=worker)
     calls = Call.objects.filter(agent=worker)
     tasks = Task.objects.filter(assigned_to=worker)

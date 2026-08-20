@@ -82,6 +82,7 @@ class DashboardScopeTests(TestCase):
         )
         Order.objects.create(
             buyer=self.agent_buyer,
+            agent=self.agent,
             operation_type="sale",
             max_price="230000",
             payment_type="financing",
@@ -89,6 +90,7 @@ class DashboardScopeTests(TestCase):
         )
         Order.objects.create(
             buyer=self.other_buyer,
+            agent=self.other_agent,
             operation_type="rent",
             max_price="280000",
             payment_type="cash",

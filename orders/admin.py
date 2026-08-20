@@ -7,6 +7,7 @@ from .models import Order, OrderComment
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
         "buyer",
+        "agent",
         "property_type",
         "max_price",
         "payment_type",
@@ -14,7 +15,7 @@ class OrderAdmin(admin.ModelAdmin):
         "created_at",
     )
     search_fields = ("buyer__name", "buyer__last_name", "buyer__phone")
-    list_filter = ("payment_type", "property_type", "zone")
+    list_filter = ("agent", "payment_type", "property_type", "zone")
 
 
 @admin.register(OrderComment)

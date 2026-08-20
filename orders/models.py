@@ -34,6 +34,14 @@ class Order(models.Model):
         related_name="orders",
         limit_choices_to={"contact_type": "buyer"},
     )
+    agent = models.ForeignKey(
+        "users.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="orders",
+        verbose_name="Agente asignado",
+    )
     operation_type = models.CharField(
         max_length=10,
         choices=OPERATION_TYPE_CHOICES,

@@ -16,7 +16,7 @@ from config.pagination import paginate
 def order_list(request):
     orders = Order.objects.select_related(
         "buyer",
-        "buyer__assigned_agent",
+        "agent",
         "zone",
     )
     search = request.GET.get("search", "").strip()
@@ -30,9 +30,9 @@ def order_list(request):
 
     if request.user.is_superuser or request.user.role in ["admin", "manager"]:
         if agent:
-            orders = orders.filter(buyer__assigned_agent_id=agent)
+            orders = orders.filter(agent_id=agent)
     else:
-        orders = orders.filter(buyer__assigned_agent=request.user)
+        orders = orders.filter(agent=request.user)
 
     if search:
         orders = orders.filter(
@@ -94,6 +94,7 @@ def order_create(request, buyer_id=None):
         order = form.save(commit=False)
         if buyer is not None:
             order.buyer = buyer
+        order.agent = request.user
         order.save()
         return redirect("order_detail", pk=order.pk)
 
@@ -114,7 +115,7 @@ def order_detail(request, pk):
     order = get_object_or_404(
         Order.objects.select_related(
             "buyer",
-            "buyer__assigned_agent",
+            "agent",
             "zone",
         ),
         pk=pk,
@@ -142,7 +143,7 @@ def order_add_comment(request, pk):
     order = get_object_or_404(
         Order.objects.select_related(
             "buyer",
-            "buyer__assigned_agent",
+            "agent",
             "zone",
         ),
         pk=pk,

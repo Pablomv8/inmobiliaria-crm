@@ -248,7 +248,7 @@ def contact_detail(request, pk):
     elif contact.contact_type == "buyer":
         orders = Order.objects.filter(buyer=contact).select_related(
             "zone",
-            "buyer__assigned_agent",
+            "agent",
         ).order_by("-created_at")
 
     completed_sales = Sale.objects.filter(

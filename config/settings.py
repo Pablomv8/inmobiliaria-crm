@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'calendar_app',
     'listings',
     'orders',
+    'goals',
     'django_select2',
 ]
 

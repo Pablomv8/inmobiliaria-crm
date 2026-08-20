@@ -476,11 +476,15 @@ class SaleAppointmentFlowTests(TestCase):
             username="sales-agent",
             password="test-password",
         )
+        self.contact_agent = get_user_model().objects.create_user(
+            username="sales-buyer-agent",
+            password="test-password",
+        )
         self.buyer = Contact.objects.create(
             name="Comprador",
             phone="600100100",
             contact_type="buyer",
-            assigned_agent=self.agent,
+            assigned_agent=self.contact_agent,
         )
         self.owner = Contact.objects.create(
             name="Propietaria venta",
@@ -510,6 +514,7 @@ class SaleAppointmentFlowTests(TestCase):
         )
         self.order = Order.objects.create(
             buyer=self.buyer,
+            agent=self.agent,
             operation_type="sale",
             zone=self.zone,
             max_price="275000",
@@ -574,6 +579,7 @@ class SaleAppointmentFlowTests(TestCase):
         )
         rental_order = Order.objects.create(
             buyer=self.buyer,
+            agent=self.agent,
             operation_type="rent",
             zone=self.zone,
             max_price="1700",

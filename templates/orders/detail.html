@@ -15,7 +15,7 @@
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div class="rounded-xl border border-indigo-200 bg-indigo-50 p-4"><p class="text-sm text-indigo-600">Operación</p><p class="font-semibold text-indigo-900">{{ order.get_operation_type_display }}</p></div>
             <div class="rounded-xl bg-gray-50 p-4"><p class="text-sm text-gray-500">Comprador</p><a href="{% url 'contact_detail' order.buyer.id %}" class="font-semibold text-blue-600">{{ order.buyer }}</a></div>
-            <div class="rounded-xl bg-gray-50 p-4"><p class="text-sm text-gray-500">Agente asignado</p><p class="font-semibold">{{ order.buyer.assigned_agent|default:"Sin asignar" }}</p></div>
+            <div class="rounded-xl bg-gray-50 p-4"><p class="text-sm text-gray-500">Agente asignado</p><p class="font-semibold">{% if order.agent %}{{ order.agent.get_full_name|default:order.agent.username }}{% else %}Sin asignar{% endif %}</p></div>
             <div class="rounded-xl bg-gray-50 p-4"><p class="text-sm text-gray-500">Presupuesto máximo</p><p class="font-semibold">{{ order.max_price }} €</p></div>
             <div class="rounded-xl bg-gray-50 p-4"><p class="text-sm text-gray-500">Tipo de inmueble</p><p class="font-semibold">{{ order.get_property_type_display }}</p></div>
             <div class="rounded-xl bg-gray-50 p-4"><p class="text-sm text-gray-500">Forma de pago</p><p class="font-semibold">{{ order.get_payment_type_display }}</p></div>
