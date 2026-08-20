@@ -205,7 +205,7 @@ class DashboardScopeTests(TestCase):
 
     def test_manager_sees_office_totals_and_every_user(self):
         self.client.force_login(self.manager)
-        response = self.client.get(reverse("dashboard"))
+        response = self.client.get(reverse("dashboard"), {"view": "office"})
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context["is_office_viewer"])
@@ -221,6 +221,49 @@ class DashboardScopeTests(TestCase):
         self.assertContains(response, "Embudo comercial global")
         self.assertContains(response, "Resumen económico global")
         self.assertIn("office_goal_rows", response.context)
+
+    def test_manager_can_choose_personal_office_or_combined_dashboard(self):
+        self.client.force_login(self.manager)
+
+        personal_response = self.client.get(reverse("dashboard"))
+        office_response = self.client.get(
+            reverse("dashboard"),
+            {"view": "office"},
+        )
+        combined_response = self.client.get(
+            reverse("dashboard"),
+            {"view": "both"},
+        )
+
+        self.assertEqual(personal_response.context["dashboard_view"], "personal")
+        self.assertContains(personal_response, "Mi cartera")
+        self.assertNotContains(personal_response, "Vista global de la oficina")
+        self.assertEqual(office_response.context["dashboard_view"], "office")
+        self.assertNotContains(office_response, "Resumen personal")
+        self.assertContains(office_response, "Vista global de la oficina")
+        self.assertTrue(combined_response.context["show_personal_dashboard"])
+        self.assertTrue(combined_response.context["show_office_dashboard"])
+        self.assertContains(combined_response, "Resumen personal")
+        self.assertContains(combined_response, "Vista global de la oficina")
+
+    def test_manager_can_open_extended_administration(self):
+        self.client.force_login(self.manager)
+
+        response = self.client.get(reverse("administration"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Administración")
+        self.assertContains(response, "Centro de acciones global")
+        self.assertContains(response, "Estado de los inmuebles")
+        self.assertContains(response, "Carga por usuario")
+        self.assertContains(response, reverse("administration"))
+
+    def test_agent_cannot_open_extended_administration(self):
+        self.client.force_login(self.agent)
+
+        response = self.client.get(reverse("administration"))
+
+        self.assertEqual(response.status_code, 403)
 
     def test_personal_cards_link_to_logged_user_filters(self):
         self.client.force_login(self.manager)
@@ -342,6 +385,17 @@ class DashboardScopeTests(TestCase):
         self.assertContains(response, "Mostrando")
 
     def test_manager_sees_selected_worker_detail_and_recent_portfolio(self):
+        today = timezone.localdate()
+        goal = Goal.objects.create(
+            name="Objetivo del agente en seguimiento",
+            scope="individual",
+            metric="news",
+            target_count=1,
+            start_date=today,
+            end_date=today,
+            created_by=self.manager,
+        )
+        goal.assignees.add(self.agent)
         self.client.force_login(self.manager)
 
         response = self.client.get(
@@ -358,6 +412,14 @@ class DashboardScopeTests(TestCase):
         self.assertEqual(response.context["orders_total"], 1)
         self.assertEqual(response.context["scheduled_appointments"], 1)
         self.assertContains(response, "Indicadores de seguimiento")
+        self.assertContains(response, "Objetivos activos del agente")
+        self.assertContains(response, goal.name)
+        self.assertContains(response, "Aportación del agente: 1")
+        self.assertEqual(response.context["started_goals"], 1)
+        self.assertEqual(response.context["achieved_goals"], 1)
+        self.assertEqual(response.context["goal_completion_rate"], 100)
+        self.assertContains(response, "Objetivos cumplidos")
+        self.assertContains(response, "1 cumplidos de 1 objetivos iniciados")
         self.assertContains(response, self.agent_property.full_address)
         self.assertContains(
             response,

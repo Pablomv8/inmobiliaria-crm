@@ -50,6 +50,8 @@
         </a>
     </section>
 
+    {% include "dashboard/partials/goals.html" with goal_rows=worker_goal_rows goals_title="Objetivos activos del agente" goals_subtitle="Progreso individual y aportación a objetivos compartidos." %}
+
     <section class="grid gap-8 xl:grid-cols-3">
         <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm xl:col-span-2">
             <div class="mb-6"><h2 class="text-lg font-bold text-gray-900">Indicadores de seguimiento</h2><p class="mt-1 text-sm text-gray-500">Porcentaje calculado sobre registros no cancelados.</p></div>
@@ -68,6 +70,11 @@
                     <div class="mb-2 flex items-center justify-between text-sm"><span class="font-medium text-gray-700">Noticias cerradas</span><span class="font-bold text-gray-900">{{ news_completion_rate }}%</span></div>
                     <div class="h-2 overflow-hidden rounded-full bg-gray-100"><div class="h-full rounded-full bg-blue-500" style="width: {{ news_completion_rate }}%"></div></div>
                     <p class="mt-2 text-xs text-gray-500">{{ closed_news }} cerradas · {{ open_news }} en proceso</p>
+                </div>
+                <div>
+                    <div class="mb-2 flex items-center justify-between text-sm"><span class="font-medium text-gray-700">Objetivos cumplidos</span><span class="font-bold text-gray-900">{{ goal_completion_rate }}%</span></div>
+                    <div class="h-2 overflow-hidden rounded-full bg-gray-100"><div class="h-full rounded-full bg-violet-500" style="width: {{ goal_completion_rate }}%"></div></div>
+                    <p class="mt-2 text-xs text-gray-500">{{ achieved_goals }} cumplidos de {{ started_goals }} objetivos iniciados</p>
                 </div>
             </div>
         </div>

@@ -15,7 +15,7 @@ from activities.models import Activity
 from calendar_app.models import Appointment, Call, ProposalAppointment
 from contacts.models import Contact
 from goals.models import Goal
-from goals.services import build_goal_progress
+from goals.services import build_goal_progress, calculate_progress
 from listings.models import Listing
 from news.models import News
 from orders.models import Order
@@ -390,6 +390,17 @@ def dashboard(request):
     today = timezone.localdate()
     now = timezone.now()
     is_office_viewer = user_can_see_office(user)
+    dashboard_view = request.GET.get("view", "personal")
+    if not is_office_viewer or dashboard_view not in {
+        "personal",
+        "office",
+        "both",
+    }:
+        dashboard_view = "personal"
+    show_personal_dashboard = dashboard_view in {"personal", "both"}
+    show_office_dashboard = (
+        is_office_viewer and dashboard_view in {"office", "both"}
+    )
 
     personal_contacts = Contact.objects.filter(assigned_agent=user)
     personal_tasks = Task.objects.filter(assigned_to=user)
@@ -499,13 +510,14 @@ def dashboard(request):
     if selected_days not in [7, 30, 90]:
         selected_days = 30
 
-    chart_news = News.objects.all() if is_office_viewer else personal_news
+    chart_is_office = show_office_dashboard
+    chart_news = News.objects.all() if chart_is_office else personal_news
     chart_appointments = (
-        Appointment.objects.all() if is_office_viewer else personal_appointments
+        Appointment.objects.all() if chart_is_office else personal_appointments
     )
     chart_proposals = (
         ProposalAppointment.objects.all()
-        if is_office_viewer
+        if chart_is_office
         else personal_proposals
     )
     chart_context = build_activity_chart(
@@ -517,6 +529,10 @@ def dashboard(request):
 
     context = {
         "is_office_viewer": is_office_viewer,
+        "dashboard_view": dashboard_view,
+        "show_personal_dashboard": show_personal_dashboard,
+        "show_office_dashboard": show_office_dashboard,
+        "chart_is_office": chart_is_office,
         "today": today,
         "selected_days": selected_days,
         "my_contacts": personal_contacts.count(),
@@ -556,13 +572,13 @@ def dashboard(request):
         ).order_by("-created_at")[:5],
         "recent_activities": (
             Activity.objects.all()
-            if is_office_viewer
+            if chart_is_office
             else Activity.objects.filter(user=user)
         ).select_related("user")[:6],
         **chart_context,
     }
 
-    if is_office_viewer:
+    if show_office_dashboard:
         all_signed_sales = Sale.objects.filter(status="signed")
         office_funnel = build_commercial_funnel(
             News.objects.all(),
@@ -630,6 +646,101 @@ def dashboard(request):
 
 
 @login_required
+def administration(request):
+    if not user_can_see_office(request.user):
+        raise PermissionDenied
+
+    Property.refresh_aged_contact_statuses()
+    today = timezone.localdate()
+    all_properties = Property.objects.all()
+    all_appointments = Appointment.objects.all()
+    all_listings = Listing.objects.all()
+    all_orders = Order.objects.all()
+    all_sales = Sale.objects.all()
+    all_rentals = RentalContract.objects.all()
+
+    property_status_rows = [
+        {
+            "value": value,
+            "label": label,
+            "count": all_properties.filter(status=value).count(),
+        }
+        for value, label in Property.STATUS_CHOICES
+    ]
+    occupancy_rows = [
+        {
+            "value": value,
+            "label": label,
+            "count": all_properties.filter(occupied_by=value).count(),
+        }
+        for value, label in Property.OCCUPANCY_CHOICES
+    ]
+    proposal_status_rows = [
+        {
+            "value": value,
+            "label": label,
+            "count": ProposalAppointment.objects.filter(status=value).count(),
+        }
+        for value, label in ProposalAppointment.STATUS_CHOICES
+    ]
+
+    return render(
+        request,
+        "dashboard/administration.html",
+        {
+            "today": today,
+            "office_users": User.objects.filter(is_active=True).count(),
+            "office_contacts": Contact.objects.count(),
+            "office_properties": all_properties.count(),
+            "office_active_listings": all_listings.filter(status="active").count(),
+            "office_open_orders": all_orders.exclude(
+                status__in=["closed", "cancelled"]
+            ).count(),
+            "office_scheduled_appointments": all_appointments.filter(
+                status="scheduled"
+            ).count(),
+            "office_proposals": ProposalAppointment.objects.count(),
+            "office_closed_operations": (
+                all_sales.filter(status="signed").count()
+                + all_rentals.filter(status="signed").count()
+            ),
+            "office_action_items": build_action_items(
+                user=request.user,
+                appointments=all_appointments,
+                listings=all_listings,
+                orders=all_orders,
+                tasks=Task.objects.all(),
+                properties=all_properties,
+                office=True,
+            ),
+            "office_funnel": build_commercial_funnel(
+                News.objects.all(),
+                all_listings,
+                all_appointments,
+                ProposalAppointment.objects.all(),
+                all_sales,
+                all_rentals,
+            ),
+            "office_economics": build_economic_summary(
+                all_sales,
+                all_rentals,
+            ),
+            "office_goal_rows": build_goal_rows(
+                Goal.objects.filter(
+                    start_date__lte=today,
+                    end_date__gte=today,
+                ).distinct(),
+                limit=8,
+            ),
+            "property_status_rows": property_status_rows,
+            "occupancy_rows": occupancy_rows,
+            "proposal_status_rows": proposal_status_rows,
+            "user_rows": build_user_rows(),
+        },
+    )
+
+
+@login_required
 def team_overview(request):
     if not user_can_see_office(request.user):
         raise PermissionDenied
@@ -688,6 +799,36 @@ def team_member_detail(request, pk):
     closed_news = news.filter(status="closed").count()
     news_total = news.count()
     signed_sales = sales.filter(status="signed")
+    started_goal_progress = [
+        build_goal_progress(goal)
+        for goal in Goal.objects.filter(
+            assignees=worker,
+            start_date__lte=today,
+        ).prefetch_related("assignees").distinct()
+    ]
+    started_goals = len(started_goal_progress)
+    achieved_goals = sum(
+        1 for row in started_goal_progress if row["is_achieved"]
+    )
+    goal_completion_rate = (
+        round(achieved_goals * 100 / started_goals)
+        if started_goals
+        else 0
+    )
+    worker_goal_rows = build_goal_rows(
+        Goal.objects.filter(
+            assignees=worker,
+            start_date__lte=today,
+            end_date__gte=today,
+        ).distinct(),
+        limit=6,
+    )
+    for row in worker_goal_rows:
+        row["show_contribution"] = True
+        row["contribution_current"] = calculate_progress(
+            row["goal"],
+            [worker.pk],
+        )
 
     signed_sale_totals = signed_sales.aggregate(
         revenue=Sum("sale_price"),
@@ -747,6 +888,10 @@ def team_member_detail(request, pk):
         "signed_sales": signed_sales.count(),
         "sales_revenue": signed_sale_totals["revenue"] or 0,
         "sales_commission": signed_sale_totals["commission"] or 0,
+        "started_goals": started_goals,
+        "achieved_goals": achieved_goals,
+        "goal_completion_rate": goal_completion_rate,
+        "worker_goal_rows": worker_goal_rows,
         "upcoming_events": upcoming_events,
         "recent_contacts": contacts.order_by("-created_at")[:5],
         "recent_news": news.select_related("related_property").order_by("-created_at")[:5],
