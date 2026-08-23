@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 
 from properties.models import Zone
 
-from .models import Task
+from .models import Street, Task
 from .scheduling import (
     ACTIVE_TASK_STATUSES,
     build_occurrences,
@@ -26,6 +26,7 @@ class TaskForm(forms.ModelForm):
             "title",
             "description",
             "zone",
+            "streets",
             "assigned_to",
             "priority",
             "due_date",
@@ -40,6 +41,7 @@ class TaskForm(forms.ModelForm):
             "title": "Nombre de la tarea",
             "description": "Descripción",
             "zone": "Zona que se debe peinar",
+            "streets": "Calles que se deben peinar",
             "assigned_to": "Persona asignada",
             "priority": "Prioridad",
             "due_date": "Fecha límite",
@@ -61,6 +63,7 @@ class TaskForm(forms.ModelForm):
                 "placeholder": "Describe qué debe hacerse y cualquier indicación importante.",
             }),
             "zone": forms.Select(attrs={"class": INPUT_CLASS}),
+            "streets": forms.CheckboxSelectMultiple,
             "assigned_to": forms.Select(attrs={"class": INPUT_CLASS}),
             "priority": forms.Select(attrs={"class": INPUT_CLASS}),
             "due_date": forms.DateTimeInput(
@@ -85,6 +88,7 @@ class TaskForm(forms.ModelForm):
         self.fields["title"].required = False
         self.fields["description"].required = False
         self.fields["zone"].required = False
+        self.fields["streets"].required = False
         self.fields["assigned_to"].required = True
         self.fields["assigned_to"].error_messages["required"] = (
             "Selecciona la persona responsable de la tarea."
@@ -97,6 +101,9 @@ class TaskForm(forms.ModelForm):
             )
         )
         self.fields["zone"].queryset = Zone.objects.all().order_by("name")
+        self.fields["streets"].queryset = Street.objects.filter(
+            municipality="Arcos de la Frontera",
+        ).order_by("name")
         self.fields["due_date"].input_formats = ["%Y-%m-%dT%H:%M"]
         self.fields["schedule_date"].required = False
         self.fields["start_time"].required = False
@@ -114,9 +121,11 @@ class TaskForm(forms.ModelForm):
         cleaned_data = super().clean()
         task_type = cleaned_data.get("task_type")
         zone = cleaned_data.get("zone")
+        streets = cleaned_data.get("streets")
 
         if task_type == "custom":
             cleaned_data["zone"] = None
+            cleaned_data["streets"] = Street.objects.none()
             cleaned_data["schedule_date"] = None
             cleaned_data["start_time"] = None
             cleaned_data["end_time"] = None
@@ -124,6 +133,16 @@ class TaskForm(forms.ModelForm):
         elif task_type == "zone_sweep":
             if zone is not None:
                 cleaned_data["title"] = f"Peinar zona {zone.name}"
+            cleaned_data["streets"] = Street.objects.none()
+            cleaned_data["description"] = ""
+            cleaned_data["due_date"] = None
+        elif task_type == "street_sweep":
+            cleaned_data["zone"] = None
+            if not streets:
+                self.add_error(
+                    "streets",
+                    "Selecciona al menos una calle que se deba peinar.",
+                )
             cleaned_data["description"] = ""
             cleaned_data["due_date"] = None
 
@@ -148,3 +167,15 @@ class TaskForm(forms.ModelForm):
             )
 
         return cleaned_data
+
+    def save(self, commit=True):
+        task = super().save(commit=commit)
+        if commit and task.task_type == "street_sweep":
+            names = list(task.streets.values_list("name", flat=True))
+            if len(names) <= 3:
+                street_summary = ", ".join(names)
+            else:
+                street_summary = f"{', '.join(names[:3])} y {len(names) - 3} más"
+            task.title = f"Peinar calles: {street_summary}"[:255]
+            task.save(update_fields=["title"])
+        return task

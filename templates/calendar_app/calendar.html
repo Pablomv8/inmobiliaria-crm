@@ -115,7 +115,7 @@
                                 {% if event.type == "call" %}
                                     📞 {{ event.object.contact.name }}
                                 {% elif event.type == "task" %}
-                                    {% if event.object.task_type == "zone_sweep" %}📍{% else %}✅{% endif %} {{ event.object.title }}
+                                    {% if event.object.task_type == "zone_sweep" %}📍{% elif event.object.task_type == "street_sweep" %}🛣️{% else %}✅{% endif %} {{ event.object.title }}
                                 {% else %}
                                     📅 {{ event.object.get_appointment_type_display }}
                                 {% endif %}
@@ -189,7 +189,7 @@
                         </div>
                     {% elif event.type == "task" %}
                         <div class="text-sm text-gray-600">
-                            {% if event.object.task_type == "zone_sweep" %}📍{% else %}✅{% endif %} {{ event.object.title }}
+                            {% if event.object.task_type == "zone_sweep" %}📍{% elif event.object.task_type == "street_sweep" %}🛣️{% else %}✅{% endif %} {{ event.object.title }}
                         </div>
                         <div class="text-xs text-gray-500">
                             Hasta las {{ event.end_time|time:"H:i" }}
@@ -236,7 +236,7 @@
                         </div>
                     {% elif event.type == "task" %}
                         <div class="text-sm text-gray-600">
-                            {% if event.object.task_type == "zone_sweep" %}📍{% else %}✅{% endif %} {{ event.object.title }}
+                            {% if event.object.task_type == "zone_sweep" %}📍{% elif event.object.task_type == "street_sweep" %}🛣️{% else %}✅{% endif %} {{ event.object.title }}
                         </div>
                         <div class="text-xs text-gray-500">
                             Hasta las {{ event.end_time|time:"H:i" }}

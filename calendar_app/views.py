@@ -1489,16 +1489,21 @@ def calendar_events(request):
 
     for task_event in build_task_events(tasks, viewer=request.user):
         task = task_event["object"]
+        if task.task_type == "zone_sweep":
+            task_title = f"📍 {task.title}\n👤 {task_event['agent_name']}"
+            task_color = "#059669"
+        elif task.task_type == "street_sweep":
+            task_title = f"🛣️ {task.title}\n👤 {task_event['agent_name']}"
+            task_color = "#ea580c"
+        else:
+            task_title = f"✅ Tarea: {task.title}\n👤 {task_event['agent_name']}"
+            task_color = "#7c3aed"
         event = {
             "id": f"task-{task.id}-{task_event['occurrence_index']}",
-            "title": (
-                f"📍 {task.title}\n👤 {task_event['agent_name']}"
-                if task.task_type == "zone_sweep"
-                else f"✅ Tarea: {task.title}\n👤 {task_event['agent_name']}"
-            ),
+            "title": task_title,
             "start": task_event["start"].isoformat(),
             "end": task_event["end"].isoformat(),
-            "color": "#ea580c" if task.task_type == "zone_sweep" else "#7c3aed",
+            "color": task_color,
         }
         if task_event["detail_url"]:
             event["url"] = task_event["detail_url"]

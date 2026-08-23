@@ -1,5 +1,35 @@
 {% extends "base.html" %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<style>
+    .street-checkboxes #id_streets > div {
+        border-radius: .75rem;
+        transition: background-color .15s ease;
+    }
+    .street-checkboxes #id_streets > div:hover {
+        background: #f8fafc;
+    }
+    .street-checkboxes #id_streets label {
+        display: flex;
+        cursor: pointer;
+        align-items: flex-start;
+        gap: .65rem;
+        padding: .65rem .75rem;
+        color: #334155;
+        font-size: .875rem;
+        line-height: 1.25rem;
+    }
+    .street-checkboxes #id_streets input {
+        margin-top: .15rem;
+        height: 1rem;
+        width: 1rem;
+        flex: none;
+        accent-color: #4f46e5;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="mx-auto max-w-4xl space-y-6">
     <div>
@@ -21,7 +51,7 @@
                 <h2 class="mt-1 text-xl font-bold text-gray-900">¿Qué trabajo se va a realizar?</h2>
             </div>
 
-            <div class="grid gap-4 md:grid-cols-2">
+            <div class="grid gap-4 md:grid-cols-3">
                 {% for choice in form.task_type %}
                     <label class="task-type-card flex cursor-pointer gap-4 rounded-2xl border border-gray-200 p-5 transition hover:border-indigo-300 hover:bg-indigo-50/40">
                         <span class="mt-1">{{ choice.tag }}</span>
@@ -30,8 +60,10 @@
                             <span class="mt-1 block text-sm text-gray-500">
                                 {% if choice.data.value == "custom" %}
                                     Define un nombre y explica detalladamente qué debe hacerse.
-                                {% else %}
+                                {% elif choice.data.value == "zone_sweep" %}
                                     Asigna a una persona el peinado comercial de una zona concreta.
+                                {% else %}
+                                    Selecciona en el mapa una batería concreta de calles de Arcos.
                                 {% endif %}
                             </span>
                         </span>
@@ -59,13 +91,54 @@
                 </div>
             </div>
 
-            <div id="zone-task-fields" class="mt-7 hidden space-y-5">
+            <div id="zone-selection-fields" class="mt-7 hidden">
                 <div>
                     <label for="{{ form.zone.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Zona que se debe peinar</label>
                     {{ form.zone }}
                     {% if form.zone.errors %}<p class="mt-1 text-sm text-red-600">{{ form.zone.errors.0 }}</p>{% endif %}
                     <p class="mt-2 text-xs text-gray-500">El nombre de la tarea se generará automáticamente con la zona elegida.</p>
                 </div>
+            </div>
+
+            <div id="street-selection-fields" class="mt-7 hidden space-y-5">
+                <div class="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4 text-sm text-indigo-900">
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-route mt-0.5 text-indigo-600"></i>
+                        <p>Pulsa sobre las calles del mapa o utiliza el listado. Ambas selecciones están sincronizadas.</p>
+                    </div>
+                </div>
+
+                {% if street_count %}
+                    <div class="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(18rem,0.8fr)]">
+                        <div class="overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
+                            <div id="street-map" class="h-[28rem] w-full" aria-label="Mapa para seleccionar calles de Arcos de la Frontera"></div>
+                        </div>
+                        <div class="flex min-h-0 flex-col rounded-2xl border border-gray-200 bg-white p-4">
+                            <label for="street-search" class="text-sm font-semibold text-gray-700">Buscar calle</label>
+                            <div class="relative mt-2">
+                                <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <input id="street-search" type="search" placeholder="Ej. Corredera" class="w-full rounded-xl border border-gray-300 py-2.5 pl-10 pr-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100">
+                            </div>
+                            <div class="mt-3 flex items-center justify-between text-xs">
+                                <span class="font-semibold text-indigo-700"><span id="selected-street-count">0</span> seleccionadas</span>
+                                <button id="clear-streets" type="button" class="font-semibold text-gray-500 hover:text-gray-900">Limpiar</button>
+                            </div>
+                            <div class="street-checkboxes mt-3 max-h-[20rem] overflow-y-auto rounded-xl border border-gray-200 p-2">
+                                {{ form.streets }}
+                            </div>
+                            {% if form.streets.errors %}<p class="mt-2 text-sm text-red-600">{{ form.streets.errors.0 }}</p>{% endif %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
+                        <p class="font-bold">Todavía no hay calles cargadas.</p>
+                        <p class="mt-1">Ejecuta <code class="rounded bg-amber-100 px-1.5 py-0.5">python manage.py import_arcos_streets</code> para cargar el catálogo de Arcos de la Frontera.</p>
+                    </div>
+                    {% if form.streets.errors %}<p class="text-sm text-red-600">{{ form.streets.errors.0 }}</p>{% endif %}
+                {% endif %}
+            </div>
+
+            <div id="sweep-schedule-fields" class="mt-7 hidden space-y-5">
                 <div class="grid gap-5 md:grid-cols-2">
                     <div class="md:col-span-2">
                         <label for="{{ form.schedule_date.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Fecha de inicio</label>
@@ -126,10 +199,14 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+{{ street_geojson|json_script:"street-geojson" }}
 <script>
     const typeInputs = document.querySelectorAll('input[name="task_type"]');
     const customFields = document.getElementById('custom-task-fields');
-    const zoneFields = document.getElementById('zone-task-fields');
+    const zoneFields = document.getElementById('zone-selection-fields');
+    const streetFields = document.getElementById('street-selection-fields');
+    const sweepScheduleFields = document.getElementById('sweep-schedule-fields');
     const titleInput = document.getElementById('id_title');
     const descriptionInput = document.getElementById('id_description');
     const dueDateInput = document.getElementById('id_due_date');
@@ -138,21 +215,88 @@
     const startTimeInput = document.getElementById('id_start_time');
     const endTimeInput = document.getElementById('id_end_time');
     const repeatDaysInput = document.getElementById('id_repeat_days');
+    const streetCheckboxes = Array.from(document.querySelectorAll('input[name="streets"]'));
+    const streetDataElement = document.getElementById('street-geojson');
+    const streetData = streetDataElement ? JSON.parse(streetDataElement.textContent) : {type: 'FeatureCollection', features: []};
+    const streetLayers = new Map();
+    let streetMap = null;
+
+    function isStreetSelected(streetId) {
+        const checkbox = streetCheckboxes.find(item => item.value === String(streetId));
+        return Boolean(checkbox && checkbox.checked);
+    }
+
+    function streetStyle(streetId) {
+        return isStreetSelected(streetId)
+            ? {color: '#4f46e5', weight: 7, opacity: 0.95}
+            : {color: '#64748b', weight: 4, opacity: 0.72};
+    }
+
+    function refreshStreetSelection() {
+        streetCheckboxes.forEach(checkbox => {
+            const layer = streetLayers.get(checkbox.value);
+            if (layer) layer.setStyle(streetStyle(checkbox.value));
+        });
+        const counter = document.getElementById('selected-street-count');
+        if (counter) counter.textContent = streetCheckboxes.filter(item => item.checked).length;
+    }
+
+    function ensureStreetMap() {
+        if (streetMap || !document.getElementById('street-map') || typeof L === 'undefined') return;
+
+        streetMap = L.map('street-map').setView([36.7509, -5.8067], 14);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        }).addTo(streetMap);
+
+        const streetsLayer = L.geoJSON(streetData, {
+            style: feature => streetStyle(feature.properties.id),
+            onEachFeature: (feature, layer) => {
+                const streetId = String(feature.properties.id);
+                streetLayers.set(streetId, layer);
+                const tooltip = document.createElement('span');
+                tooltip.textContent = feature.properties.name;
+                layer.bindTooltip(tooltip);
+                layer.on('click', () => {
+                    const checkbox = streetCheckboxes.find(item => item.value === streetId);
+                    if (checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        checkbox.dispatchEvent(new Event('change', {bubbles: true}));
+                    }
+                });
+                layer.on('mouseover', () => layer.setStyle({color: '#f97316', weight: 7}));
+                layer.on('mouseout', () => layer.setStyle(streetStyle(streetId)));
+            },
+        }).addTo(streetMap);
+
+        if (streetData.features.length && streetsLayer.getBounds().isValid()) {
+            streetMap.fitBounds(streetsLayer.getBounds(), {padding: [16, 16]});
+        }
+        setTimeout(() => streetMap.invalidateSize(), 0);
+        refreshStreetSelection();
+    }
 
     function updateTaskFields() {
         const selected = document.querySelector('input[name="task_type"]:checked');
         const isZoneSweep = selected && selected.value === 'zone_sweep';
+        const isStreetSweep = selected && selected.value === 'street_sweep';
+        const isSweep = isZoneSweep || isStreetSweep;
 
-        customFields.classList.toggle('hidden', isZoneSweep);
+        customFields.classList.toggle('hidden', isSweep);
         zoneFields.classList.toggle('hidden', !isZoneSweep);
-        titleInput.required = !isZoneSweep;
-        descriptionInput.required = !isZoneSweep;
-        dueDateInput.required = !isZoneSweep;
+        streetFields.classList.toggle('hidden', !isStreetSweep);
+        sweepScheduleFields.classList.toggle('hidden', !isSweep);
+        titleInput.required = !isSweep;
+        descriptionInput.required = !isSweep;
+        dueDateInput.required = !isSweep;
         zoneInput.required = isZoneSweep;
-        scheduleDateInput.required = isZoneSweep;
-        startTimeInput.required = isZoneSweep;
-        endTimeInput.required = isZoneSweep;
-        repeatDaysInput.required = isZoneSweep;
+        scheduleDateInput.required = isSweep;
+        startTimeInput.required = isSweep;
+        endTimeInput.required = isSweep;
+        repeatDaysInput.required = isSweep;
+
+        if (isStreetSweep) ensureStreetMap();
 
         document.querySelectorAll('.task-type-card').forEach(card => {
             const radio = card.querySelector('input[type="radio"]');
@@ -161,7 +305,21 @@
         });
     }
 
+    streetCheckboxes.forEach(checkbox => checkbox.addEventListener('change', refreshStreetSelection));
+    document.getElementById('clear-streets')?.addEventListener('click', () => {
+        streetCheckboxes.forEach(checkbox => { checkbox.checked = false; });
+        refreshStreetSelection();
+    });
+    document.getElementById('street-search')?.addEventListener('input', event => {
+        const query = event.target.value.trim().toLocaleLowerCase('es');
+        streetCheckboxes.forEach(checkbox => {
+            const row = checkbox.closest('div');
+            if (row) row.classList.toggle('hidden', !row.textContent.toLocaleLowerCase('es').includes(query));
+        });
+    });
+
     typeInputs.forEach(input => input.addEventListener('change', updateTaskFields));
     updateTaskFields();
+    refreshStreetSelection();
 </script>
 {% endblock %}

@@ -8,11 +8,49 @@ from django.utils import timezone
 from datetime import timedelta
 
 
+SWEEP_TASK_TYPES = {"zone_sweep", "street_sweep"}
+
+
+class Street(models.Model):
+    name = models.CharField(max_length=255, verbose_name="Calle")
+    normalized_name = models.CharField(max_length=255, editable=False)
+    municipality = models.CharField(
+        max_length=100,
+        default="Arcos de la Frontera",
+        verbose_name="Municipio",
+    )
+    geometry = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Geometría GeoJSON",
+    )
+    external_ids = models.JSONField(default=list, blank=True)
+    source = models.CharField(max_length=50, default="OpenStreetMap")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["municipality", "normalized_name"],
+                name="unique_street_name_per_municipality",
+            ),
+        ]
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        self.normalized_name = " ".join(self.name.casefold().split())
+        return super().save(*args, **kwargs)
+
+
 class Task(models.Model):
 
     TASK_TYPE_CHOICES = (
         ("custom", "Personalizada"),
         ("zone_sweep", "Peinar una zona"),
+        ("street_sweep", "Peinar calles"),
     )
 
     STATUS_CHOICES = (
@@ -62,6 +100,13 @@ class Task(models.Model):
         blank=True,
         related_name="tasks",
         verbose_name="Zona",
+    )
+
+    streets = models.ManyToManyField(
+        Street,
+        blank=True,
+        related_name="tasks",
+        verbose_name="Calles que se deben peinar",
     )
 
     assigned_to = models.ForeignKey(
@@ -149,8 +194,8 @@ class Task(models.Model):
                 errors["due_date"] = (
                     "Selecciona la fecha límite para mostrar la tarea en la agenda."
                 )
-        elif self.task_type == "zone_sweep":
-            if self.zone_id is None:
+        elif self.task_type in SWEEP_TASK_TYPES:
+            if self.task_type == "zone_sweep" and self.zone_id is None:
                 errors["zone"] = "Selecciona la zona que se debe peinar."
             if self.schedule_date is None:
                 errors["schedule_date"] = "Selecciona la fecha de inicio."
@@ -173,8 +218,11 @@ class Task(models.Model):
             raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
-        if self.task_type == "zone_sweep" and self.zone_id:
-            self.title = f"Peinar zona {self.zone.name}"
+        if self.task_type in SWEEP_TASK_TYPES:
+            if self.task_type == "zone_sweep" and self.zone_id:
+                self.title = f"Peinar zona {self.zone.name}"
+            elif self.task_type == "street_sweep" and not self.title:
+                self.title = "Peinar calles"
             self.description = ""
             self.due_date = None
         elif self.task_type == "custom":
@@ -189,7 +237,7 @@ class Task(models.Model):
     @property
     def due_label(self):
 
-        if self.task_type == "zone_sweep":
+        if self.task_type in SWEEP_TASK_TYPES:
             if not self.schedule_date or not self.start_time:
                 return "Sin horario"
             if self.schedule_date == timezone.localdate():

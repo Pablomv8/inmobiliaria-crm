@@ -1,6 +1,13 @@
 from django.contrib import admin
 
-from .models import Task
+from .models import Street, Task
+
+
+@admin.register(Street)
+class StreetAdmin(admin.ModelAdmin):
+    list_display = ("name", "municipality", "source", "updated_at")
+    list_filter = ("municipality", "source")
+    search_fields = ("name",)
 
 
 @admin.register(Task)
@@ -15,4 +22,11 @@ class TaskAdmin(admin.ModelAdmin):
         "due_date",
     )
     list_filter = ("task_type", "zone", "priority", "status", "assigned_to")
-    search_fields = ("title", "description", "zone__name", "assigned_to__username")
+    filter_horizontal = ("streets",)
+    search_fields = (
+        "title",
+        "description",
+        "zone__name",
+        "streets__name",
+        "assigned_to__username",
+    )

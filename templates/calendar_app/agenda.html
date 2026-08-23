@@ -39,7 +39,7 @@
                         {% elif event.type == "task" %}
 
                             {% if event.detail_url %}<a href="{{ event.detail_url }}" class="text-sm font-semibold text-purple-700 hover:underline">{% else %}<span class="text-sm font-semibold text-purple-700">{% endif %}
-                                {% if event.object.task_type == "zone_sweep" %}📍{% else %}✅{% endif %} {{ event.object.get_task_type_display }}
+                                {% if event.object.task_type == "zone_sweep" %}📍{% elif event.object.task_type == "street_sweep" %}🛣️{% else %}✅{% endif %} {{ event.object.get_task_type_display }}
                             {% if event.detail_url %}</a>{% else %}</span>{% endif %}
 
                             <p class="mt-1">

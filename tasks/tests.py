@@ -11,7 +11,9 @@ from contacts.models import Contact
 from calendar_app.models import Appointment
 
 from .forms import TaskForm
-from .models import Task
+from .models import Street, Task
+from .scheduling import task_occurrences
+from .street_import import parse_overpass_streets
 
 
 class TaskTypeFlowTests(TestCase):
@@ -34,6 +36,22 @@ class TaskTypeFlowTests(TestCase):
         )
         self.zone = Zone.objects.create(name="Centro tareas")
         self.other_zone = Zone.objects.create(name="Norte tareas")
+        self.street = Street.objects.create(
+            name="Calle Corredera",
+            geometry={
+                "type": "MultiLineString",
+                "coordinates": [[[-5.81, 36.75], [-5.80, 36.76]]],
+            },
+            external_ids=[101],
+        )
+        self.other_street = Street.objects.create(
+            name="Calle Matrera",
+            geometry={
+                "type": "MultiLineString",
+                "coordinates": [[[-5.80, 36.75], [-5.79, 36.76]]],
+            },
+            external_ids=[102],
+        )
         self.client.force_login(self.manager)
 
     def test_custom_task_requires_name_description_and_assignee(self):
@@ -200,6 +218,66 @@ class TaskTypeFlowTests(TestCase):
             "La hora de fin debe ser posterior a la hora de inicio.",
         )
 
+    def test_street_sweep_requires_streets_and_generates_its_name(self):
+        invalid_response = self.client.post(
+            reverse("task_create"),
+            {
+                "task_type": "street_sweep",
+                "streets": [],
+                "schedule_date": "2026-08-26",
+                "start_time": "09:00",
+                "end_time": "11:00",
+                "repeat_days": "2",
+                "assigned_to": self.agent.pk,
+                "priority": "medium",
+                "status": "pending",
+            },
+        )
+
+        self.assertEqual(invalid_response.status_code, 200)
+        self.assertFormError(
+            invalid_response.context["form"],
+            "streets",
+            "Selecciona al menos una calle que se deba peinar.",
+        )
+
+        response = self.client.post(
+            reverse("task_create"),
+            {
+                "task_type": "street_sweep",
+                "streets": [self.street.pk, self.other_street.pk],
+                "schedule_date": "2026-08-26",
+                "start_time": "09:00",
+                "end_time": "11:00",
+                "repeat_days": "2",
+                "assigned_to": self.agent.pk,
+                "priority": "medium",
+                "status": "pending",
+            },
+        )
+
+        self.assertRedirects(response, reverse("task_list"))
+        task = Task.objects.get()
+        self.assertEqual(task.task_type, "street_sweep")
+        self.assertEqual(
+            task.title,
+            "Peinar calles: Calle Corredera, Calle Matrera",
+        )
+        self.assertIsNone(task.zone)
+        self.assertQuerySetEqual(
+            task.streets.all(),
+            [self.street, self.other_street],
+        )
+        self.assertEqual(len(task_occurrences(task)), 2)
+
+    def test_street_sweep_form_renders_map_data(self):
+        response = self.client.get(reverse("task_create"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Mapa para seleccionar calles")
+        self.assertContains(response, "Calle Corredera")
+        self.assertContains(response, '"type": "FeatureCollection"')
+
     def test_task_form_rejects_schedule_conflicts(self):
         Task.objects.create(
             task_type="custom",
@@ -328,6 +406,12 @@ class TaskTypeFlowTests(TestCase):
             zone=self.zone,
             assigned_to=self.agent,
         )
+        street_task = Task.objects.create(
+            task_type="street_sweep",
+            title="Peinar calles: Calle Corredera",
+            assigned_to=self.agent,
+        )
+        street_task.streets.add(self.street)
 
         custom_response = self.client.get(
             reverse("task_detail", args=[custom_task.pk])
@@ -335,11 +419,16 @@ class TaskTypeFlowTests(TestCase):
         zone_response = self.client.get(
             reverse("task_detail", args=[zone_task.pk])
         )
+        street_response = self.client.get(
+            reverse("task_detail", args=[street_task.pk])
+        )
 
         self.assertContains(custom_response, "Descripción de la tarea")
         self.assertContains(custom_response, "Comprobar todas las cláusulas.")
         self.assertContains(zone_response, "Peinado comercial")
         self.assertContains(zone_response, self.zone.name)
+        self.assertContains(street_response, "Calles seleccionadas")
+        self.assertContains(street_response, self.street.name)
 
 
 class TaskFormModelValidationTests(TestCase):
@@ -353,6 +442,7 @@ class TaskFormModelValidationTests(TestCase):
                 "title",
                 "description",
                 "zone",
+                "streets",
                 "assigned_to",
                 "priority",
                 "due_date",
@@ -365,3 +455,41 @@ class TaskFormModelValidationTests(TestCase):
         )
         self.assertNotIn("contact", form.fields)
         self.assertNotIn("related_property", form.fields)
+
+
+class StreetImportTests(TestCase):
+    def test_parser_groups_segments_with_the_same_street_name(self):
+        rows = parse_overpass_streets({
+            "elements": [
+                {
+                    "id": 10,
+                    "tags": {"name": "Calle Corredera"},
+                    "geometry": [
+                        {"lat": 36.75, "lon": -5.81},
+                        {"lat": 36.76, "lon": -5.80},
+                    ],
+                },
+                {
+                    "id": 11,
+                    "tags": {"name": "  CALLE corredera  "},
+                    "geometry": [
+                        {"lat": 36.76, "lon": -5.80},
+                        {"lat": 36.77, "lon": -5.79},
+                    ],
+                },
+                {
+                    "id": 12,
+                    "tags": {},
+                    "geometry": [
+                        {"lat": 36.76, "lon": -5.80},
+                        {"lat": 36.77, "lon": -5.79},
+                    ],
+                },
+            ],
+        })
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["name"], "Calle Corredera")
+        self.assertEqual(rows[0]["external_ids"], [10, 11])
+        self.assertEqual(rows[0]["geometry"]["type"], "MultiLineString")
+        self.assertEqual(len(rows[0]["geometry"]["coordinates"]), 2)

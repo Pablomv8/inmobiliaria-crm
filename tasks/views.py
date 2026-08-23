@@ -36,7 +36,7 @@ class TaskListView(LoginRequiredMixin, ListView):
         qs = Task.objects.select_related(
             "assigned_to",
             "zone",
-        )
+        ).prefetch_related("streets")
 
         # agentes solo ven sus tareas
         if not can_manage_all:
@@ -78,7 +78,8 @@ class TaskListView(LoginRequiredMixin, ListView):
                 Q(title__icontains=search)
                 | Q(description__icontains=search)
                 | Q(zone__name__icontains=search)
-            )
+                | Q(streets__name__icontains=search)
+            ).distinct()
 
         ordering = self.request.GET.get("ordering")
 
@@ -121,7 +122,10 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
 
         user = self.request.user
 
-        qs = Task.objects.select_related("assigned_to", "zone")
+        qs = Task.objects.select_related(
+            "assigned_to",
+            "zone",
+        ).prefetch_related("streets")
 
         # Admin y manager ven todo
         if user.is_superuser or user.role in ["admin", "manager"]:
@@ -148,7 +152,31 @@ class TaskDetailView(LoginRequiredMixin, DetailView):
 # -----------------------
 # CREAR TAREA (MANAGER / ADMIN)
 # -----------------------
-class TaskCreateView(LoginRequiredMixin, CreateView):
+class StreetMapContextMixin:
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        streets = context["form"].fields["streets"].queryset
+        context["street_geojson"] = {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "id": str(street.pk),
+                    "properties": {
+                        "id": str(street.pk),
+                        "name": street.name,
+                    },
+                    "geometry": street.geometry,
+                }
+                for street in streets
+                if street.geometry
+            ],
+        }
+        context["street_count"] = streets.count()
+        return context
+
+
+class TaskCreateView(StreetMapContextMixin, LoginRequiredMixin, CreateView):
     model = Task
     form_class = TaskForm
     template_name = "tasks/task_form.html"
@@ -173,7 +201,7 @@ class TaskCreateView(LoginRequiredMixin, CreateView):
 # -----------------------
 # EDITAR TAREA
 # -----------------------
-class TaskUpdateView(LoginRequiredMixin, UpdateView):
+class TaskUpdateView(StreetMapContextMixin, LoginRequiredMixin, UpdateView):
     model = Task
     form_class = TaskForm
     template_name = "tasks/task_form.html"

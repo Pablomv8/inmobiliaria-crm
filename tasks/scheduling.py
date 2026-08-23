@@ -26,7 +26,7 @@ def build_occurrences(
         return [(start, start + timedelta(hours=1))]
 
     if (
-        task_type == "zone_sweep"
+        task_type in {"zone_sweep", "street_sweep"}
         and schedule_date
         and start_time
         and end_time
