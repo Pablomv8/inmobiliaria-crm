@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta
 from itertools import chain
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Max, Q, Sum
 from django.db.models.functions import TruncMonth
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, render
@@ -70,12 +70,12 @@ def build_commercial_funnel(
         + rentals.filter(status="signed").count(),
     ]
     labels = [
-        "Noticias",
-        "Encargos",
-        "Citas de venta",
-        "Propuestas",
-        "Contratos",
-        "Cierres",
+        "Noticias captadas",
+        "Encargos formalizados",
+        "Visitas de venta",
+        "Propuestas de compra",
+        "Citas de contrato",
+        "Operaciones firmadas",
     ]
     agent_query = f"?agent={user.pk}" if user is not None else ""
     calendar_query = f"?agents={user.pk}" if user is not None else ""
@@ -334,6 +334,174 @@ def build_agent_comparison(days):
         "listings": [row["listings"] for row in rows],
         "orders": [row["orders"] for row in rows],
         "appointments": [row["appointments"] for row in rows],
+    }
+
+
+def most_recent_value(item, fields):
+    values = [getattr(item, field, None) for field in fields]
+    values = [value for value in values if value is not None]
+    return max(values) if values else None
+
+
+def build_opportunity_aging(news, listings, orders):
+    now = timezone.now()
+    activity_dates = []
+    for item in news.exclude(status="closed").annotate(
+        latest_comment=Max("comments__created_at"),
+        latest_appointment=Max("appointments__created_at"),
+        latest_call=Max("calls__created_at"),
+    ):
+        activity_dates.append(most_recent_value(item, [
+            "created_at",
+            "latest_comment",
+            "latest_appointment",
+            "latest_call",
+        ]))
+    for item in listings.filter(status="active").annotate(
+        latest_comment=Max("comments__created_at"),
+        latest_appointment=Max("follow_up_appointments__created_at"),
+        latest_call=Max("calls__created_at"),
+        latest_proposal=Max("proposals__created_at"),
+    ):
+        activity_dates.append(most_recent_value(item, [
+            "created_at",
+            "latest_comment",
+            "latest_appointment",
+            "latest_call",
+            "latest_proposal",
+        ]))
+    for item in orders.exclude(status__in=["closed", "cancelled"]).annotate(
+        latest_comment=Max("comments__created_at"),
+        latest_appointment=Max("sale_appointments__created_at"),
+        latest_proposal=Max("proposals__created_at"),
+    ):
+        activity_dates.append(most_recent_value(item, [
+            "created_at",
+            "updated_at",
+            "latest_comment",
+            "latest_appointment",
+            "latest_proposal",
+        ]))
+
+    buckets = [0, 0, 0, 0]
+    for last_activity in activity_dates:
+        if last_activity is None:
+            continue
+        age = max(0, (now - last_activity).days)
+        if age <= 7:
+            buckets[0] += 1
+        elif age <= 15:
+            buckets[1] += 1
+        elif age <= 30:
+            buckets[2] += 1
+        else:
+            buckets[3] += 1
+    total = sum(buckets)
+    return {
+        "labels": ["0–7 días", "8–15 días", "16–30 días", "+30 días"],
+        "counts": buckets,
+        "total": total,
+        "stale": buckets[3],
+        "fresh_percentage": round(buckets[0] * 100 / total) if total else 0,
+    }
+
+
+def build_appointment_outcomes(appointments, days=90):
+    start_date = timezone.localdate() - timedelta(days=days - 1)
+    appointments = appointments.filter(date__gte=start_date)
+    groups = [
+        ("Adquisición", ["acquisition"]),
+        ("Venta", ["sale"]),
+        ("Seguimiento", ["follow_up"]),
+        ("Propuesta", ["proposal"]),
+        ("Aceptación", ["proposal_acceptance"]),
+        ("Contrato/firma", ["contract", "signing"]),
+    ]
+    data = {
+        "labels": [],
+        "successful": [],
+        "unsuccessful": [],
+        "without_result": [],
+        "cancelled": [],
+        "period_days": days,
+    }
+    for label, appointment_types in groups:
+        group = appointments.filter(appointment_type__in=appointment_types)
+        successful = group.filter(status="completed", result_success=True).count()
+        unsuccessful = group.filter(status="completed", result_success=False).count()
+        without_result = group.filter(
+            status="completed",
+            result_success__isnull=True,
+        ).count()
+        cancelled = group.filter(status="cancelled").count()
+        if successful + unsuccessful + without_result + cancelled == 0:
+            continue
+        data["labels"].append(label)
+        data["successful"].append(successful)
+        data["unsuccessful"].append(unsuccessful)
+        data["without_result"].append(without_result)
+        data["cancelled"].append(cancelled)
+    data["total"] = sum(
+        sum(data[key])
+        for key in ("successful", "unsuccessful", "without_result", "cancelled")
+    )
+    decided = sum(data["successful"]) + sum(data["unsuccessful"])
+    data["success_rate"] = (
+        round(sum(data["successful"]) * 100 / decided) if decided else 0
+    )
+    return data
+
+
+def build_listing_health(listings):
+    today = timezone.localdate()
+    follow_up_cutoff = today - timedelta(days=30)
+    active_listings = list(listings.filter(status="active"))
+    listing_ids = [listing.pk for listing in active_listings]
+    follow_up_dates = {
+        row["listing_id"]: row["latest"]
+        for row in Appointment.objects.filter(
+            listing_id__in=listing_ids,
+            appointment_type="follow_up",
+        ).exclude(status="cancelled").values("listing_id").annotate(
+            latest=Max("date")
+        )
+    }
+    proposal_listing_ids = set(
+        ProposalAppointment.objects.filter(
+            listing_id__in=listing_ids,
+        ).values_list("listing_id", flat=True)
+    )
+    expiring_ids = {
+        listing.pk
+        for listing in active_listings
+        if listing.end_date
+        and today <= listing.end_date <= today + timedelta(days=30)
+    }
+    without_recent_follow_up_ids = {
+        listing.pk
+        for listing in active_listings
+        if follow_up_dates.get(listing.pk) is None
+        or follow_up_dates[listing.pk] < follow_up_cutoff
+    }
+    needs_attention_ids = expiring_ids | without_recent_follow_up_ids
+    healthy = len(active_listings) - len(needs_attention_ids)
+    total = len(active_listings)
+    return {
+        "total": total,
+        "healthy": healthy,
+        "healthy_percentage": round(healthy * 100 / total) if total else 0,
+        "needs_attention": len(needs_attention_ids),
+        "expiring": len(expiring_ids),
+        "without_recent_follow_up": len(without_recent_follow_up_ids),
+        "with_proposals": len(proposal_listing_ids),
+    }
+
+
+def build_commercial_health(*, news, listings, orders, appointments):
+    return {
+        "aging": build_opportunity_aging(news, listings, orders),
+        "appointments": build_appointment_outcomes(appointments),
+        "listings": build_listing_health(listings),
     }
 
 
@@ -603,6 +771,12 @@ def dashboard(request):
         sales=personal_sales,
         rentals=personal_rentals,
     )
+    personal_commercial_health = build_commercial_health(
+        news=personal_news,
+        listings=personal_listings,
+        orders=personal_orders,
+        appointments=personal_appointments,
+    )
     personal_action_items = build_action_items(
         user=user,
         appointments=personal_appointments,
@@ -705,6 +879,7 @@ def dashboard(request):
         "personal_economics": personal_economics,
         "personal_goal_rows": personal_goal_rows,
         "personal_analytics": personal_analytics,
+        "personal_commercial_health": personal_commercial_health,
         "personal_action_items": personal_action_items,
         "upcoming_events": upcoming_events,
         "upcoming_tasks": upcoming_tasks,
@@ -755,6 +930,12 @@ def dashboard(request):
             sales=Sale.objects.all(),
             rentals=RentalContract.objects.all(),
         )
+        office_commercial_health = build_commercial_health(
+            news=News.objects.all(),
+            listings=Listing.objects.all(),
+            orders=Order.objects.all(),
+            appointments=Appointment.objects.all(),
+        )
         office_action_items = build_action_items(
             user=user,
             appointments=Appointment.objects.all(),
@@ -795,6 +976,7 @@ def dashboard(request):
             "office_economics": office_economics,
             "office_goal_rows": office_goal_rows,
             "office_analytics": office_analytics,
+            "office_commercial_health": office_commercial_health,
             "agent_comparison": build_agent_comparison(selected_days),
             "office_action_items": office_action_items,
             "user_rows": build_user_rows(),

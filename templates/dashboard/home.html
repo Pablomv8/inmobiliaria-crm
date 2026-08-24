@@ -153,6 +153,8 @@
 
     {% include "dashboard/partials/analytics.html" with analytics=personal_analytics analytics_id="personal-dashboard-analytics" evolution_title="Evolución de mi cartera" goals_title="Cumplimiento personal" %}
 
+    {% include "dashboard/partials/commercial_health.html" with health=personal_commercial_health health_id="personal-commercial-health" health_title="Salud de mi cartera" health_subtitle="Detecta oportunidades sin movimiento, revisa el resultado de tus citas y prioriza los encargos que necesitan seguimiento." agent_id=request.user.id %}
+
     {% include "dashboard/partials/economics.html" with economics=personal_economics economics_title="Mi resumen económico" economics_subtitle="Importes acumulados de ventas y alquileres firmados." %}
 
     <section class="grid xl:grid-cols-2 gap-6">
@@ -209,6 +211,8 @@
             </div>
 
             {% include "dashboard/partials/analytics.html" with analytics=office_analytics analytics_id="office-dashboard-analytics" evolution_title="Evolución comercial de la oficina" goals_title="Cumplimiento de la oficina" %}
+
+            {% include "dashboard/partials/commercial_health.html" with health=office_commercial_health health_id="office-commercial-health" health_title="Salud comercial de la oficina" health_subtitle="Visión conjunta de las oportunidades estancadas, los resultados de las citas y los encargos que requieren intervención." %}
 
             <div class="rounded-2xl border border-indigo-100 bg-white p-5 shadow-sm sm:p-6">
                 <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -320,6 +324,49 @@ document.addEventListener("DOMContentLoaded", function () {
                     }]
                 },
                 options: {responsive: true, maintainAspectRatio: false, cutout: "78%", plugins: {legend: {display: false}, tooltip: {enabled: false}}}
+            });
+        }
+    });
+
+    document.querySelectorAll("[data-commercial-health]").forEach(container => {
+        const data = JSON.parse(document.getElementById(container.dataset.commercialHealth).textContent);
+        const agingCanvas = container.querySelector("[data-aging-chart]");
+        if (agingCanvas && data.aging.total) {
+            new Chart(agingCanvas, {
+                type: "doughnut",
+                data: {
+                    labels: data.aging.labels,
+                    datasets: [{
+                        data: data.aging.counts,
+                        backgroundColor: ["#059669", "#2563eb", "#d97706", "#e11d48"],
+                        borderColor: "#ffffff",
+                        borderWidth: 3
+                    }]
+                },
+                options: {responsive: true, maintainAspectRatio: false, cutout: "58%", plugins: {legend: {position: "bottom", labels: {usePointStyle: true, boxWidth: 8}}}}
+            });
+        }
+
+        const outcomesCanvas = container.querySelector("[data-outcomes-chart]");
+        if (outcomesCanvas && data.appointments.total) {
+            new Chart(outcomesCanvas, {
+                type: "bar",
+                data: {
+                    labels: data.appointments.labels,
+                    datasets: [
+                        {label: "Con éxito", data: data.appointments.successful, backgroundColor: "#059669"},
+                        {label: "Sin éxito", data: data.appointments.unsuccessful, backgroundColor: "#e11d48"},
+                        {label: "Sin decisión", data: data.appointments.without_result, backgroundColor: "#d97706"},
+                        {label: "Canceladas", data: data.appointments.cancelled, backgroundColor: "#64748b"}
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {mode: "index", intersect: false},
+                    plugins: {legend: {position: "bottom", labels: {usePointStyle: true, boxWidth: 8}}},
+                    scales: {x: {stacked: true, grid: {display: false}}, y: {stacked: true, beginAtZero: true, ticks: {precision: 0}}}
+                }
             });
         }
     });

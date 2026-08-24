@@ -181,6 +181,11 @@ class DashboardScopeTests(TestCase):
         self.assertContains(response, goal.name)
         self.assertContains(response, "Evolución de mi cartera")
         self.assertContains(response, "Cumplimiento personal")
+        self.assertContains(response, "Salud de mi cartera")
+        self.assertContains(response, "¿Qué significa cada fase del embudo?")
+        self.assertContains(response, "Noticias captadas")
+        self.assertContains(response, "Encargos formalizados")
+        self.assertContains(response, "Operaciones firmadas")
         self.assertEqual(
             response.context["personal_analytics"]["goals"],
             {
@@ -204,6 +209,12 @@ class DashboardScopeTests(TestCase):
             [stage["width"] for stage in response.context["personal_funnel"]["stages"]],
             [100, 100, 100, 0, 0, 0],
         )
+        health = response.context["personal_commercial_health"]
+        self.assertEqual(health["aging"]["counts"], [3, 0, 0, 0])
+        self.assertEqual(health["aging"]["fresh_percentage"], 100)
+        self.assertEqual(health["listings"]["total"], 1)
+        self.assertEqual(health["listings"]["needs_attention"], 1)
+        self.assertEqual(health["listings"]["without_recent_follow_up"], 1)
         order_alert = next(
             item
             for item in response.context["personal_action_items"]
@@ -243,11 +254,58 @@ class DashboardScopeTests(TestCase):
         self.assertIn("office_goal_rows", response.context)
         self.assertContains(response, "Evolución comercial de la oficina")
         self.assertContains(response, "Comparación de actividad por agente")
+        self.assertContains(response, "Salud comercial de la oficina")
+        self.assertIn("office_commercial_health", response.context)
         comparison = response.context["agent_comparison"]
         self.assertIn("dashboard-agent", comparison["labels"])
         self.assertIn("dashboard-other", comparison["labels"])
         self.assertIn("dashboard-manager", comparison["labels"])
         self.assertEqual(len(comparison["contacts"]), len(comparison["labels"]))
+
+    def test_commercial_health_detects_stale_opportunities(self):
+        stale_at = timezone.now() - timedelta(days=40)
+        News.objects.filter(agent=self.agent).update(created_at=stale_at)
+        Listing.objects.filter(agent=self.agent).update(created_at=stale_at)
+        Order.objects.filter(agent=self.agent).update(
+            created_at=stale_at,
+            updated_at=stale_at,
+        )
+        Appointment.objects.filter(agent=self.agent).update(created_at=stale_at)
+        self.client.force_login(self.agent)
+
+        response = self.client.get(reverse("dashboard"))
+
+        aging = response.context["personal_commercial_health"]["aging"]
+        self.assertEqual(aging["counts"], [0, 0, 0, 3])
+        self.assertEqual(aging["stale"], 3)
+        self.assertEqual(aging["fresh_percentage"], 0)
+
+    def test_commercial_health_groups_appointment_results(self):
+        sale_appointment = Appointment.objects.get(agent=self.agent)
+        sale_appointment.date = timezone.localdate()
+        sale_appointment.status = "completed"
+        sale_appointment.result_success = True
+        sale_appointment.save(update_fields=["date", "status", "result_success"])
+        Appointment.objects.create(
+            related_property=self.agent_property,
+            contact=self.agent_owner,
+            agent=self.agent,
+            appointment_type="acquisition",
+            date=timezone.localdate(),
+            time=time(12, 0),
+            end_time=time(13, 0),
+            status="cancelled",
+        )
+        self.client.force_login(self.agent)
+
+        response = self.client.get(reverse("dashboard"))
+
+        outcomes = response.context["personal_commercial_health"]["appointments"]
+        self.assertEqual(outcomes["labels"], ["Adquisición", "Venta"])
+        self.assertEqual(outcomes["successful"], [0, 1])
+        self.assertEqual(outcomes["cancelled"], [1, 0])
+        self.assertEqual(outcomes["total"], 2)
+        self.assertEqual(outcomes["success_rate"], 100)
 
     def test_manager_can_choose_personal_office_or_combined_dashboard(self):
         self.client.force_login(self.manager)
