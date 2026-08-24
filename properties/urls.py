@@ -10,6 +10,8 @@ from .views import (
     property_add_comment,
     create_owner_for_property,
     add_owner_to_property,
+    property_geocode,
+    property_map,
 )
 
 urlpatterns = [
@@ -17,6 +19,10 @@ urlpatterns = [
     path('', property_list, name='properties'),
 
     path('new/', property_create, name='property_create'),
+
+    path('geocode/', property_geocode, name='property_geocode'),
+
+    path('map/', property_map, name='property_map'),
 
     path('<int:pk>/', property_detail, name='property_detail'),
 

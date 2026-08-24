@@ -19,6 +19,7 @@
   "homepage": "https://github.com/Pablomv8/inmobiliaria-crm#readme",
   "dependencies": {
     "@tailwindcss/cli": "^4.3.0",
+    "leaflet": "^1.9.4",
     "tailwindcss": "^4.3.0"
   },
   "type": "commonjs"

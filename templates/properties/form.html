@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+{% endblock %}
+
 {% block content %}
 <div class="mx-auto max-w-5xl space-y-6">
     <div>
@@ -26,6 +30,9 @@
                 <div class="md:col-span-2 lg:col-span-3">
                     <label for="{{ form.street.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Calle</label>
                     {{ form.street }}
+                    <datalist id="arcos-street-options">
+                        {% for street_name in street_suggestions %}<option value="{{ street_name }}"></option>{% endfor %}
+                    </datalist>
                     {% if form.street.errors %}<p class="mt-1 text-sm text-red-600">{{ form.street.errors.0 }}</p>{% endif %}
                 </div>
                 <div>
@@ -47,6 +54,34 @@
                     <label for="{{ form.province.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Provincia</label>
                     {{ form.province }}
                     {% if form.province.errors %}<p class="mt-1 text-sm text-red-600">{{ form.province.errors.0 }}</p>{% endif %}
+                </div>
+
+                {{ form.latitude }}
+                {{ form.longitude }}
+
+                <div class="md:col-span-2 lg:col-span-4">
+                    <div class="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
+                        <div class="flex flex-col gap-3 border-b border-gray-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p class="font-bold text-gray-900">Ubicación en el mapa</p>
+                                <p class="mt-1 text-xs text-gray-500">Localiza la dirección o pulsa sobre el mapa para corregir el punto.</p>
+                            </div>
+                            <button id="locate-property" type="button" class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">
+                                <i class="fa-solid fa-location-crosshairs"></i>
+                                Localizar dirección
+                            </button>
+                        </div>
+                        <div id="property-location-map" class="h-80 w-full" aria-label="Mapa para localizar el inmueble"></div>
+                        <div id="geocoding-status" class="border-t border-gray-200 bg-white px-4 py-3 text-sm text-gray-600">
+                            {% if form.latitude.value and form.longitude.value %}
+                                <span class="font-medium text-emerald-700"><i class="fa-solid fa-circle-check mr-1.5"></i>El inmueble tiene una ubicación guardada. Puedes moverla si es necesario.</span>
+                            {% else %}
+                                La ubicación se calculará automáticamente al guardar si la dirección pertenece a Arcos de la Frontera.
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if form.latitude.errors %}<p class="mt-1 text-sm text-red-600">{{ form.latitude.errors.0 }}</p>{% endif %}
+                    {% if form.longitude.errors %}<p class="mt-1 text-sm text-red-600">{{ form.longitude.errors.0 }}</p>{% endif %}
                 </div>
 
                 <div class="md:col-span-2 lg:col-span-4">
@@ -140,4 +175,129 @@
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9coqIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+    const latitudeInput = document.getElementById('id_latitude');
+    const longitudeInput = document.getElementById('id_longitude');
+    const locationStatus = document.getElementById('geocoding-status');
+    const addressInputs = ['id_street', 'id_number', 'id_postal_code', 'id_city', 'id_province']
+        .map(id => document.getElementById(id))
+        .filter(Boolean);
+    const propertyMap = L.map('property-location-map').setView([36.7509, -5.8067], 14);
+    let propertyMarker = null;
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(propertyMap);
+
+    function setLocationStatus(message, state = 'neutral') {
+        const colors = {
+            neutral: 'text-gray-600',
+            loading: 'text-indigo-700',
+            success: 'text-emerald-700',
+            error: 'text-red-700',
+        };
+        locationStatus.className = `border-t border-gray-200 bg-white px-4 py-3 text-sm font-medium ${colors[state]}`;
+        locationStatus.textContent = message;
+    }
+
+    function setPropertyLocation(latitude, longitude, statusMessage, zoom = true) {
+        const lat = Number(latitude);
+        const lng = Number(longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+        latitudeInput.value = lat.toFixed(6);
+        longitudeInput.value = lng.toFixed(6);
+        if (!propertyMarker) {
+            propertyMarker = L.marker([lat, lng], {draggable: true}).addTo(propertyMap);
+            propertyMarker.on('dragend', event => {
+                const position = event.target.getLatLng();
+                setPropertyLocation(
+                    position.lat,
+                    position.lng,
+                    'Ubicación ajustada manualmente.',
+                    false,
+                );
+            });
+        } else {
+            propertyMarker.setLatLng([lat, lng]);
+        }
+        if (zoom) propertyMap.setView([lat, lng], 18);
+        setLocationStatus(statusMessage || 'Ubicación seleccionada.', 'success');
+    }
+
+    function clearStoredLocation() {
+        latitudeInput.value = '';
+        longitudeInput.value = '';
+        if (propertyMarker) {
+            propertyMap.removeLayer(propertyMarker);
+            propertyMarker = null;
+        }
+        setLocationStatus(
+            'La dirección ha cambiado. Vuelve a localizarla o guarda para calcularla automáticamente.',
+            'neutral',
+        );
+    }
+
+    propertyMap.on('click', event => {
+        setPropertyLocation(
+            event.latlng.lat,
+            event.latlng.lng,
+            'Ubicación seleccionada manualmente.',
+        );
+    });
+
+    const hasInitialCoordinates = latitudeInput.value !== '' && longitudeInput.value !== '';
+    const initialLatitude = Number(latitudeInput.value);
+    const initialLongitude = Number(longitudeInput.value);
+    if (hasInitialCoordinates && Number.isFinite(initialLatitude) && Number.isFinite(initialLongitude)) {
+        setPropertyLocation(
+            initialLatitude,
+            initialLongitude,
+            'Ubicación guardada. Puedes arrastrar el marcador para corregirla.',
+        );
+    }
+
+    addressInputs.forEach(input => input.addEventListener('input', clearStoredLocation));
+
+    document.getElementById('locate-property').addEventListener('click', async event => {
+        const button = event.currentTarget;
+        const values = Object.fromEntries(addressInputs.map(input => [input.name, input.value.trim()]));
+        if (!values.street || !values.number || !values.city) {
+            setLocationStatus('Completa al menos la calle, el número y la ciudad.', 'error');
+            return;
+        }
+
+        button.disabled = true;
+        button.classList.add('opacity-60', 'cursor-wait');
+        setLocationStatus('Buscando la dirección…', 'loading');
+
+        try {
+            const response = await fetch("{% url 'property_geocode' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+                body: new URLSearchParams(values),
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success) throw new Error(data.message || 'No se pudo localizar la dirección.');
+            setPropertyLocation(
+                data.latitude,
+                data.longitude,
+                `Dirección localizada mediante ${data.source}. Comprueba el punto antes de guardar.`,
+            );
+        } catch (error) {
+            setLocationStatus(error.message, 'error');
+        } finally {
+            button.disabled = false;
+            button.classList.remove('opacity-60', 'cursor-wait');
+        }
+    });
+</script>
 {% endblock %}

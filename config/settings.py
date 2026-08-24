@@ -134,8 +134,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [
-    BASE_DIR / 'static'
-
+    BASE_DIR / 'static',
+    BASE_DIR / 'node_modules' / 'leaflet' / 'dist',
 ]
 
 MEDIA_URL = '/media/'

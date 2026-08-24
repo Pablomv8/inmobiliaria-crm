@@ -9,14 +9,70 @@ from contacts.models import Contact
 from .forms import PropertyCommentForm, PropertyForm, OwnerContactForm
 from .timeline import build_property_timeline
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.apps import apps
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
+from django.urls import reverse
 from config.pagination import paginate
 
 
 from django.db.models import Q
+from .geocoding import geocode_address, is_arcos_de_la_frontera
 
-from django.db.models import Q
+ADDRESS_FIELDS = {"street", "number", "postal_code", "city", "province"}
+COORDINATE_FIELDS = {"latitude", "longitude"}
+
+
+def property_form_context(form, title):
+    Street = apps.get_model("tasks", "Street")
+    return {
+        "form": form,
+        "title": title,
+        "street_suggestions": Street.objects.filter(
+            municipality="Arcos de la Frontera",
+        ).values_list("name", flat=True),
+    }
+
+
+def apply_automatic_geocoding(form, property_obj, creating=False):
+    address_changed = bool(ADDRESS_FIELDS.intersection(form.changed_data))
+    coordinates_changed = bool(COORDINATE_FIELDS.intersection(form.changed_data))
+    submitted_coordinates = (
+        property_obj.latitude is not None
+        and property_obj.longitude is not None
+    )
+    manually_positioned = coordinates_changed and submitted_coordinates
+
+    if address_changed and not manually_positioned:
+        property_obj.latitude = None
+        property_obj.longitude = None
+
+    has_coordinates = (
+        property_obj.latitude is not None
+        and property_obj.longitude is not None
+    )
+    should_geocode = (
+        (creating or address_changed)
+        and not manually_positioned
+        and not has_coordinates
+        and is_arcos_de_la_frontera(property_obj.city)
+    )
+    if not should_geocode:
+        return None
+
+    result = geocode_address(
+        property_obj.street,
+        property_obj.number,
+        property_obj.postal_code,
+        property_obj.city,
+        property_obj.province,
+    )
+    if result:
+        property_obj.latitude = result.latitude
+        property_obj.longitude = result.longitude
+    return result
+
 
 @login_required
 def property_list(request):
@@ -145,8 +201,28 @@ def property_create(request):
 
             property_obj = form.save(commit=False)
             property_obj.created_by = request.user
+            geocoding_result = apply_automatic_geocoding(
+                form,
+                property_obj,
+                creating=True,
+            )
             property_obj.save()
             form.save_m2m()
+
+            if geocoding_result:
+                messages.success(
+                    request,
+                    "Inmueble localizado automáticamente en el mapa.",
+                )
+            elif (
+                property_obj.latitude is None
+                and is_arcos_de_la_frontera(property_obj.city)
+            ):
+                messages.warning(
+                    request,
+                    "El inmueble se ha guardado, pero no se pudo localizar "
+                    "automáticamente. Puedes corregir el punto al editarlo.",
+                )
 
             return redirect('properties')
 
@@ -154,10 +230,91 @@ def property_create(request):
 
         form = PropertyForm()
 
-    return render(request, 'properties/form.html', {
-        'form': form,
-        'title': 'Nuevo inmueble'
-    })
+    return render(
+        request,
+        'properties/form.html',
+        property_form_context(form, 'Nuevo inmueble'),
+    )
+
+
+@login_required
+def property_map(request):
+    Property.refresh_aged_contact_statuses()
+    all_properties = Property.objects.all()
+    properties = all_properties.filter(
+        latitude__isnull=False,
+        longitude__isnull=False,
+    ).select_related("zone")
+
+    search = request.GET.get("search", "").strip()
+    status = request.GET.get("status", "")
+    property_type = request.GET.get("type", "")
+    zone = request.GET.get("zone", "")
+    occupied_by = request.GET.get("occupied_by", "")
+
+    if search:
+        properties = properties.filter(
+            Q(street__icontains=search)
+            | Q(number__icontains=search)
+            | Q(city__icontains=search)
+        )
+    if status:
+        properties = properties.filter(status=status)
+    if property_type:
+        properties = properties.filter(property_type=property_type)
+    if zone:
+        properties = properties.filter(zone_id=zone)
+    if occupied_by:
+        properties = properties.filter(occupied_by=occupied_by)
+
+    properties = list(properties.order_by("street", "number"))
+    property_map_data = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "id": str(property_obj.pk),
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [
+                        float(property_obj.longitude),
+                        float(property_obj.latitude),
+                    ],
+                },
+                "properties": {
+                    "id": str(property_obj.pk),
+                    "address": property_obj.full_address,
+                    "status": property_obj.status,
+                    "status_label": property_obj.get_status_display(),
+                    "property_type": property_obj.get_property_type_display(),
+                    "occupied_by": property_obj.get_occupied_by_display(),
+                    "zone": str(property_obj.zone or "Sin zona"),
+                    "detail_url": reverse("property_detail", args=[property_obj.pk]),
+                },
+            }
+            for property_obj in properties
+        ],
+    }
+    geolocated_total = all_properties.filter(
+        latitude__isnull=False,
+        longitude__isnull=False,
+    ).count()
+
+    return render(
+        request,
+        "properties/map.html",
+        {
+            "properties": properties,
+            "property_map_data": property_map_data,
+            "displayed_count": len(properties),
+            "geolocated_total": geolocated_total,
+            "pending_location_count": all_properties.count() - geolocated_total,
+            "zones": Zone.objects.order_by("name"),
+            "property_types": Property.PROPERTY_TYPE_CHOICES,
+            "status_choices": Property.STATUS_CHOICES,
+            "occupancy_choices": Property.OCCUPANCY_CHOICES,
+        },
+    )
 
 @login_required
 def property_update(request, pk):
@@ -173,8 +330,26 @@ def property_update(request, pk):
         )
 
         if form.is_valid():
+            property_obj = form.save(commit=False)
+            geocoding_result = apply_automatic_geocoding(form, property_obj)
+            property_obj.save()
+            form.save_m2m()
 
-            form.save()
+            if geocoding_result:
+                messages.success(
+                    request,
+                    "Dirección actualizada y localizada automáticamente.",
+                )
+            elif (
+                ADDRESS_FIELDS.intersection(form.changed_data)
+                and property_obj.latitude is None
+                and is_arcos_de_la_frontera(property_obj.city)
+            ):
+                messages.warning(
+                    request,
+                    "La dirección se ha actualizado, pero no se pudo localizar. "
+                    "Puedes seleccionar el punto manualmente en el mapa.",
+                )
 
             return redirect('property_detail', pk=property.id)
 
@@ -182,9 +357,51 @@ def property_update(request, pk):
 
         form = PropertyForm(instance=property)
 
-    return render(request, 'properties/form.html', {
-        'form': form,
-        'title': 'Editar inmueble'
+    return render(
+        request,
+        'properties/form.html',
+        property_form_context(form, 'Editar inmueble'),
+    )
+
+
+@login_required
+@require_POST
+def property_geocode(request):
+    city = request.POST.get("city", "")
+    if not is_arcos_de_la_frontera(city):
+        return JsonResponse(
+            {
+                "success": False,
+                "message": "La localización automática está configurada para Arcos de la Frontera.",
+            },
+            status=400,
+        )
+
+    result = geocode_address(
+        request.POST.get("street", ""),
+        request.POST.get("number", ""),
+        request.POST.get("postal_code", ""),
+        city,
+        request.POST.get("province", ""),
+    )
+    if not result:
+        return JsonResponse(
+            {
+                "success": False,
+                "message": (
+                    "No se encontró la dirección. Pulsa sobre el mapa para "
+                    "colocar el inmueble manualmente."
+                ),
+            },
+            status=404,
+        )
+
+    return JsonResponse({
+        "success": True,
+        "latitude": str(result.latitude),
+        "longitude": str(result.longitude),
+        "source": result.source,
+        "label": result.label,
     })
 
 @login_required

@@ -17,10 +17,16 @@
             </p>
         </div>
 
-        <a class="bg-gray-900 text-white px-5 py-3 rounded-xl hover:bg-gray-800 transition text-center"
-        href="{% url 'property_create' %}">
-            + Nuevo inmueble
-        </a>
+        <div class="flex flex-col gap-2 sm:flex-row">
+            <a class="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-5 py-3 text-center font-semibold text-gray-700 transition hover:bg-gray-50"
+            href="{% url 'property_map' %}">
+                <i class="fa-solid fa-map-location-dot"></i> Ver mapa
+            </a>
+            <a class="rounded-xl bg-gray-900 px-5 py-3 text-center text-white transition hover:bg-gray-800"
+            href="{% url 'property_create' %}">
+                + Nuevo inmueble
+            </a>
+        </div>
 
     </div>
 

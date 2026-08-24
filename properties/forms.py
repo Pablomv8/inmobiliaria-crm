@@ -34,6 +34,23 @@ class PropertyForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["zone"].queryset = Zone.objects.order_by("name")
         self.fields["zone"].empty_label = "Selecciona una zona"
+        if not self.is_bound and not self.instance.pk:
+            self.initial.setdefault("city", "Arcos de la Frontera")
+            self.initial.setdefault("province", "Cádiz")
+
+    def clean(self):
+        cleaned_data = super().clean()
+        latitude = cleaned_data.get("latitude")
+        longitude = cleaned_data.get("longitude")
+        if (latitude is None) != (longitude is None):
+            raise forms.ValidationError(
+                "La ubicación del mapa debe incluir latitud y longitud."
+            )
+        if latitude is not None and not (-90 <= latitude <= 90):
+            self.add_error("latitude", "La latitud seleccionada no es válida.")
+        if longitude is not None and not (-180 <= longitude <= 180):
+            self.add_error("longitude", "La longitud seleccionada no es válida.")
+        return cleaned_data
 
     class Meta:
         model = Property
@@ -44,6 +61,8 @@ class PropertyForm(forms.ModelForm):
             'postal_code',
             'city',
             'province',
+            'latitude',
+            'longitude',
             'zone',
             "bedrooms",
             "bathrooms",
@@ -61,6 +80,8 @@ class PropertyForm(forms.ModelForm):
             "postal_code": "Código postal",
             "city": "Ciudad",
             "province": "Provincia",
+            "latitude": "Latitud",
+            "longitude": "Longitud",
             "zone": "Zona",
             "bedrooms": "Habitaciones",
             "bathrooms": "Baños",
@@ -83,7 +104,9 @@ class PropertyForm(forms.ModelForm):
             # BASIC INFO
             'street': forms.TextInput(attrs={
                 'class': INPUT_CLASS,
-                'placeholder': 'Calle Alcalá'
+                'placeholder': 'Ej. Calle Corredera',
+                'list': 'arcos-street-options',
+                'autocomplete': 'street-address',
             }),
 
             'number': forms.TextInput(attrs={
@@ -98,13 +121,16 @@ class PropertyForm(forms.ModelForm):
 
             'city': forms.TextInput(attrs={
                 'class': INPUT_CLASS,
-                'placeholder': 'Madrid'
+                'placeholder': 'Arcos de la Frontera'
             }),
 
             'province': forms.TextInput(attrs={
                 'class': INPUT_CLASS,
-                'placeholder': 'Madrid'
+                'placeholder': 'Cádiz'
             }),
+
+            'latitude': forms.HiddenInput(),
+            'longitude': forms.HiddenInput(),
 
             'zone': forms.Select(attrs={
                 'class': SELECT_CLASS,
