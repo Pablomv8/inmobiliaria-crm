@@ -58,6 +58,9 @@ class PropertyForm(forms.ModelForm):
         fields = [
             'street',
             'number',
+            'block',
+            'floor',
+            'door',
             'postal_code',
             'city',
             'province',
@@ -77,6 +80,9 @@ class PropertyForm(forms.ModelForm):
         labels = {
             "street": "Calle",
             "number": "Número",
+            "block": "Bloque o portal",
+            "floor": "Planta",
+            "door": "Puerta o local",
             "postal_code": "Código postal",
             "city": "Ciudad",
             "province": "Provincia",
@@ -104,14 +110,32 @@ class PropertyForm(forms.ModelForm):
             # BASIC INFO
             'street': forms.TextInput(attrs={
                 'class': INPUT_CLASS,
-                'placeholder': 'Ej. Calle Corredera',
-                'list': 'arcos-street-options',
-                'autocomplete': 'street-address',
+                'placeholder': 'Empieza a escribir, por ejemplo: Corredera',
+                'autocomplete': 'off',
+                'role': 'combobox',
+                'aria-autocomplete': 'list',
+                'aria-controls': 'address-suggestions',
+                'aria-expanded': 'false',
             }),
 
             'number': forms.TextInput(attrs={
                 'class': INPUT_CLASS,
                 'placeholder': '45'
+            }),
+
+            'block': forms.TextInput(attrs={
+                'class': INPUT_CLASS,
+                'placeholder': 'Ej. B o 2',
+            }),
+
+            'floor': forms.TextInput(attrs={
+                'class': INPUT_CLASS,
+                'placeholder': 'Ej. 2º',
+            }),
+
+            'door': forms.TextInput(attrs={
+                'class': INPUT_CLASS,
+                'placeholder': 'Ej. A',
             }),
 
             'postal_code': forms.TextInput(attrs={

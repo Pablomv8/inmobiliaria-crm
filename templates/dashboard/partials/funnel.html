@@ -9,14 +9,21 @@
             <p class="text-lg font-bold text-emerald-800">{{ funnel.closing_rate }}%</p>
         </div>
     </div>
-    <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+    <div class="mt-6 space-y-3">
         {% for stage in funnel.stages %}
-            <a href="{{ stage.url }}" class="relative rounded-xl border border-gray-100 bg-gray-50 p-4 transition hover:border-indigo-200 hover:bg-indigo-50/40">
-                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ stage.label }}</p>
-                <div class="mt-2 flex items-end justify-between gap-2">
-                    <p class="text-2xl font-bold text-gray-900">{{ stage.count }}</p>
-                    {% if not forloop.first %}<span class="text-xs font-semibold text-indigo-600">{{ stage.conversion }}%</span>{% endif %}
+            <a href="{{ stage.url }}" class="group grid grid-cols-[minmax(6.5rem,9rem)_minmax(0,1fr)_3rem] items-center gap-3 rounded-xl px-2 py-1.5 transition hover:bg-gray-50">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 group-hover:text-indigo-700">{{ stage.label }}</p>
+                    {% if not forloop.first %}<p class="mt-0.5 text-[11px] text-gray-400">{{ stage.conversion }}% desde la fase anterior</p>{% endif %}
                 </div>
+                <div class="h-9 overflow-hidden rounded-lg bg-gray-100">
+                    {% if stage.count %}
+                        <div class="flex h-full min-w-8 items-center justify-end rounded-lg px-2 text-xs font-bold text-white transition-all group-hover:brightness-95 {% cycle 'bg-amber-500' 'bg-orange-500' 'bg-indigo-500' 'bg-violet-500' 'bg-blue-600' 'bg-emerald-600' %}" style="width: {{ stage.width }}%">
+                            {% if stage.width >= 18 %}{{ stage.count }}{% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+                <p class="text-right text-xl font-bold text-gray-900">{{ stage.count }}</p>
             </a>
         {% endfor %}
     </div>

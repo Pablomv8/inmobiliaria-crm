@@ -12,6 +12,7 @@ from calendar_app.models import Appointment
 from listings.models import Listing
 from news.models import News
 from sales.models import Sale
+from tasks.models import Street
 
 from .forms import OwnerContactForm, PropertyForm
 from .geocoding import GeocodingResult, geocode_address
@@ -48,6 +49,26 @@ class PropertyModelTests(TestCase):
         self.assertNotIn("price", form.fields)
         self.assertNotIn("status", form.fields)
         self.assertIn("occupied_by", form.fields)
+        self.assertIn("block", form.fields)
+        self.assertIn("floor", form.fields)
+        self.assertIn("door", form.fields)
+
+    def test_flat_full_address_includes_block_floor_and_door(self):
+        property_obj = Property(
+            street="Calle Corredera",
+            number="12",
+            city="Arcos de la Frontera",
+            property_type="flat",
+            block="B",
+            floor="2º",
+            door="A",
+        )
+
+        self.assertEqual(
+            property_obj.full_address,
+            "Calle Corredera 12, Bloque/portal B, Planta 2º, Puerta A, "
+            "Arcos de la Frontera",
+        )
 
     def test_property_form_exposes_zone_ordered_by_name(self):
         second_zone = Zone.objects.create(name="Zona Sur")
@@ -96,6 +117,10 @@ class PropertyFormViewTests(TestCase):
         )
         self.first_zone = Zone.objects.create(name="Centro inmueble")
         self.second_zone = Zone.objects.create(name="Norte inmueble")
+        self.suggested_street = Street.objects.create(
+            name="Calle Corredera",
+            municipality="Arcos de la Frontera",
+        )
         self.property = Property.objects.create(
             street="Calle Antigua",
             number="5",
@@ -114,8 +139,12 @@ class PropertyFormViewTests(TestCase):
         self.assertContains(form_response, 'name="occupied_by"', html=False)
         self.assertNotContains(form_response, 'name="status"', html=False)
         self.assertContains(form_response, "property-location-map")
-        self.assertContains(form_response, "Localizar dirección")
-        self.assertContains(form_response, "arcos-street-options")
+        self.assertContains(form_response, "Comprobar ubicación")
+        self.assertContains(form_response, "address-suggestions")
+        self.assertContains(form_response, reverse("property_address_suggestions"))
+        self.assertContains(form_response, "address-block-field")
+        self.assertContains(form_response, "updateAddressFields")
+        self.assertContains(form_response, "/static/leaflet.js")
 
         response = self.client.post(
             reverse("property_create"),
@@ -135,6 +164,57 @@ class PropertyFormViewTests(TestCase):
         self.assertEqual(created_property.occupied_by, "vacant")
         self.assertEqual(created_property.status, "vacant")
         self.assertEqual(created_property.created_by, self.user)
+
+    def test_flat_address_details_are_saved(self):
+        response = self.client.post(
+            reverse("property_create"),
+            {
+                "street": "Calle Corredera",
+                "number": "12",
+                "block": "B",
+                "floor": "2º",
+                "door": "A",
+                "city": "Madrid",
+                "zone": self.second_zone.pk,
+                "property_type": "flat",
+                "occupied_by": "owner",
+            },
+        )
+
+        self.assertRedirects(response, reverse("properties"))
+        property_obj = Property.objects.get(
+            street="Calle Corredera",
+            city="Madrid",
+        )
+        self.assertEqual(property_obj.block, "B")
+        self.assertEqual(property_obj.floor, "2º")
+        self.assertEqual(property_obj.door, "A")
+
+    def test_address_suggestions_search_arcos_streets(self):
+        Street.objects.create(
+            name="Calle Corredera de otra ciudad",
+            municipality="Jerez de la Frontera",
+        )
+
+        response = self.client.get(
+            reverse("property_address_suggestions"),
+            {"q": "Corre"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        suggestions = response.json()["suggestions"]
+        self.assertEqual(len(suggestions), 1)
+        self.assertEqual(suggestions[0]["street"], self.suggested_street.name)
+        self.assertEqual(suggestions[0]["city"], "Arcos de la Frontera")
+
+    def test_address_suggestions_require_two_characters(self):
+        response = self.client.get(
+            reverse("property_address_suggestions"),
+            {"q": "C"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"suggestions": []})
 
     def test_edit_form_changes_property_zone(self):
         response = self.client.post(

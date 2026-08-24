@@ -11,7 +11,7 @@ from .timeline import build_property_timeline
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.apps import apps
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 from django.http import JsonResponse
 from django.urls import reverse
 from config.pagination import paginate
@@ -25,14 +25,35 @@ COORDINATE_FIELDS = {"latitude", "longitude"}
 
 
 def property_form_context(form, title):
-    Street = apps.get_model("tasks", "Street")
     return {
         "form": form,
         "title": title,
-        "street_suggestions": Street.objects.filter(
-            municipality="Arcos de la Frontera",
-        ).values_list("name", flat=True),
     }
+
+
+@login_required
+@require_GET
+def property_address_suggestions(request):
+    query = request.GET.get("q", "").strip()
+    if len(query) < 2:
+        return JsonResponse({"suggestions": []})
+
+    Street = apps.get_model("tasks", "Street")
+    streets = Street.objects.filter(
+        municipality="Arcos de la Frontera",
+        name__icontains=query,
+    ).order_by("name")[:8]
+    return JsonResponse({
+        "suggestions": [
+            {
+                "label": street.name,
+                "street": street.name,
+                "city": street.municipality,
+                "province": "Cádiz",
+            }
+            for street in streets
+        ],
+    })
 
 
 def apply_automatic_geocoding(form, property_obj, creating=False):

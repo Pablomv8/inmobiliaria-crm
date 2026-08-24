@@ -1,10 +1,9 @@
-import json
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from itertools import chain
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q, Sum
-from django.db.models.functions import TruncDate
+from django.db.models.functions import TruncMonth
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
@@ -89,15 +88,23 @@ def build_commercial_funnel(
         f"{reverse('sale_list')}{agent_query}",
     ]
     stages = []
+    largest_stage = max(counts, default=0)
     for index, (label, count) in enumerate(zip(labels, counts)):
+        conversion = (
+            conversion_percentage(count, counts[index - 1])
+            if index
+            else 100
+        )
         stages.append({
             "label": label,
             "count": count,
             "url": urls[index],
-            "conversion": (
-                conversion_percentage(count, counts[index - 1])
-                if index
-                else 100
+            "conversion": conversion,
+            "dropoff": 100 - conversion if index else 0,
+            "width": (
+                max(6, round(count * 100 / largest_stage))
+                if count and largest_stage
+                else 0
             ),
         })
     return {
@@ -139,6 +146,195 @@ def build_economic_summary(sales, rentals, *, user=None):
 def build_goal_rows(queryset, limit=4):
     goals = queryset.prefetch_related("assignees").order_by("end_date")[:limit]
     return [build_goal_progress(goal) for goal in goals]
+
+
+def build_goal_summary(queryset):
+    rows = [build_goal_progress(goal) for goal in queryset.prefetch_related(
+        "assignees"
+    )]
+    active_count = len(rows)
+    average_progress = (
+        round(sum(row["percentage"] for row in rows) / active_count)
+        if active_count
+        else 0
+    )
+    achieved_count = sum(1 for row in rows if row["is_achieved"])
+    today = timezone.localdate()
+    at_risk_count = sum(
+        1
+        for row in rows
+        if not row["is_achieved"]
+        and row["goal"].end_date <= today + timedelta(days=7)
+    )
+    return {
+        "active": active_count,
+        "achieved": achieved_count,
+        "at_risk": at_risk_count,
+        "percentage": average_progress,
+    }
+
+
+def shift_month(month_start, offset):
+    month_index = month_start.year * 12 + month_start.month - 1 + offset
+    return date(month_index // 12, month_index % 12 + 1, 1)
+
+
+def monthly_counts(queryset, field, start_date):
+    rows = (
+        queryset.filter(**{f"{field}__date__gte": start_date})
+        .annotate(month=TruncMonth(field))
+        .values("month")
+        .annotate(total=Count("id"))
+    )
+    counts = {}
+    for row in rows:
+        month = row["month"]
+        if isinstance(month, datetime):
+            month = month.date()
+        counts[month.replace(day=1)] = row["total"]
+    return counts
+
+
+def monthly_date_counts(queryset, field, start_date):
+    rows = (
+        queryset.filter(**{f"{field}__gte": start_date})
+        .annotate(month=TruncMonth(field))
+        .values("month")
+        .annotate(total=Count("id"))
+    )
+    counts = {}
+    for row in rows:
+        month = row["month"]
+        if isinstance(month, datetime):
+            month = month.date()
+        counts[month.replace(day=1)] = row["total"]
+    return counts
+
+
+def build_monthly_evolution(
+    news,
+    listings,
+    orders,
+    proposals,
+    sales,
+    rentals,
+    months=6,
+):
+    current_month = timezone.localdate().replace(day=1)
+    month_list = [
+        shift_month(current_month, offset)
+        for offset in range(-(months - 1), 1)
+    ]
+    start_date = month_list[0]
+    news_map = monthly_counts(news, "created_at", start_date)
+    listing_map = monthly_counts(listings, "created_at", start_date)
+    order_map = monthly_counts(orders, "created_at", start_date)
+    proposal_map = monthly_counts(proposals, "created_at", start_date)
+    sale_map = monthly_date_counts(
+        sales.filter(status="signed"),
+        "sale_date",
+        start_date,
+    )
+    rental_map = monthly_date_counts(
+        rentals.filter(status="signed"),
+        "contract_date",
+        start_date,
+    )
+    return {
+        "labels": [month.strftime("%m/%Y") for month in month_list],
+        "news": [news_map.get(month, 0) for month in month_list],
+        "listings": [listing_map.get(month, 0) for month in month_list],
+        "orders": [order_map.get(month, 0) for month in month_list],
+        "proposals": [proposal_map.get(month, 0) for month in month_list],
+        "closings": [
+            sale_map.get(month, 0) + rental_map.get(month, 0)
+            for month in month_list
+        ],
+    }
+
+
+def build_dashboard_analytics(
+    *,
+    goals,
+    news,
+    listings,
+    orders,
+    proposals,
+    sales,
+    rentals,
+):
+    return {
+        "monthly": build_monthly_evolution(
+            news,
+            listings,
+            orders,
+            proposals,
+            sales,
+            rentals,
+        ),
+        "goals": build_goal_summary(goals),
+    }
+
+
+def build_agent_comparison(days):
+    start_date = timezone.localdate() - timedelta(days=days - 1)
+    users = list(
+        User.objects.filter(
+            is_active=True,
+            role__in=["agent", "manager", "admin"],
+        ).order_by("first_name", "last_name", "username")
+    )
+    contacts = grouped_counts(
+        Contact.objects.filter(created_at__date__gte=start_date),
+        "assigned_agent_id",
+    )
+    news = grouped_counts(
+        News.objects.filter(created_at__date__gte=start_date),
+        "agent_id",
+    )
+    listings = grouped_counts(
+        Listing.objects.filter(created_at__date__gte=start_date),
+        "agent_id",
+    )
+    orders = grouped_counts(
+        Order.objects.filter(created_at__date__gte=start_date),
+        "agent_id",
+    )
+    appointments = grouped_counts(
+        Appointment.objects.filter(
+            date__gte=start_date,
+            status="completed",
+        ),
+        "agent_id",
+    )
+    rows = []
+    for user in users:
+        row = {
+            "user": user,
+            "contacts": contacts.get(user.pk, 0),
+            "news": news.get(user.pk, 0),
+            "listings": listings.get(user.pk, 0),
+            "orders": orders.get(user.pk, 0),
+            "appointments": appointments.get(user.pk, 0),
+        }
+        row["total"] = sum(
+            row[key]
+            for key in ("contacts", "news", "listings", "orders", "appointments")
+        )
+        rows.append(row)
+    rows.sort(key=lambda row: (-row["total"], row["user"].username))
+    rows = rows[:10]
+    return {
+        "labels": [
+            row["user"].get_full_name() or row["user"].username
+            for row in rows
+        ],
+        "contacts": [row["contacts"] for row in rows],
+        "news": [row["news"] for row in rows],
+        "listings": [row["listings"] for row in rows],
+        "orders": [row["orders"] for row in rows],
+        "appointments": [row["appointments"] for row in rows],
+    }
 
 
 def build_action_items(
@@ -343,46 +539,6 @@ def build_worker_rows():
     return rows
 
 
-def build_activity_chart(days, news, appointments, proposals):
-    today = timezone.localdate()
-    start_date = today - timedelta(days=days - 1)
-    news_map = {
-        item["day"]: item["total"]
-        for item in news.filter(created_at__date__gte=start_date)
-        .annotate(day=TruncDate("created_at"))
-        .values("day")
-        .annotate(total=Count("id"))
-    }
-    appointments_map = {
-        item["date"]: item["total"]
-        for item in appointments.filter(
-            status="completed",
-            date__gte=start_date,
-        )
-        .values("date")
-        .annotate(total=Count("id"))
-    }
-    proposals_map = {
-        item["day"]: item["total"]
-        for item in proposals.filter(created_at__date__gte=start_date)
-        .annotate(day=TruncDate("created_at"))
-        .values("day")
-        .annotate(total=Count("id"))
-    }
-
-    dates = [start_date + timedelta(days=offset) for offset in range(days)]
-    return {
-        "activity_labels": json.dumps([day.strftime("%d/%m") for day in dates]),
-        "news_data": json.dumps([news_map.get(day, 0) for day in dates]),
-        "appointments_data": json.dumps(
-            [appointments_map.get(day, 0) for day in dates]
-        ),
-        "proposals_data": json.dumps(
-            [proposals_map.get(day, 0) for day in dates]
-        ),
-    }
-
-
 @login_required
 def dashboard(request):
     Property.refresh_aged_contact_statuses()
@@ -432,12 +588,20 @@ def dashboard(request):
         personal_rentals,
         user=user,
     )
-    personal_goal_rows = build_goal_rows(
-        Goal.objects.filter(
-            assignees=user,
-            start_date__lte=today,
-            end_date__gte=today,
-        ).distinct()
+    personal_goals = Goal.objects.filter(
+        assignees=user,
+        start_date__lte=today,
+        end_date__gte=today,
+    ).distinct()
+    personal_goal_rows = build_goal_rows(personal_goals)
+    personal_analytics = build_dashboard_analytics(
+        goals=personal_goals,
+        news=personal_news,
+        listings=personal_listings,
+        orders=personal_orders,
+        proposals=personal_proposals,
+        sales=personal_sales,
+        rentals=personal_rentals,
     )
     personal_action_items = build_action_items(
         user=user,
@@ -511,21 +675,6 @@ def dashboard(request):
         selected_days = 30
 
     chart_is_office = show_office_dashboard
-    chart_news = News.objects.all() if chart_is_office else personal_news
-    chart_appointments = (
-        Appointment.objects.all() if chart_is_office else personal_appointments
-    )
-    chart_proposals = (
-        ProposalAppointment.objects.all()
-        if chart_is_office
-        else personal_proposals
-    )
-    chart_context = build_activity_chart(
-        selected_days,
-        chart_news,
-        chart_appointments,
-        chart_proposals,
-    )
 
     context = {
         "is_office_viewer": is_office_viewer,
@@ -555,6 +704,7 @@ def dashboard(request):
         "personal_funnel": personal_funnel,
         "personal_economics": personal_economics,
         "personal_goal_rows": personal_goal_rows,
+        "personal_analytics": personal_analytics,
         "personal_action_items": personal_action_items,
         "upcoming_events": upcoming_events,
         "upcoming_tasks": upcoming_tasks,
@@ -575,7 +725,6 @@ def dashboard(request):
             if chart_is_office
             else Activity.objects.filter(user=user)
         ).select_related("user")[:6],
-        **chart_context,
     }
 
     if show_office_dashboard:
@@ -592,12 +741,19 @@ def dashboard(request):
             Sale.objects.all(),
             RentalContract.objects.all(),
         )
-        office_goal_rows = build_goal_rows(
-            Goal.objects.filter(
-                start_date__lte=today,
-                end_date__gte=today,
-            ).distinct(),
-            limit=3,
+        office_goals = Goal.objects.filter(
+            start_date__lte=today,
+            end_date__gte=today,
+        ).distinct()
+        office_goal_rows = build_goal_rows(office_goals, limit=3)
+        office_analytics = build_dashboard_analytics(
+            goals=office_goals,
+            news=News.objects.all(),
+            listings=Listing.objects.all(),
+            orders=Order.objects.all(),
+            proposals=ProposalAppointment.objects.all(),
+            sales=Sale.objects.all(),
+            rentals=RentalContract.objects.all(),
         )
         office_action_items = build_action_items(
             user=user,
@@ -638,6 +794,8 @@ def dashboard(request):
             "office_funnel": office_funnel,
             "office_economics": office_economics,
             "office_goal_rows": office_goal_rows,
+            "office_analytics": office_analytics,
+            "agent_comparison": build_agent_comparison(selected_days),
             "office_action_items": office_action_items,
             "user_rows": build_user_rows(),
         })

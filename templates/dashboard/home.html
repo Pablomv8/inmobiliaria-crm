@@ -151,6 +151,8 @@
         {% include "dashboard/partials/goals.html" with goal_rows=personal_goal_rows goals_title="Mis objetivos activos" goals_subtitle="Progreso calculado automáticamente con tu actividad." %}
     </section>
 
+    {% include "dashboard/partials/analytics.html" with analytics=personal_analytics analytics_id="personal-dashboard-analytics" evolution_title="Evolución de mi cartera" goals_title="Cumplimiento personal" %}
+
     {% include "dashboard/partials/economics.html" with economics=personal_economics economics_title="Mi resumen económico" economics_subtitle="Importes acumulados de ventas y alquileres firmados." %}
 
     <section class="grid xl:grid-cols-2 gap-6">
@@ -206,6 +208,28 @@
                 {% include "dashboard/partials/goals.html" with goal_rows=office_goal_rows goals_title="Objetivos activos de la oficina" goals_subtitle="Los tres objetivos más próximos a vencer." %}
             </div>
 
+            {% include "dashboard/partials/analytics.html" with analytics=office_analytics analytics_id="office-dashboard-analytics" evolution_title="Evolución comercial de la oficina" goals_title="Cumplimiento de la oficina" %}
+
+            <div class="rounded-2xl border border-indigo-100 bg-white p-5 shadow-sm sm:p-6">
+                <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-wider text-blue-600">Equipo</p>
+                        <h3 class="mt-1 text-lg font-semibold text-gray-900">Comparación de actividad por agente</h3>
+                        <p class="mt-1 text-sm text-gray-500">Hasta diez usuarios, ordenados por actividad registrada en el periodo.</p>
+                    </div>
+                    <form method="get">
+                        <input type="hidden" name="view" value="{{ dashboard_view }}">
+                        <select name="days" onchange="this.form.submit()" class="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-700">
+                            <option value="7" {% if selected_days == 7 %}selected{% endif %}>Últimos 7 días</option>
+                            <option value="30" {% if selected_days == 30 %}selected{% endif %}>Últimos 30 días</option>
+                            <option value="90" {% if selected_days == 90 %}selected{% endif %}>Últimos 90 días</option>
+                        </select>
+                    </form>
+                </div>
+                {{ agent_comparison|json_script:"agent-comparison-data" }}
+                <div class="h-96"><canvas id="agentComparisonChart" aria-label="Comparación de actividad entre agentes"></canvas></div>
+            </div>
+
             <div class="rounded-2xl border border-indigo-100 bg-white overflow-hidden">
                 <div class="px-5 py-4 border-b border-gray-100"><h3 class="font-semibold text-gray-900">Carga por usuario</h3><p class="text-sm text-gray-500 mt-1">{{ office_users }} usuarios activos.</p></div>
                 <div class="hidden lg:block overflow-x-auto">
@@ -246,20 +270,10 @@
         </section>
     {% endif %}
 
-    <section class="grid xl:grid-cols-3 gap-6">
-        <div class="xl:col-span-2 rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 shadow-sm">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                <div><h2 class="text-lg font-semibold text-gray-900">Actividad {% if chart_is_office %}de la oficina{% else %}de mi cartera{% endif %}</h2><p class="text-sm text-gray-500 mt-1">Noticias creadas, citas completadas y propuestas.</p></div>
-                <form method="get">{% if is_office_viewer %}<input type="hidden" name="view" value="{{ dashboard_view }}">{% endif %}<select name="days" onchange="this.form.submit()" class="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm"><option value="7" {% if selected_days == 7 %}selected{% endif %}>7 días</option><option value="30" {% if selected_days == 30 %}selected{% endif %}>30 días</option><option value="90" {% if selected_days == 90 %}selected{% endif %}>90 días</option></select></form>
-            </div>
-            <div class="h-80"><canvas id="activityChart"></canvas></div>
-        </div>
-
-        <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 class="text-lg font-semibold text-gray-900">Actividad reciente</h2>
-            <div class="space-y-4 mt-5">
-                {% for activity in recent_activities %}<div class="flex gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gray-100">{{ activity.icon }}</span><div><p class="text-sm text-gray-800">{{ activity.description }}</p><p class="text-xs text-gray-500 mt-1">{{ activity.user.username }} · {{ activity.created_at|timesince }}</p></div></div>{% empty %}<p class="rounded-xl bg-gray-50 p-5 text-center text-sm text-gray-500">No hay actividad reciente.</p>{% endfor %}
-            </div>
+    <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h2 class="text-lg font-semibold text-gray-900">Actividad reciente {% if chart_is_office %}de la oficina{% else %}de mi cartera{% endif %}</h2>
+        <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {% for activity in recent_activities %}<div class="flex gap-3 rounded-xl border border-gray-100 p-4"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gray-100">{{ activity.icon }}</span><div><p class="text-sm text-gray-800">{{ activity.description }}</p><p class="text-xs text-gray-500 mt-1">{{ activity.user.username }} · {{ activity.created_at|timesince }}</p></div></div>{% empty %}<p class="rounded-xl bg-gray-50 p-5 text-center text-sm text-gray-500 md:col-span-2 xl:col-span-3">No hay actividad reciente.</p>{% endfor %}
         </div>
     </section>
 </div>
@@ -268,20 +282,72 @@
 {% block extra_js %}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const canvas = document.getElementById("activityChart");
-    if (!canvas) return;
-    new Chart(canvas, {
-        type: "line",
-        data: {
-            labels: JSON.parse('{{ activity_labels|escapejs }}'),
-            datasets: [
-                {label: "Noticias", data: JSON.parse('{{ news_data|escapejs }}'), borderColor: "#f59e0b", backgroundColor: "rgba(245,158,11,.1)", fill: true, tension: .35},
-                {label: "Citas completadas", data: JSON.parse('{{ appointments_data|escapejs }}'), borderColor: "#4f46e5", backgroundColor: "rgba(79,70,229,.1)", fill: true, tension: .35},
-                {label: "Propuestas", data: JSON.parse('{{ proposals_data|escapejs }}'), borderColor: "#059669", backgroundColor: "rgba(5,150,105,.1)", fill: true, tension: .35}
-            ]
-        },
-        options: {responsive: true, maintainAspectRatio: false, interaction: {mode: "index", intersect: false}, plugins: {legend: {position: "top", labels: {usePointStyle: true}}}, scales: {y: {beginAtZero: true, ticks: {precision: 0}}, x: {grid: {display: false}}}}
+    if (typeof Chart === "undefined") return;
+
+    document.querySelectorAll("[data-dashboard-analytics]").forEach(container => {
+        const data = JSON.parse(document.getElementById(container.dataset.dashboardAnalytics).textContent);
+        const monthlyCanvas = container.querySelector("[data-monthly-chart]");
+        new Chart(monthlyCanvas, {
+            type: "line",
+            data: {
+                labels: data.monthly.labels,
+                datasets: [
+                    {label: "Noticias", data: data.monthly.news, borderColor: "#d97706", backgroundColor: "rgba(217,119,6,.08)", tension: .32},
+                    {label: "Encargos", data: data.monthly.listings, borderColor: "#ea580c", backgroundColor: "rgba(234,88,12,.08)", tension: .32},
+                    {label: "Pedidos", data: data.monthly.orders, borderColor: "#2563eb", backgroundColor: "rgba(37,99,235,.08)", tension: .32},
+                    {label: "Propuestas", data: data.monthly.proposals, borderColor: "#7c3aed", backgroundColor: "rgba(124,58,237,.08)", tension: .32},
+                    {label: "Cierres", data: data.monthly.closings, borderColor: "#059669", backgroundColor: "rgba(5,150,105,.12)", fill: true, tension: .32}
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {mode: "index", intersect: false},
+                plugins: {legend: {position: "bottom", labels: {usePointStyle: true, boxWidth: 8}}},
+                scales: {y: {beginAtZero: true, ticks: {precision: 0}}, x: {grid: {display: false}}}
+            }
+        });
+
+        const goalsCanvas = container.querySelector("[data-goals-chart]");
+        if (goalsCanvas && data.goals.active) {
+            new Chart(goalsCanvas, {
+                type: "doughnut",
+                data: {
+                    datasets: [{
+                        data: [data.goals.percentage, 100 - data.goals.percentage],
+                        backgroundColor: ["#7c3aed", "#ede9fe"],
+                        borderWidth: 0
+                    }]
+                },
+                options: {responsive: true, maintainAspectRatio: false, cutout: "78%", plugins: {legend: {display: false}, tooltip: {enabled: false}}}
+            });
+        }
     });
+
+    const comparisonCanvas = document.getElementById("agentComparisonChart");
+    if (comparisonCanvas) {
+        const data = JSON.parse(document.getElementById("agent-comparison-data").textContent);
+        new Chart(comparisonCanvas, {
+            type: "bar",
+            data: {
+                labels: data.labels,
+                datasets: [
+                    {label: "Contactos", data: data.contacts, backgroundColor: "#0f766e"},
+                    {label: "Noticias", data: data.news, backgroundColor: "#d97706"},
+                    {label: "Encargos", data: data.listings, backgroundColor: "#ea580c"},
+                    {label: "Pedidos", data: data.orders, backgroundColor: "#2563eb"},
+                    {label: "Citas completadas", data: data.appointments, backgroundColor: "#7c3aed"}
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {mode: "index", intersect: false},
+                plugins: {legend: {position: "bottom", labels: {usePointStyle: true, boxWidth: 8}}},
+                scales: {y: {beginAtZero: true, ticks: {precision: 0}}, x: {grid: {display: false}}}
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

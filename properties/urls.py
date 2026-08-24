@@ -11,6 +11,7 @@ from .views import (
     create_owner_for_property,
     add_owner_to_property,
     property_geocode,
+    property_address_suggestions,
     property_map,
 )
 
@@ -21,6 +22,12 @@ urlpatterns = [
     path('new/', property_create, name='property_create'),
 
     path('geocode/', property_geocode, name='property_geocode'),
+
+    path(
+        'address-suggestions/',
+        property_address_suggestions,
+        name='property_address_suggestions',
+    ),
 
     path('map/', property_map, name='property_map'),
 

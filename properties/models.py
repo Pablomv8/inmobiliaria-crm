@@ -63,6 +63,24 @@ class Property(models.Model):
         max_length=20
     )
 
+    block = models.CharField(
+        max_length=30,
+        blank=True,
+        verbose_name="Bloque o portal",
+    )
+
+    floor = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="Planta",
+    )
+
+    door = models.CharField(
+        max_length=30,
+        blank=True,
+        verbose_name="Puerta o local",
+    )
+
     postal_code = models.CharField(
         max_length=10,
         blank=True
@@ -242,11 +260,16 @@ class Property(models.Model):
     
     @property
     def full_address(self):
-
-        return (
-            f"{self.street} {self.number}, "
-            f"{self.city}"
-        )
+        address_parts = [f"{self.street} {self.number}".strip()]
+        if self.block:
+            address_parts.append(f"Bloque/portal {self.block}")
+        if self.floor:
+            address_parts.append(f"Planta {self.floor}")
+        if self.door:
+            door_label = "Local" if self.property_type == "local" else "Puerta"
+            address_parts.append(f"{door_label} {self.door}")
+        address_parts.append(self.city)
+        return ", ".join(part for part in address_parts if part)
     
     def __str__(self):
         return self.full_address

@@ -179,11 +179,31 @@ class DashboardScopeTests(TestCase):
         self.assertContains(response, "Mi resumen económico")
         self.assertContains(response, "Mis objetivos activos")
         self.assertContains(response, goal.name)
+        self.assertContains(response, "Evolución de mi cartera")
+        self.assertContains(response, "Cumplimiento personal")
+        self.assertEqual(
+            response.context["personal_analytics"]["goals"],
+            {
+                "active": 1,
+                "achieved": 0,
+                "at_risk": 1,
+                "percentage": 33,
+            },
+        )
+        monthly = response.context["personal_analytics"]["monthly"]
+        self.assertEqual(len(monthly["labels"]), 6)
+        self.assertEqual(monthly["news"][-1], 1)
+        self.assertEqual(monthly["listings"][-1], 1)
+        self.assertEqual(monthly["orders"][-1], 1)
         funnel_counts = [
             stage["count"]
             for stage in response.context["personal_funnel"]["stages"]
         ]
         self.assertEqual(funnel_counts, [1, 1, 1, 0, 0, 0])
+        self.assertEqual(
+            [stage["width"] for stage in response.context["personal_funnel"]["stages"]],
+            [100, 100, 100, 0, 0, 0],
+        )
         order_alert = next(
             item
             for item in response.context["personal_action_items"]
@@ -221,6 +241,13 @@ class DashboardScopeTests(TestCase):
         self.assertContains(response, "Embudo comercial global")
         self.assertContains(response, "Resumen económico global")
         self.assertIn("office_goal_rows", response.context)
+        self.assertContains(response, "Evolución comercial de la oficina")
+        self.assertContains(response, "Comparación de actividad por agente")
+        comparison = response.context["agent_comparison"]
+        self.assertIn("dashboard-agent", comparison["labels"])
+        self.assertIn("dashboard-other", comparison["labels"])
+        self.assertIn("dashboard-manager", comparison["labels"])
+        self.assertEqual(len(comparison["contacts"]), len(comparison["labels"]))
 
     def test_manager_can_choose_personal_office_or_combined_dashboard(self):
         self.client.force_login(self.manager)
