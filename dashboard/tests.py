@@ -546,6 +546,20 @@ class DashboardScopeTests(TestCase):
         self.assertEqual(response.context["goal_completion_rate"], 100)
         self.assertContains(response, "Objetivos cumplidos")
         self.assertContains(response, "1 cumplidos de 1 objetivos iniciados")
+        self.assertContains(response, "Embudo comercial del agente")
+        self.assertContains(response, "¿Qué significa cada fase del embudo?")
+        self.assertEqual(
+            [stage["count"] for stage in response.context["worker_funnel"]["stages"]],
+            [1, 1, 1, 0, 0, 0],
+        )
+        self.assertEqual(
+            response.context["worker_funnel"]["stages"][0]["url"],
+            f"{reverse('news_list')}?agent={self.agent.pk}",
+        )
+        self.assertEqual(
+            response.context["worker_funnel"]["stages"][2]["url"],
+            f"{reverse('calendar')}?agents={self.agent.pk}",
+        )
         self.assertContains(response, self.agent_property.full_address)
         self.assertContains(
             response,

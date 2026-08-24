@@ -1129,6 +1129,17 @@ def team_member_detail(request, pk):
     tasks = Task.objects.filter(assigned_to=worker)
     proposals = ProposalAppointment.objects.filter(agent=worker)
     sales = Sale.objects.filter(agent=worker)
+    rentals = RentalContract.objects.filter(agent=worker)
+
+    worker_funnel = build_commercial_funnel(
+        news,
+        listings,
+        appointments,
+        proposals,
+        sales,
+        rentals,
+        user=worker,
+    )
 
     pending_tasks = tasks.filter(status__in=["pending", "in_progress"])
     overdue_tasks = pending_tasks.filter(due_date__lt=now)
@@ -1232,6 +1243,7 @@ def team_member_detail(request, pk):
         "achieved_goals": achieved_goals,
         "goal_completion_rate": goal_completion_rate,
         "worker_goal_rows": worker_goal_rows,
+        "worker_funnel": worker_funnel,
         "upcoming_events": upcoming_events,
         "recent_contacts": contacts.order_by("-created_at")[:5],
         "recent_news": news.select_related("related_property").order_by("-created_at")[:5],

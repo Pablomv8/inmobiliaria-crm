@@ -52,6 +52,8 @@
 
     {% include "dashboard/partials/goals.html" with goal_rows=worker_goal_rows goals_title="Objetivos activos del agente" goals_subtitle="Progreso individual y aportación a objetivos compartidos." %}
 
+    {% include "dashboard/partials/funnel.html" with funnel=worker_funnel funnel_title="Embudo comercial del agente" funnel_subtitle="Conversión de los elementos asignados a este trabajador a lo largo del proceso comercial." %}
+
     <section class="grid gap-8 xl:grid-cols-3">
         <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm xl:col-span-2">
             <div class="mb-6"><h2 class="text-lg font-bold text-gray-900">Indicadores de seguimiento</h2><p class="mt-1 text-sm text-gray-500">Porcentaje calculado sobre registros no cancelados.</p></div>
