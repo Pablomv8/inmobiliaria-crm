@@ -68,7 +68,7 @@ def contact_create(request):
 
     if request.method == 'POST':
 
-        form = ContactForm(request.POST)
+        form = ContactForm(request.POST, user=request.user)
 
         if form.is_valid():
 
@@ -85,7 +85,7 @@ def contact_create(request):
 
     else:
 
-        form = ContactForm()
+        form = ContactForm(user=request.user)
 
     return render(request, 'contacts/form.html', {
         'form': form,
@@ -99,7 +99,7 @@ def contact_update(request, pk):
 
     if request.method == 'POST':
 
-        form = ContactForm(request.POST, instance=contact)
+        form = ContactForm(request.POST, instance=contact, user=request.user)
 
         if form.is_valid():
 
@@ -116,7 +116,7 @@ def contact_update(request, pk):
 
     else:
 
-        form = ContactForm(instance=contact)
+        form = ContactForm(instance=contact, user=request.user)
 
     return render(request, 'contacts/form.html', {
         'form': form,

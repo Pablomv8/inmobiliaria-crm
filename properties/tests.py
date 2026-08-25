@@ -77,6 +77,7 @@ class PropertyModelTests(TestCase):
         form = PropertyForm()
 
         self.assertIn("zone", form.fields)
+        self.assertTrue(form.fields["zone"].required)
         self.assertEqual(
             list(form.fields["zone"].queryset),
             [first_zone, second_zone],
@@ -95,17 +96,78 @@ class PropertyModelTests(TestCase):
         self.assertTrue(form.fields["longitude"].widget.is_hidden)
 
     def test_property_form_accepts_previous_and_new_types(self):
+        zone = Zone.objects.create(name="Zona formulario")
         for property_type in ("flat", "local", "nave", "solar", "terreno"):
             with self.subTest(property_type=property_type):
-                form = PropertyForm(data={
+                data = {
                     "street": "Calle Mayor",
                     "number": "10",
                     "city": "Madrid",
+                    "zone": zone.pk,
                     "property_type": property_type,
                     "occupied_by": "owner",
-                })
+                }
+                if property_type == "flat":
+                    data.update({"floor": "2", "door": "A"})
+                form = PropertyForm(data=data)
 
                 self.assertTrue(form.is_valid(), form.errors)
+
+    def test_property_form_validates_spanish_postal_code(self):
+        zone = Zone.objects.create(name="Zona postal")
+        valid_form = PropertyForm(data={
+            "street": "Calle Corredera",
+            "number": "10",
+            "postal_code": "11630",
+            "city": "Arcos de la Frontera",
+            "zone": zone.pk,
+            "property_type": "house",
+            "occupied_by": "owner",
+        })
+        invalid_form = PropertyForm(data={
+            "street": "Calle Corredera",
+            "number": "10",
+            "postal_code": "999",
+            "city": "Arcos de la Frontera",
+            "zone": zone.pk,
+            "property_type": "house",
+            "occupied_by": "owner",
+        })
+
+        self.assertTrue(valid_form.is_valid(), valid_form.errors)
+        self.assertFalse(invalid_form.is_valid())
+        self.assertIn("postal_code", invalid_form.errors)
+
+    def test_new_arcos_property_requires_postal_code(self):
+        zone = Zone.objects.create(name="Zona Arcos")
+        form = PropertyForm(data={
+            "street": "Calle Corredera",
+            "number": "10",
+            "city": "Arcos de la Frontera",
+            "zone": zone.pk,
+            "property_type": "house",
+            "occupied_by": "owner",
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("postal_code", form.errors)
+
+    def test_flat_requires_floor_and_door_but_not_block(self):
+        zone = Zone.objects.create(name="Zona piso")
+        form = PropertyForm(data={
+            "street": "Calle Corredera",
+            "number": "10",
+            "postal_code": "11630",
+            "city": "Arcos de la Frontera",
+            "zone": zone.pk,
+            "property_type": "flat",
+            "occupied_by": "owner",
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("floor", form.errors)
+        self.assertIn("door", form.errors)
+        self.assertNotIn("block", form.errors)
 
 
 class PropertyFormViewTests(TestCase):
@@ -125,7 +187,7 @@ class PropertyFormViewTests(TestCase):
             street="Calle Antigua",
             number="5",
             city="Madrid",
-            property_type="flat",
+            property_type="house",
             zone=self.first_zone,
         )
         self.client.force_login(self.user)
@@ -279,6 +341,7 @@ class PropertyFormViewTests(TestCase):
                 "number": "12",
                 "city": "Arcos de la Frontera",
                 "province": "Cádiz",
+                "postal_code": "11630",
                 "zone": self.first_zone.pk,
                 "property_type": "house",
                 "occupied_by": "owner",
@@ -309,6 +372,7 @@ class PropertyFormViewTests(TestCase):
                 "number": "8",
                 "city": "Arcos de la Frontera",
                 "province": "Cádiz",
+                "postal_code": "11630",
                 "zone": self.first_zone.pk,
                 "property_type": self.property.property_type,
                 "occupied_by": "owner",
@@ -367,10 +431,13 @@ class PropertyFormViewTests(TestCase):
                 "number": "3",
                 "city": "Arcos de la Frontera",
                 "province": "Cádiz",
+                "postal_code": "11630",
                 "latitude": "36.752000",
                 "longitude": "-5.808000",
                 "zone": self.first_zone.pk,
                 "property_type": "flat",
+                "floor": "1",
+                "door": "A",
                 "occupied_by": "vacant",
             },
         )
@@ -743,12 +810,18 @@ class OwnerContactFormTests(TestCase):
         self.client.force_login(self.agent)
 
     def test_owner_form_uses_spanish_labels_and_hides_fixed_fields(self):
-        form = OwnerContactForm(property_obj=self.property)
+        form = OwnerContactForm(property_obj=self.property, user=self.agent)
 
         self.assertEqual(form.fields["name"].label, "Nombre")
         self.assertEqual(form.fields["last_name"].label, "Apellidos")
         self.assertEqual(form.fields["assigned_agent"].label, "Agente asignado")
         self.assertEqual(form.fields["marital_status"].choices[0][1], "Selecciona el estado civil")
+        self.assertTrue(form.fields["last_name"].required)
+        self.assertTrue(form.fields["identification_number"].required)
+        self.assertTrue(form.fields["marital_status"].required)
+        self.assertTrue(form.fields["phone"].required)
+        self.assertTrue(form.fields["assigned_agent"].required)
+        self.assertEqual(form["assigned_agent"].value(), self.agent.pk)
         self.assertNotIn("contact_type", form.fields)
         self.assertNotIn("properties", form.fields)
 
@@ -764,12 +837,31 @@ class OwnerContactFormTests(TestCase):
         self.assertContains(response, "Gestión comercial")
         self.assertContains(response, "Notas internas")
 
+    def test_owner_form_applies_contact_data_validations(self):
+        form = OwnerContactForm(data={
+            "name": "Propietario inválido",
+            "phone": "1234",
+            "email": "correo-invalido",
+            "identification_number": "12345678A",
+            "postal_code": "00000",
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("phone", form.errors)
+        self.assertIn("email", form.errors)
+        self.assertIn("identification_number", form.errors)
+        self.assertIn("postal_code", form.errors)
+        self.assertIn("last_name", form.errors)
+        self.assertIn("marital_status", form.errors)
+
     def test_creating_owner_keeps_automatic_property_relationship(self):
         response = self.client.post(
             reverse("create_owner_for_property", args=[self.property.pk]),
             {
                 "name": "María",
                 "last_name": "García",
+                "identification_number": "12345678Z",
+                "marital_status": "single",
                 "phone": "612345678",
                 "email": "maria@example.com",
                 "assigned_agent": self.agent.pk,

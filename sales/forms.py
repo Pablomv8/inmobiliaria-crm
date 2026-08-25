@@ -245,6 +245,10 @@ class RentalContractClosingForm(forms.ModelForm):
 
     def __init__(self, *args, appointment, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["end_date"].required = True
+        self.fields["end_date"].error_messages["required"] = (
+            "Indica la fecha de finalización del alquiler."
+        )
         proposal = appointment.purchase_proposal
         listing = appointment.listing or (proposal.listing if proposal else None)
         if not self.is_bound:

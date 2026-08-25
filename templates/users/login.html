@@ -128,13 +128,16 @@
                         <!-- Username -->
                         <div>
 
-                            <label class="block mb-2 text-sm font-semibold text-gray-700">
+                            <label for="id_username" class="block mb-2 text-sm font-semibold text-gray-700">
                                 Usuario
                             </label>
 
                             <input
                                 type="text"
+                                id="id_username"
                                 name="username"
+                                required
+                                autocomplete="username"
                                 placeholder="Introduce tu usuario"
                                 class="w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-200 focus:outline-none transition"
                             >
@@ -144,13 +147,16 @@
                         <!-- Password -->
                         <div>
 
-                            <label class="block mb-2 text-sm font-semibold text-gray-700">
+                            <label for="id_password" class="block mb-2 text-sm font-semibold text-gray-700">
                                 Contraseña
                             </label>
 
                             <input
                                 type="password"
+                                id="id_password"
                                 name="password"
+                                required
+                                autocomplete="current-password"
                                 placeholder="Introduce tu contraseña"
                                 class="w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-gray-800 placeholder-gray-400 focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-200 focus:outline-none transition"
                             >

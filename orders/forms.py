@@ -91,6 +91,12 @@ class OrderForm(forms.ModelForm):
                 self.instance.agent if self.instance.pk else None
             )
             self.fields["agent"].empty_label = "Selecciona un responsable"
+            self.fields["agent"].required = True
+            self.fields["agent"].error_messages["required"] = (
+                "Selecciona la persona responsable del pedido."
+            )
+            if not self.is_bound and not self.instance.pk:
+                self.fields["agent"].initial = user
         else:
             self.fields.pop("agent")
 

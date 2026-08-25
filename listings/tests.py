@@ -8,6 +8,7 @@ from calendar_app.models import Appointment, Call
 from contacts.models import Contact
 from properties.models import Property
 
+from .forms import ListingForm
 from .models import Listing, ListingComment
 
 
@@ -75,6 +76,24 @@ class ListingFollowUpTests(TestCase):
             reverse("listing_detail", args=[self.listing.pk]),
         )
         self.assertEqual(self.listing.agent, self.new_agent)
+
+    def test_listing_commission_must_be_greater_than_zero(self):
+        form = ListingForm(
+            data={
+                "owner": self.owner.pk,
+                "agent": self.agent.pk,
+                "agreed_price": "245000",
+                "start_date": "2026-08-01",
+                "end_date": "2027-02-01",
+                "commission_amount": "0",
+            },
+            instance=self.listing,
+            property_obj=self.property,
+            user=self.manager,
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("commission_amount", form.errors)
 
     def test_agent_cannot_open_listing_reassignment_form(self):
         response = self.client.get(

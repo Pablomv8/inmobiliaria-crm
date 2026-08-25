@@ -7,6 +7,7 @@ from news.models import News
 from orders.models import Order
 from properties.models import Property, Zone
 
+from .forms import ContactForm
 from .models import Contact
 
 
@@ -290,3 +291,52 @@ class ContactRelatedWorkflowTests(TestCase):
         self.assertContains(response, "3. Gestión comercial")
         self.assertContains(response, "4. Información adicional")
         self.assertContains(response, "rounded-3xl")
+        self.assertContains(response, "data-required-marker")
+        for field_name in (
+            "last_name",
+            "identification_number",
+            "marital_status",
+            "phone",
+        ):
+            self.assertTrue(response.context["form"].fields[field_name].required)
+        self.assertTrue(response.context["form"].fields["assigned_agent"].required)
+        self.assertEqual(
+            response.context["form"]["assigned_agent"].value(),
+            self.agent.pk,
+        )
+
+    def test_contact_form_validates_and_normalizes_common_personal_data(self):
+        form = ContactForm(data={
+            "name": "Cliente validado",
+            "last_name": "García Pérez",
+            "phone": "612 345 678",
+            "email": "CLIENTE@EXAMPLE.COM",
+            "postal_code": "11630",
+            "identification_number": "12345678-z",
+            "marital_status": "single",
+            "contact_type": "buyer",
+            "assigned_agent": self.agent.pk,
+        })
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["phone"], "+34612345678")
+        self.assertEqual(form.cleaned_data["email"], "cliente@example.com")
+        self.assertEqual(form.cleaned_data["identification_number"], "12345678Z")
+
+    def test_contact_form_rejects_invalid_email_phone_document_and_postal_code(self):
+        form = ContactForm(data={
+            "name": "Cliente no válido",
+            "phone": "12345",
+            "email": "correo-sin-formato",
+            "postal_code": "99000",
+            "identification_number": "12345678A",
+            "contact_type": "owner",
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("phone", form.errors)
+        self.assertIn("email", form.errors)
+        self.assertIn("postal_code", form.errors)
+        self.assertIn("identification_number", form.errors)
+        self.assertIn("last_name", form.errors)
+        self.assertIn("marital_status", form.errors)

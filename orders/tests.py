@@ -194,6 +194,30 @@ class OrderCrudTests(TestCase):
         self.assertRedirects(response, reverse("order_detail", args=[order.pk]))
         self.assertEqual(order.agent, self.contact_agent)
 
+    def test_manager_must_assign_an_agent_to_new_order(self):
+        self.client.force_login(self.manager)
+        data = self.order_data()
+
+        response = self.client.post(reverse("order_create"), data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Order.objects.exists())
+        self.assertFormError(
+            response.context["form"],
+            "agent",
+            "Selecciona la persona responsable del pedido.",
+        )
+
+    def test_manager_is_selected_by_default_as_order_agent(self):
+        self.client.force_login(self.manager)
+
+        response = self.client.get(reverse("order_create"))
+
+        self.assertEqual(
+            response.context["form"]["agent"].value(),
+            self.manager.pk,
+        )
+
     def test_agent_cannot_reassign_order_through_post_data(self):
         order = Order.objects.create(
             buyer=self.buyer,

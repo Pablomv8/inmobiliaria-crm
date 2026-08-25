@@ -528,7 +528,8 @@ def create_owner_for_property(request, property_id):
 
         form = OwnerContactForm(
             request.POST,
-            property_obj=property_obj
+            property_obj=property_obj,
+            user=request.user,
         )
 
         if form.is_valid():
@@ -543,7 +544,8 @@ def create_owner_for_property(request, property_id):
     else:
 
         form = OwnerContactForm(
-            property_obj=property_obj
+            property_obj=property_obj,
+            user=request.user,
         )
 
     return render(

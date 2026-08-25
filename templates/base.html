@@ -110,5 +110,62 @@
 
 </div>
 {% block extra_js %}{% endblock %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function fieldLabel(field) {
+        if (field.type === 'hidden' || field.type === 'radio' || field.type === 'checkbox') return null;
+        if (field.id) {
+            const explicitLabel = Array.from(document.querySelectorAll('label[for]'))
+                .find(label => label.htmlFor === field.id);
+            if (explicitLabel) return explicitLabel;
+        }
+
+        let container = field.parentElement;
+        for (let depth = 0; container && depth < 4; depth += 1, container = container.parentElement) {
+            const directLabel = Array.from(container.children)
+                .find(child => child.tagName === 'LABEL');
+            if (directLabel) return directLabel;
+            if (container.tagName === 'FORM') break;
+        }
+        return null;
+    }
+
+    function hasRequiredMarker(label) {
+        return Array.from(label.querySelectorAll('span')).some(span =>
+            span.dataset.requiredMarker !== undefined ||
+            (span.textContent.trim() === '*' && span.classList.contains('text-red-500'))
+        );
+    }
+
+    function syncRequiredMarker(field) {
+        const label = fieldLabel(field);
+        if (!label) return;
+        const automaticMarker = label.querySelector('[data-required-marker]');
+        if (field.required) {
+            field.setAttribute('aria-required', 'true');
+            if (!hasRequiredMarker(label)) {
+                const marker = document.createElement('span');
+                marker.dataset.requiredMarker = '';
+                marker.className = 'ml-1 text-red-500';
+                marker.textContent = '*';
+                marker.setAttribute('aria-hidden', 'true');
+                label.appendChild(marker);
+            }
+        } else {
+            field.removeAttribute('aria-required');
+            if (automaticMarker) automaticMarker.remove();
+        }
+    }
+
+    document.querySelectorAll('form input, form select, form textarea').forEach(syncRequiredMarker);
+    new MutationObserver(mutations => {
+        mutations.forEach(mutation => syncRequiredMarker(mutation.target));
+    }).observe(document.body, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['required'],
+    });
+});
+</script>
 </body>
 </html>

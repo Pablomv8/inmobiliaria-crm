@@ -53,7 +53,7 @@ class ListingForm(forms.ModelForm):
             }),
             "commission_amount": forms.NumberInput(attrs={
                 "class": INPUT_CLASS,
-                "min": 0,
+                "min": "0.01",
                 "step": "0.01",
                 "placeholder": "Ej: 7500,00",
             }),
@@ -112,6 +112,14 @@ class ListingForm(forms.ModelForm):
                 "El precio acordado debe ser mayor que cero."
             )
         return agreed_price
+
+    def clean_commission_amount(self):
+        commission = self.cleaned_data["commission_amount"]
+        if commission <= 0:
+            raise forms.ValidationError(
+                "La comisión acordada debe ser mayor que cero."
+            )
+        return commission
 
 
 class ListingCommentForm(forms.ModelForm):

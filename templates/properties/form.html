@@ -201,6 +201,7 @@
     const propertyTypeInput = document.getElementById('id_property_type');
     const streetInput = document.getElementById('id_street');
     const numberInput = document.getElementById('id_number');
+    const postalCodeInput = document.getElementById('id_postal_code');
     const cityInput = document.getElementById('id_city');
     const provinceInput = document.getElementById('id_province');
     const blockInput = document.getElementById('id_block');
@@ -224,6 +225,7 @@
     let visibleSuggestions = [];
     let activeSuggestionIndex = -1;
     let geocodingSequence = 0;
+    const isNewProperty = {{ form.instance.pk|yesno:"false,true" }};
 
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -291,6 +293,8 @@
         toggleAddressField(blockField, isVerticalProperty);
         toggleAddressField(floorField, isVerticalProperty);
         toggleAddressField(doorField, hasDoor);
+        floorInput.required = propertyType === 'flat';
+        doorInput.required = propertyType === 'flat';
 
         numberLabel.textContent = {
             flat: 'Número del edificio',
@@ -304,13 +308,19 @@
         doorInput.placeholder = propertyType === 'local' ? 'Ej. 2 o A' : 'Ej. A';
 
         addressTypeHelp.textContent = {
-            flat: 'Para un piso puedes indicar bloque o portal, planta y puerta.',
+            flat: 'Para un piso debes indicar la planta y la puerta; el bloque o portal es opcional.',
             office: 'Para una oficina puedes indicar bloque o portal, planta y puerta.',
             local: 'Para un local puedes indicar su número o letra dentro del edificio.',
             nave: 'Indica el número de nave o de parcela que permita identificarla.',
             solar: 'Puedes utilizar el número de portal o la referencia de la parcela.',
             terreno: 'Puedes utilizar el número de portal o la referencia de la parcela.',
         }[propertyType] || 'Para este tipo de inmueble solo necesitamos la calle y el número.';
+
+        const normalizedCity = cityInput.value.trim().toLocaleLowerCase('es-ES');
+        postalCodeInput.required = isNewProperty && [
+            'arcos',
+            'arcos de la frontera',
+        ].includes(normalizedCity);
     }
 
     function closeAddressSuggestions() {
@@ -341,6 +351,7 @@
         streetInput.value = suggestion.street;
         cityInput.value = suggestion.city;
         provinceInput.value = suggestion.province;
+        updateAddressFields();
         closeAddressSuggestions();
         clearStoredLocation();
         addressSearchHelp.textContent = 'Calle seleccionada del callejero de Arcos.';
@@ -488,6 +499,7 @@
 
     addressInputs.forEach(input => input.addEventListener('input', clearStoredLocation));
     propertyTypeInput.addEventListener('change', updateAddressFields);
+    cityInput.addEventListener('input', updateAddressFields);
     streetInput.addEventListener('input', () => {
         window.clearTimeout(suggestionTimer);
         suggestionTimer = window.setTimeout(searchAddressSuggestions, 220);

@@ -238,6 +238,35 @@ class ContractClosingFlowTests(TestCase):
             reverse("rental_contract_detail", args=[contract.pk]),
         )
 
+    def test_rental_requires_end_date_but_not_contract_reference(self):
+        _, _, _, appointment = self.build_contract("rent")
+        self.client.post(
+            reverse("contract_signing_decision", args=[appointment.pk]),
+            {"signed": "yes"},
+        )
+
+        response = self.client.post(
+            reverse("create_closing_from_contract", args=[appointment.pk]),
+            {
+                "rent_price": "1175.00",
+                "deposit_amount": "2350.00",
+                "earnest_money_amount": "500.00",
+                "owner_commission": "1175.00",
+                "tenant_commission": "600.00",
+                "start_date": "2026-09-01",
+                "contract_reference": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(RentalContract.objects.exists())
+        self.assertFormError(
+            response.context["form"],
+            "end_date",
+            "Indica la fecha de finalización del alquiler.",
+        )
+        self.assertFalse(response.context["form"].fields["contract_reference"].required)
+
     def test_unsigned_contract_does_not_create_a_closing(self):
         _, _, _, appointment = self.build_contract("sale")
 

@@ -1296,7 +1296,12 @@ def update_call_status(request, call_id, status):
         id=call_id,
     )
 
-    if status in ["completed", "cancelled", "pending"]:
+    if status == "completed" and not call.comments.exists():
+        messages.warning(
+            request,
+            "Añade un comentario de resultado antes de completar la llamada.",
+        )
+    elif status in ["completed", "cancelled", "pending"]:
 
         call.status = status
         call.save()

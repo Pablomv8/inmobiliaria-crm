@@ -221,6 +221,37 @@ class NewsCrudTests(TestCase):
         self.assertRedirects(response, reverse("news_detail", args=[news.pk]))
         self.assertEqual(news.agent, administrator)
 
+    def test_manager_must_assign_an_agent_to_new_news(self):
+        self.client.force_login(self.manager)
+
+        response = self.client.post(
+            reverse("news_create_general"),
+            {
+                "related_property": self.property.pk,
+                "motivation": "sale",
+                "client_price": "250000",
+                "estimated_price": "240000",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(News.objects.exists())
+        self.assertFormError(
+            response.context["form"],
+            "agent",
+            "Selecciona la persona responsable de la noticia.",
+        )
+
+    def test_manager_is_selected_by_default_as_news_agent(self):
+        self.client.force_login(self.manager)
+
+        response = self.client.get(reverse("news_create_general"))
+
+        self.assertEqual(
+            response.context["form"]["agent"].value(),
+            self.manager.pk,
+        )
+
     def test_agent_cannot_reassign_news_through_post_data(self):
         news = self.create_news()
 

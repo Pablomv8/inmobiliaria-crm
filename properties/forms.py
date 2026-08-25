@@ -1,6 +1,14 @@
 from django import forms
 from contacts.models import Contact
+from config.validators import (
+    normalize_identity_document,
+    normalize_phone_number,
+    validate_identity_document,
+    validate_phone_number,
+    validate_spanish_postal_code,
+)
 
+from .geocoding import is_arcos_de_la_frontera
 from .models import Property, PropertyComment, Zone
 
 
@@ -34,6 +42,47 @@ class PropertyForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["zone"].queryset = Zone.objects.order_by("name")
         self.fields["zone"].empty_label = "Selecciona una zona"
+        self.fields["zone"].required = True
+        self.fields["zone"].error_messages["required"] = (
+            "Selecciona la zona comercial del inmueble."
+        )
+        selected_city = (
+            self.data.get("city")
+            if self.is_bound
+            else self.initial.get("city", "Arcos de la Frontera")
+        )
+        self.fields["postal_code"].required = (
+            not self.instance.pk and is_arcos_de_la_frontera(selected_city)
+        )
+        self.fields["postal_code"].error_messages["required"] = (
+            "Introduce el código postal del inmueble."
+        )
+        selected_property_type = (
+            self.data.get("property_type")
+            if self.is_bound
+            else (
+                self.instance.property_type
+                if self.instance.pk
+                else self.initial.get("property_type")
+            )
+        )
+        self.fields["floor"].required = selected_property_type == "flat"
+        self.fields["door"].required = selected_property_type == "flat"
+        self.fields["floor"].error_messages["required"] = (
+            "Indica la planta del piso."
+        )
+        self.fields["door"].error_messages["required"] = (
+            "Indica la puerta del piso."
+        )
+        self.fields["postal_code"].validators.append(
+            validate_spanish_postal_code
+        )
+        self.fields["postal_code"].widget.attrs.update({
+            "inputmode": "numeric",
+            "pattern": r"(?:0[1-9]|[1-4][0-9]|5[0-2])[0-9]{3}",
+            "maxlength": "5",
+            "title": "Introduce un código postal español de 5 cifras.",
+        })
         if not self.is_bound and not self.instance.pk:
             self.initial.setdefault("city", "Arcos de la Frontera")
             self.initial.setdefault("province", "Cádiz")
@@ -51,6 +100,9 @@ class PropertyForm(forms.ModelForm):
         if longitude is not None and not (-180 <= longitude <= 180):
             self.add_error("longitude", "La longitud seleccionada no es válida.")
         return cleaned_data
+
+    def clean_postal_code(self):
+        return self.cleaned_data.get("postal_code", "").strip()
 
     class Meta:
         model = Property
@@ -216,16 +268,27 @@ class PropertyForm(forms.ModelForm):
 
 class OwnerContactForm(forms.ModelForm):
 
-    def __init__(self, *args, property_obj=None, **kwargs):
+    def __init__(self, *args, property_obj=None, user=None, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.property_obj = property_obj
+
+        for field_name in (
+            "last_name",
+            "identification_number",
+            "marital_status",
+            "phone",
+        ):
+            self.fields[field_name].required = True
 
         self.fields["marital_status"].choices = [
             ("", "Selecciona el estado civil"),
             *Contact.MARITAL_STATUS_CHOICES,
         ]
-        self.fields["assigned_agent"].empty_label = "Sin agente asignado"
+        self.fields["assigned_agent"].required = True
+        self.fields["assigned_agent"].empty_label = "Selecciona un agente"
+        if not self.is_bound and not self.instance.pk and user is not None:
+            self.fields["assigned_agent"].initial = user
 
         for field in self.fields.values():
             field.error_messages["required"] = "Este campo es obligatorio."
@@ -236,6 +299,28 @@ class OwnerContactForm(forms.ModelForm):
         self.fields["birth_date"].error_messages["invalid"] = (
             "Introduce una fecha válida."
         )
+        self.fields["phone"].validators.append(validate_phone_number)
+        self.fields["postal_code"].validators.append(
+            validate_spanish_postal_code
+        )
+        self.fields["identification_number"].validators.append(
+            validate_identity_document
+        )
+        self.fields["phone"].widget.attrs.update({
+            "inputmode": "tel",
+            "pattern": r"(?:\+|00)?[0-9][0-9 ().-]{7,19}",
+            "title": "Introduce un teléfono español o internacional válido.",
+        })
+        self.fields["postal_code"].widget.attrs.update({
+            "inputmode": "numeric",
+            "pattern": r"(?:0[1-9]|[1-4][0-9]|5[0-2])[0-9]{3}",
+            "maxlength": "5",
+            "title": "Introduce un código postal español de 5 cifras.",
+        })
+        self.fields["identification_number"].widget.attrs.update({
+            "pattern": r"[A-Za-z0-9][A-Za-z0-9 -]{5,29}",
+            "title": "Introduce un DNI, NIE o pasaporte válido.",
+        })
 
     class Meta:
 
@@ -384,6 +469,20 @@ class OwnerContactForm(forms.ModelForm):
                 contact.properties.add(self.property_obj)
 
         return contact
+
+    def clean_phone(self):
+        return normalize_phone_number(self.cleaned_data.get("phone", ""))
+
+    def clean_identification_number(self):
+        return normalize_identity_document(
+            self.cleaned_data.get("identification_number", "")
+        )
+
+    def clean_postal_code(self):
+        return self.cleaned_data.get("postal_code", "").strip()
+
+    def clean_email(self):
+        return (self.cleaned_data.get("email") or "").lower().strip()
 
 
 class PropertyCommentForm(forms.ModelForm):

@@ -1,6 +1,13 @@
 from django import forms
 from .models import Contact, Property
 from django_select2.forms import Select2MultipleWidget
+from config.validators import (
+    normalize_identity_document,
+    normalize_phone_number,
+    validate_identity_document,
+    validate_phone_number,
+    validate_spanish_postal_code,
+)
 from users.permissions import assignable_agents
 
 INPUT_CLASS = """
@@ -63,8 +70,19 @@ duration-200
 
 class ContactForm(forms.ModelForm):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+
+        for field_name in (
+            "last_name",
+            "identification_number",
+            "marital_status",
+            "phone",
+        ):
+            self.fields[field_name].required = True
+            self.fields[field_name].error_messages["required"] = (
+                "Este campo es obligatorio."
+            )
 
         current_agent = (
             self.instance.assigned_agent
@@ -74,7 +92,38 @@ class ContactForm(forms.ModelForm):
         self.fields["assigned_agent"].queryset = assignable_agents(
             current_agent
         )
-        self.fields["assigned_agent"].empty_label = "Sin asignar"
+        self.fields["assigned_agent"].required = True
+        self.fields["assigned_agent"].empty_label = "Selecciona un responsable"
+        self.fields["assigned_agent"].error_messages["required"] = (
+            "Selecciona la persona responsable del contacto."
+        )
+        if not self.is_bound and not self.instance.pk and user is not None:
+            self.fields["assigned_agent"].initial = user
+        self.fields["phone"].validators.append(validate_phone_number)
+        self.fields["postal_code"].validators.append(
+            validate_spanish_postal_code
+        )
+        self.fields["identification_number"].validators.append(
+            validate_identity_document
+        )
+        self.fields["email"].error_messages["invalid"] = (
+            "Introduce un correo electrónico válido."
+        )
+        self.fields["phone"].widget.attrs.update({
+            "inputmode": "tel",
+            "pattern": r"[6789](?:[ -]?\d){8}",
+            "title": "Introduce 9 cifras; debe comenzar por 6, 7, 8 o 9.",
+        })
+        self.fields["postal_code"].widget.attrs.update({
+            "inputmode": "numeric",
+            "pattern": r"(?:0[1-9]|[1-4][0-9]|5[0-2])[0-9]{3}",
+            "maxlength": "5",
+            "title": "Introduce un código postal español de 5 cifras.",
+        })
+        self.fields["identification_number"].widget.attrs.update({
+            "pattern": r"[A-Za-z0-9][A-Za-z0-9 -]{5,29}",
+            "title": "Introduce un DNI, NIE o pasaporte válido.",
+        })
 
         if self.instance and self.instance.pk and self.instance.phone:
 
@@ -263,14 +312,6 @@ class ContactForm(forms.ModelForm):
             }),
         }
 
-    def clean_phone(self):
-        phone = self.cleaned_data.get('phone')
-
-        if phone:
-            phone = phone.strip()
-
-        return phone
-
     def clean_email(self):
         email = self.cleaned_data.get('email')
 
@@ -280,11 +321,12 @@ class ContactForm(forms.ModelForm):
         return email
     
     def clean_phone(self):
-        phone = self.cleaned_data.get("phone", "")
+        return normalize_phone_number(self.cleaned_data.get("phone", ""))
 
-        phone = "".join(filter(str.isdigit, phone))
+    def clean_identification_number(self):
+        return normalize_identity_document(
+            self.cleaned_data.get("identification_number", "")
+        )
 
-        if phone:
-            phone = f"+34{phone}"
-
-        return phone
+    def clean_postal_code(self):
+        return self.cleaned_data.get("postal_code", "").strip()

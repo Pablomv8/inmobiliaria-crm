@@ -1155,6 +1155,11 @@ class CallFlowTests(TestCase):
         self.assertContains(detail_response, comment.text)
 
     def test_call_can_be_completed_cancelled_and_reactivated(self):
+        CallComment.objects.create(
+            call=self.call,
+            user=self.agent,
+            text="Resultado registrado antes de completar la llamada.",
+        )
         for status in ["completed", "cancelled", "pending"]:
             with self.subTest(status=status):
                 response = self.client.post(
@@ -1166,6 +1171,20 @@ class CallFlowTests(TestCase):
                     reverse("call_detail", args=[self.call.pk]),
                 )
                 self.assertEqual(self.call.status, status)
+
+    def test_call_cannot_be_completed_without_a_result_comment(self):
+        response = self.client.post(
+            reverse("call_update_status", args=[self.call.pk, "completed"]),
+            follow=True,
+        )
+
+        self.call.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.call.status, "pending")
+        self.assertContains(
+            response,
+            "Añade un comentario de resultado antes de completar la llamada.",
+        )
 
     def test_agenda_list_is_paginated(self):
         Call.objects.bulk_create([
