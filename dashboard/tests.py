@@ -1,4 +1,4 @@
-from datetime import date, time, timedelta
+from datetime import date, datetime, time, timedelta
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -565,6 +565,40 @@ class DashboardScopeTests(TestCase):
             response,
             f"{reverse('contact_list')}?agent={self.agent.pk}",
         )
+
+    def test_worker_funnel_can_be_filtered_by_inclusive_date_range(self):
+        News.objects.filter(agent=self.agent).update(
+            created_at=timezone.make_aware(
+                datetime(2026, 8, 19, 12, 0)
+            )
+        )
+        Listing.objects.filter(agent=self.agent).update(
+            created_at=timezone.make_aware(
+                datetime(2026, 8, 21, 12, 0)
+            )
+        )
+        self.client.force_login(self.manager)
+
+        response = self.client.get(
+            reverse("team_member_detail", args=[self.agent.pk]),
+            {"funnel_from": "2026-08-20", "funnel_to": "2026-08-20"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [stage["count"] for stage in response.context["worker_funnel"]["stages"]],
+            [0, 0, 1, 0, 0, 0],
+        )
+        self.assertEqual(
+            response.context["worker_funnel"]["period"]["from_value"],
+            "2026-08-20",
+        )
+        self.assertEqual(
+            response.context["worker_funnel"]["period"]["to_value"],
+            "2026-08-20",
+        )
+        self.assertContains(response, "Periodo aplicado:")
+        self.assertContains(response, "20/08/2026")
 
     def test_agent_cannot_access_team_tracking(self):
         self.client.force_login(self.agent)

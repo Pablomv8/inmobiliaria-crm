@@ -8,6 +8,7 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from config.pagination import paginate
 
 from activities.models import Activity
@@ -46,6 +47,22 @@ def conversion_percentage(current, previous):
     return min(100, round(current * 100 / previous))
 
 
+def get_funnel_period(request):
+    date_from = parse_date(request.GET.get("funnel_from", ""))
+    date_to = parse_date(request.GET.get("funnel_to", ""))
+    if date_from and date_to and date_from > date_to:
+        date_from, date_to = date_to, date_from
+    return date_from, date_to
+
+
+def filter_by_period(queryset, field, date_from=None, date_to=None):
+    if date_from:
+        queryset = queryset.filter(**{f"{field}__gte": date_from})
+    if date_to:
+        queryset = queryset.filter(**{f"{field}__lte": date_to})
+    return queryset
+
+
 def build_commercial_funnel(
     news,
     listings,
@@ -55,7 +72,35 @@ def build_commercial_funnel(
     rentals,
     *,
     user=None,
+    date_from=None,
+    date_to=None,
 ):
+    news = filter_by_period(news, "created_at__date", date_from, date_to)
+    listings = filter_by_period(
+        listings,
+        "created_at__date",
+        date_from,
+        date_to,
+    )
+    appointments = filter_by_period(
+        appointments,
+        "date",
+        date_from,
+        date_to,
+    )
+    proposals = filter_by_period(
+        proposals,
+        "created_at__date",
+        date_from,
+        date_to,
+    )
+    sales = filter_by_period(sales, "sale_date", date_from, date_to)
+    rentals = filter_by_period(
+        rentals,
+        "contract_date",
+        date_from,
+        date_to,
+    )
     counts = [
         news.count(),
         listings.count(),
@@ -110,6 +155,13 @@ def build_commercial_funnel(
     return {
         "stages": stages,
         "closing_rate": conversion_percentage(counts[-1], counts[0]),
+        "period": {
+            "date_from": date_from,
+            "date_to": date_to,
+            "from_value": date_from.isoformat() if date_from else "",
+            "to_value": date_to.isoformat() if date_to else "",
+            "active": bool(date_from or date_to),
+        },
     }
 
 
@@ -725,6 +777,7 @@ def dashboard(request):
     show_office_dashboard = (
         is_office_viewer and dashboard_view in {"office", "both"}
     )
+    funnel_date_from, funnel_date_to = get_funnel_period(request)
 
     personal_contacts = Contact.objects.filter(assigned_agent=user)
     personal_tasks = Task.objects.filter(assigned_to=user)
@@ -750,6 +803,8 @@ def dashboard(request):
         personal_sales,
         personal_rentals,
         user=user,
+        date_from=funnel_date_from,
+        date_to=funnel_date_to,
     )
     personal_economics = build_economic_summary(
         personal_sales,
@@ -911,6 +966,8 @@ def dashboard(request):
             ProposalAppointment.objects.all(),
             Sale.objects.all(),
             RentalContract.objects.all(),
+            date_from=funnel_date_from,
+            date_to=funnel_date_to,
         )
         office_economics = build_economic_summary(
             Sale.objects.all(),
@@ -998,6 +1055,7 @@ def administration(request):
     all_orders = Order.objects.all()
     all_sales = Sale.objects.all()
     all_rentals = RentalContract.objects.all()
+    funnel_date_from, funnel_date_to = get_funnel_period(request)
 
     property_status_rows = [
         {
@@ -1060,6 +1118,8 @@ def administration(request):
                 ProposalAppointment.objects.all(),
                 all_sales,
                 all_rentals,
+                date_from=funnel_date_from,
+                date_to=funnel_date_to,
             ),
             "office_economics": build_economic_summary(
                 all_sales,
@@ -1119,6 +1179,7 @@ def team_member_detail(request, pk):
     worker = get_object_or_404(User, pk=pk, role="agent", is_active=True)
     today = timezone.localdate()
     now = timezone.now()
+    funnel_date_from, funnel_date_to = get_funnel_period(request)
 
     contacts = Contact.objects.filter(assigned_agent=worker)
     news = News.objects.filter(agent=worker)
@@ -1139,6 +1200,8 @@ def team_member_detail(request, pk):
         sales,
         rentals,
         user=worker,
+        date_from=funnel_date_from,
+        date_to=funnel_date_to,
     )
 
     pending_tasks = tasks.filter(status__in=["pending", "in_progress"])
