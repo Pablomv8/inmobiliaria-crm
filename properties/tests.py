@@ -189,6 +189,7 @@ class PropertyFormViewTests(TestCase):
             city="Madrid",
             property_type="house",
             zone=self.first_zone,
+            created_by=self.user,
         )
         self.client.force_login(self.user)
 
@@ -599,6 +600,7 @@ class PropertyAutomaticStatusTests(TestCase):
             city="Madrid",
             property_type="flat",
             occupied_by="owner",
+            created_by=self.agent,
         )
         self.owner = Contact.objects.create(
             name="Propietaria estados",
@@ -806,6 +808,7 @@ class OwnerContactFormTests(TestCase):
             number="8",
             city="Madrid",
             property_type="flat",
+            created_by=self.agent,
         )
         self.client.force_login(self.agent)
 
@@ -814,14 +817,12 @@ class OwnerContactFormTests(TestCase):
 
         self.assertEqual(form.fields["name"].label, "Nombre")
         self.assertEqual(form.fields["last_name"].label, "Apellidos")
-        self.assertEqual(form.fields["assigned_agent"].label, "Agente asignado")
         self.assertEqual(form.fields["marital_status"].choices[0][1], "Selecciona el estado civil")
         self.assertTrue(form.fields["last_name"].required)
         self.assertTrue(form.fields["identification_number"].required)
         self.assertTrue(form.fields["marital_status"].required)
         self.assertTrue(form.fields["phone"].required)
-        self.assertTrue(form.fields["assigned_agent"].required)
-        self.assertEqual(form["assigned_agent"].value(), self.agent.pk)
+        self.assertNotIn("assigned_agent", form.fields)
         self.assertNotIn("contact_type", form.fields)
         self.assertNotIn("properties", form.fields)
 
@@ -834,7 +835,7 @@ class OwnerContactFormTests(TestCase):
         self.assertContains(response, "Información personal")
         self.assertContains(response, "Datos de contacto")
         self.assertContains(response, "Domicilio del propietario")
-        self.assertContains(response, "Gestión comercial")
+        self.assertNotContains(response, "Gestión comercial")
         self.assertContains(response, "Notas internas")
 
     def test_owner_form_applies_contact_data_validations(self):
@@ -864,7 +865,6 @@ class OwnerContactFormTests(TestCase):
                 "marital_status": "single",
                 "phone": "612345678",
                 "email": "maria@example.com",
-                "assigned_agent": self.agent.pk,
             },
         )
 

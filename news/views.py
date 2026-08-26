@@ -10,6 +10,7 @@ from calendar_app.models import Appointment, Call
 from properties.models import Property
 from users.models import User
 from config.pagination import paginate
+from users.permissions import scope_to_user
 
 from .forms import NewsCommentForm, NewsForm
 from .models import News
@@ -112,7 +113,7 @@ def news_create(request, property_id=None):
 
 @login_required
 def news_update(request, pk):
-    news = get_object_or_404(News, pk=pk)
+    news = get_object_or_404(scope_to_user(News.objects.all(), request.user), pk=pk)
     form = NewsForm(request.POST or None, instance=news, user=request.user)
 
     if request.method == "POST" and form.is_valid():
@@ -135,7 +136,10 @@ def news_update(request, pk):
 @login_required
 def news_detail(request, pk):
     news = get_object_or_404(
-        News.objects.select_related("related_property", "agent"),
+        scope_to_user(
+            News.objects.select_related("related_property", "agent"),
+            request.user,
+        ),
         pk=pk,
     )
     comments = news.comments.select_related("user").order_by("-created_at")
@@ -182,7 +186,10 @@ def news_detail(request, pk):
 @login_required
 def news_delete(request, pk):
     news = get_object_or_404(
-        News.objects.select_related("related_property"),
+        scope_to_user(
+            News.objects.select_related("related_property", "agent"),
+            request.user,
+        ),
         pk=pk,
     )
 
@@ -196,7 +203,7 @@ def news_delete(request, pk):
 @login_required
 @require_POST
 def news_add_comment(request, pk):
-    news = get_object_or_404(News, pk=pk)
+    news = get_object_or_404(scope_to_user(News.objects.all(), request.user), pk=pk)
     form = NewsCommentForm(request.POST)
 
     if form.is_valid():

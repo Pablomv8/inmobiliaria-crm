@@ -15,6 +15,7 @@ from django.views.decorators.http import require_GET, require_POST
 from django.http import JsonResponse
 from django.urls import reverse
 from config.pagination import paginate
+from users.permissions import require_object_management
 
 
 from django.db.models import Q
@@ -341,6 +342,7 @@ def property_map(request):
 def property_update(request, pk):
 
     property = get_object_or_404(Property, pk=pk)
+    require_object_management(request.user, property, "created_by")
 
     if request.method == 'POST':
 
@@ -429,6 +431,7 @@ def property_geocode(request):
 def property_delete(request, pk):
 
     property = get_object_or_404(Property, pk=pk)
+    require_object_management(request.user, property, "created_by")
 
     if request.method == 'POST':
 
@@ -449,6 +452,7 @@ def property_update_status(request, pk):
         Property,
         pk=pk
     )
+    require_object_management(request.user, property_obj, "created_by")
 
     property_obj.sync_status()
 
@@ -463,6 +467,7 @@ def property_update_status(request, pk):
 @require_POST
 def property_add_comment(request, pk):
     property_obj = get_object_or_404(Property, pk=pk)
+    require_object_management(request.user, property_obj, "created_by")
     form = PropertyCommentForm(request.POST)
 
     if form.is_valid():
@@ -490,6 +495,7 @@ def property_add_comment(request, pk):
 def add_owner_to_property(request, property_id):
 
     property_obj = get_object_or_404(Property, id=property_id)
+    require_object_management(request.user, property_obj, "created_by")
 
     if request.method == "POST":
 
@@ -524,6 +530,7 @@ def add_owner_to_property(request, property_id):
 def create_owner_for_property(request, property_id):
 
     property_obj = get_object_or_404(Property, id=property_id)
+    require_object_management(request.user, property_obj, "created_by")
 
     if request.method == "POST":
 

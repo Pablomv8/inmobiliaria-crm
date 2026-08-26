@@ -10,6 +10,7 @@ from users.models import User
 from .forms import OrderCommentForm, OrderForm
 from .models import Order
 from config.pagination import paginate
+from users.permissions import scope_to_user
 
 
 @login_required
@@ -114,10 +115,13 @@ def order_create(request, buyer_id=None):
 @login_required
 def order_detail(request, pk):
     order = get_object_or_404(
-        Order.objects.select_related(
-            "buyer",
-            "agent",
-            "zone",
+        scope_to_user(
+            Order.objects.select_related(
+                "buyer",
+                "agent",
+                "zone",
+            ),
+            request.user,
         ),
         pk=pk,
     )
@@ -142,10 +146,13 @@ def order_detail(request, pk):
 @require_POST
 def order_add_comment(request, pk):
     order = get_object_or_404(
-        Order.objects.select_related(
-            "buyer",
-            "agent",
-            "zone",
+        scope_to_user(
+            Order.objects.select_related(
+                "buyer",
+                "agent",
+                "zone",
+            ),
+            request.user,
         ),
         pk=pk,
     )
@@ -177,7 +184,7 @@ def order_add_comment(request, pk):
 
 @login_required
 def order_update(request, pk):
-    order = get_object_or_404(Order, pk=pk)
+    order = get_object_or_404(scope_to_user(Order.objects.all(), request.user), pk=pk)
     form = OrderForm(request.POST or None, instance=order, user=request.user)
 
     if request.method == "POST" and form.is_valid():
@@ -199,7 +206,13 @@ def order_update(request, pk):
 
 @login_required
 def order_delete(request, pk):
-    order = get_object_or_404(Order.objects.select_related("buyer"), pk=pk)
+    order = get_object_or_404(
+        scope_to_user(
+            Order.objects.select_related("buyer", "agent"),
+            request.user,
+        ),
+        pk=pk,
+    )
 
     if request.method == "POST":
         order.delete()

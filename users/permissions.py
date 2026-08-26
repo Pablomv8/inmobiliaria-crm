@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 
 
@@ -8,6 +9,37 @@ def can_manage_assignments(user):
         and user.is_authenticated
         and (user.is_superuser or user.role in ["admin", "manager"])
     )
+
+
+def can_manage_office(user):
+    """Puede consultar y modificar registros de cualquier agente."""
+    return can_manage_assignments(user)
+
+
+def can_manage_object(user, obj, *assignment_fields):
+    """Comprueba si el registro pertenece al usuario o gestiona la oficina."""
+    if can_manage_office(user):
+        return True
+    if not user or not user.is_authenticated:
+        return False
+
+    for field_name in assignment_fields:
+        assigned_id = getattr(obj, f"{field_name}_id", None)
+        if assigned_id == user.pk:
+            return True
+    return False
+
+
+def require_object_management(user, obj, *assignment_fields):
+    if not can_manage_object(user, obj, *assignment_fields):
+        raise PermissionDenied
+
+
+def scope_to_user(queryset, user, assignment_field="agent"):
+    """Managers ven todo; agentes únicamente su cartera asignada."""
+    if can_manage_office(user):
+        return queryset
+    return queryset.filter(**{assignment_field: user})
 
 
 def assignable_agents(current_agent=None):

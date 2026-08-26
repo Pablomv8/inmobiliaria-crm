@@ -15,7 +15,11 @@ from sales.models import RentalContract, Sale
 
 from activities.utils import log_activity
 from config.pagination import paginate
-from users.permissions import assignable_agents, can_manage_assignments
+from users.permissions import (
+    assignable_agents,
+    can_manage_assignments,
+    require_object_management,
+)
 
 
 User = get_user_model()
@@ -81,7 +85,11 @@ def contact_create(request):
 
         if form.is_valid():
 
-            contact = form.save()
+            contact = form.save(commit=False)
+            if "assigned_agent" not in form.fields:
+                contact.assigned_agent = request.user
+            contact.save()
+            form.save_m2m()
 
             log_activity(
                 request.user,
@@ -105,6 +113,7 @@ def contact_create(request):
 def contact_update(request, pk):
 
     contact = get_object_or_404(Contact, pk=pk)
+    require_object_management(request.user, contact, "assigned_agent")
 
     if request.method == 'POST':
 
@@ -136,6 +145,7 @@ def contact_update(request, pk):
 def contact_delete(request, pk):
 
     contact = get_object_or_404(Contact, pk=pk)
+    require_object_management(request.user, contact, "assigned_agent")
 
     if request.method == 'POST':
 

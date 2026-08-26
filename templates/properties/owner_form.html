@@ -147,7 +147,7 @@
             </section>
 
             <section class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <div class="rounded-2xl border border-gray-200 p-5 sm:p-6">
+                {% if form.assigned_agent %}<div class="rounded-2xl border border-gray-200 p-5 sm:p-6">
                     <div class="mb-5 flex items-start gap-3">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 font-bold text-blue-700">4</span>
                         <div>
@@ -159,7 +159,7 @@
                     {{ form.assigned_agent }}
                     {% if form.assigned_agent.help_text %}<p class="mt-2 text-xs text-gray-500">{{ form.assigned_agent.help_text }}</p>{% endif %}
                     {% for error in form.assigned_agent.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}
-                </div>
+                </div>{% endif %}
 
                 <div class="rounded-2xl border border-gray-200 p-5 sm:p-6">
                     <div class="mb-5 flex items-start gap-3">

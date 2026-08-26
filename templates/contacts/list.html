@@ -72,8 +72,10 @@
 
                 <div class="mt-5 flex justify-end gap-2 border-t border-gray-100 pt-4">
                     <a href="{% url 'contact_detail' contact.id %}" class="rounded-xl bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200">Ver</a>
+                    {% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" or contact.assigned_agent_id == request.user.id %}
                     <a href="{% url 'contact_update' contact.id %}" class="rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black">Editar</a>
                     <a href="{% url 'contact_delete' contact.id %}" class="rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100" aria-label="Eliminar contacto">🗑️</a>
+                    {% endif %}
                 </div>
             </article>
         {% empty %}
@@ -116,7 +118,7 @@
                                 {% endif %}
                             </td>
                             <td class="px-6 py-4">
-                                <div class="flex justify-end gap-2"><a href="{% url 'contact_detail' contact.id %}" class="rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200">Ver</a><a href="{% url 'contact_update' contact.id %}" class="rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-black">Editar</a><a href="{% url 'contact_delete' contact.id %}" class="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100">Eliminar</a></div>
+                                <div class="flex justify-end gap-2"><a href="{% url 'contact_detail' contact.id %}" class="rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200">Ver</a>{% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" or contact.assigned_agent_id == request.user.id %}<a href="{% url 'contact_update' contact.id %}" class="rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-black">Editar</a><a href="{% url 'contact_delete' contact.id %}" class="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100">Eliminar</a>{% endif %}</div>
                             </td>
                         </tr>
                     {% empty %}

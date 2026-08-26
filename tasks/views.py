@@ -182,6 +182,11 @@ class TaskCreateView(StreetMapContextMixin, LoginRequiredMixin, CreateView):
     template_name = "tasks/task_form.html"
     success_url = reverse_lazy("task_list")
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
     def form_valid(self, form):
 
         form.instance.created_by = self.request.user
@@ -206,6 +211,11 @@ class TaskUpdateView(StreetMapContextMixin, LoginRequiredMixin, UpdateView):
     form_class = TaskForm
     template_name = "tasks/task_form.html"
     success_url = reverse_lazy("task_list")
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
 
     def form_valid(self, form):
 

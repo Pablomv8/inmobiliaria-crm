@@ -9,6 +9,7 @@ from .scheduling import (
     build_occurrences,
     schedule_has_conflict,
 )
+from users.permissions import can_manage_assignments
 
 
 INPUT_CLASS = (
@@ -83,7 +84,7 @@ class TaskForm(forms.ModelForm):
             "status": forms.Select(attrs={"class": INPUT_CLASS}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["title"].required = False
         self.fields["description"].required = False
@@ -100,6 +101,13 @@ class TaskForm(forms.ModelForm):
                 "username",
             )
         )
+        if user is not None and not can_manage_assignments(user):
+            self.fields["assigned_to"].queryset = get_user_model().objects.filter(
+                pk=user.pk,
+                is_active=True,
+            )
+            self.fields["assigned_to"].initial = user
+            self.fields["assigned_to"].widget = forms.HiddenInput()
         self.fields["zone"].queryset = Zone.objects.all().order_by("name")
         self.fields["streets"].queryset = Street.objects.filter(
             municipality="Arcos de la Frontera",

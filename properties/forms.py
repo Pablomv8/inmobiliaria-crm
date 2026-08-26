@@ -7,6 +7,7 @@ from config.validators import (
     validate_phone_number,
     validate_spanish_postal_code,
 )
+from users.permissions import assignable_agents, can_manage_assignments
 
 from .geocoding import is_arcos_de_la_frontera
 from .models import Property, PropertyComment, Zone
@@ -272,6 +273,7 @@ class OwnerContactForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         self.property_obj = property_obj
+        self.user = user
 
         for field_name in (
             "last_name",
@@ -285,10 +287,14 @@ class OwnerContactForm(forms.ModelForm):
             ("", "Selecciona el estado civil"),
             *Contact.MARITAL_STATUS_CHOICES,
         ]
-        self.fields["assigned_agent"].required = True
-        self.fields["assigned_agent"].empty_label = "Selecciona un agente"
-        if not self.is_bound and not self.instance.pk and user is not None:
-            self.fields["assigned_agent"].initial = user
+        if can_manage_assignments(user):
+            self.fields["assigned_agent"].queryset = assignable_agents()
+            self.fields["assigned_agent"].required = True
+            self.fields["assigned_agent"].empty_label = "Selecciona un agente"
+            if not self.is_bound and not self.instance.pk and user is not None:
+                self.fields["assigned_agent"].initial = user
+        else:
+            self.fields.pop("assigned_agent")
 
         for field in self.fields.values():
             field.error_messages["required"] = "Este campo es obligatorio."
@@ -460,6 +466,8 @@ class OwnerContactForm(forms.ModelForm):
         contact = super().save(commit=False)
 
         contact.is_owner = True
+        if "assigned_agent" not in self.fields:
+            contact.assigned_agent = self.user
 
         if commit:
             contact.save()

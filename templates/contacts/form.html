@@ -156,11 +156,11 @@
                     {% if form.is_owner.errors %}<p class="mt-1 text-sm text-red-600">{{ form.is_owner.errors.0 }}</p>{% endif %}
                     {% if form.is_buyer.errors %}<p class="mt-1 text-sm text-red-600">{{ form.is_buyer.errors.0 }}</p>{% endif %}
                 </fieldset>
-                <div>
+                {% if form.assigned_agent %}<div>
                     <label for="{{ form.assigned_agent.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Responsable</label>
                     {{ form.assigned_agent }}
                     {% if form.assigned_agent.errors %}<p class="mt-1 text-sm text-red-600">{{ form.assigned_agent.errors.0 }}</p>{% endif %}
-                </div>
+                </div>{% endif %}
                 <div id="contact-properties-field" class="md:col-span-2 {% if not form.is_owner.value %}hidden{% endif %}">
                     <label for="{{ form.properties.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Inmuebles asociados</label>
                     {{ form.properties }}

@@ -129,6 +129,8 @@
                     <!-- ACCIONES -->
                     <div class="flex items-center gap-2">
 
+                        {% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" or contact.assigned_agent_id == request.user.id %}
+
                         <a
                             href="{% url 'contact_update' contact.id %}"
                             class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-black transition"
@@ -170,6 +172,7 @@
 
                             Eliminar
                         </a>
+                        {% endif %}
 
                     </div>
 

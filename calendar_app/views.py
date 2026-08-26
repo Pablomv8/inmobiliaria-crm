@@ -32,7 +32,7 @@ from datetime import date, timedelta
 from itertools import groupby
 from users.models import User
 from users.forms import AgentReassignmentForm
-from users.permissions import can_manage_assignments
+from users.permissions import can_manage_assignments, scope_to_user
 from orders.models import Order
 from tasks.models import Task
 from tasks.scheduling import (
@@ -130,6 +130,7 @@ def get_user_order_or_404(user, order_id):
         "agent",
         "zone",
     )
+    orders = scope_to_user(orders, user)
     return get_object_or_404(orders, pk=order_id)
 
 
@@ -149,7 +150,10 @@ def get_user_proposal_or_404(user, proposal_id):
 @login_required
 def create_appointment(request, news_id):
 
-    news = get_object_or_404(News, id=news_id)
+    news = get_object_or_404(
+        scope_to_user(News.objects.select_related("agent"), request.user),
+        id=news_id,
+    )
 
     if not news.comments.exists():
 
@@ -201,7 +205,10 @@ def create_appointment(request, news_id):
 @login_required
 def create_call(request, news_id):
 
-    news = get_object_or_404(News, id=news_id)
+    news = get_object_or_404(
+        scope_to_user(News.objects.select_related("agent"), request.user),
+        id=news_id,
+    )
 
     if request.method == "POST":
 

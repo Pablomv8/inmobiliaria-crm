@@ -8,7 +8,7 @@ from config.validators import (
     validate_phone_number,
     validate_spanish_postal_code,
 )
-from users.permissions import assignable_agents
+from users.permissions import assignable_agents, can_manage_assignments
 
 INPUT_CLASS = """
 w-full
@@ -84,21 +84,24 @@ class ContactForm(forms.ModelForm):
                 "Este campo es obligatorio."
             )
 
-        current_agent = (
-            self.instance.assigned_agent
-            if self.instance and self.instance.pk
-            else None
-        )
-        self.fields["assigned_agent"].queryset = assignable_agents(
-            current_agent
-        )
-        self.fields["assigned_agent"].required = True
-        self.fields["assigned_agent"].empty_label = "Selecciona un responsable"
-        self.fields["assigned_agent"].error_messages["required"] = (
-            "Selecciona la persona responsable del contacto."
-        )
-        if not self.is_bound and not self.instance.pk and user is not None:
-            self.fields["assigned_agent"].initial = user
+        if can_manage_assignments(user):
+            current_agent = (
+                self.instance.assigned_agent
+                if self.instance and self.instance.pk
+                else None
+            )
+            self.fields["assigned_agent"].queryset = assignable_agents(
+                current_agent
+            )
+            self.fields["assigned_agent"].required = True
+            self.fields["assigned_agent"].empty_label = "Selecciona un responsable"
+            self.fields["assigned_agent"].error_messages["required"] = (
+                "Selecciona la persona responsable del contacto."
+            )
+            if not self.is_bound and not self.instance.pk and user is not None:
+                self.fields["assigned_agent"].initial = user
+        else:
+            self.fields.pop("assigned_agent")
         self.fields["phone"].validators.append(validate_phone_number)
         self.fields["postal_code"].validators.append(
             validate_spanish_postal_code

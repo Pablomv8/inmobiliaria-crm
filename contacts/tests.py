@@ -339,11 +339,7 @@ class ContactRelatedWorkflowTests(TestCase):
             "phone",
         ):
             self.assertTrue(response.context["form"].fields[field_name].required)
-        self.assertTrue(response.context["form"].fields["assigned_agent"].required)
-        self.assertEqual(
-            response.context["form"]["assigned_agent"].value(),
-            self.agent.pk,
-        )
+        self.assertNotIn("assigned_agent", response.context["form"].fields)
 
     def test_contact_form_validates_and_normalizes_common_personal_data(self):
         form = ContactForm(data={

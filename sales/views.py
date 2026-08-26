@@ -1,5 +1,6 @@
 from django.views.generic import ListView
 from django.views.generic import CreateView
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
@@ -26,7 +27,7 @@ from activities.utils import log_activity
 from django.db.models import Q
 from users.models import User
 from users.forms import AgentReassignmentForm
-from users.permissions import can_manage_assignments
+from users.permissions import can_manage_assignments, scope_to_user
 from config.pagination import paginate
 from calendar_app.models import Appointment
 
@@ -126,7 +127,7 @@ class SaleListView(ListView):
     paginate_by = 15
 
 
-class SaleCreateView(CreateView):
+class SaleCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     model = Sale
 
@@ -136,17 +137,14 @@ class SaleCreateView(CreateView):
 
     success_url = reverse_lazy("sale_list")
 
-    @login_required
+    def test_func(self):
+        return can_manage_assignments(self.request.user)
+
     def form_valid(self, form):
 
         response = super().form_valid(form)
 
         sale = self.object
-
-        # contacto cerrado
-
-        sale.buyer.status = "closed"
-        sale.buyer.save()
 
         log_activity(
             self.request.user,
@@ -567,9 +565,15 @@ def rental_contract_reassign(request, pk):
 @login_required
 def sale_update_status(request, pk):
 
-    sale = get_object_or_404(Sale, pk=pk)
+    sale = get_object_or_404(
+        scope_to_user(Sale.objects.all(), request.user),
+        pk=pk,
+    )
 
-    sale.status = request.POST.get("status")
-    sale.save()  # aquí se ejecuta la lógica del modelo
+    status = request.POST.get("status")
+    if status not in dict(Sale.STATUS_CHOICES):
+        raise PermissionDenied
+    sale.status = status
+    sale.save()
 
     return redirect("sale_list")
