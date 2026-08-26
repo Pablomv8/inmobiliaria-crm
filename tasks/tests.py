@@ -317,7 +317,7 @@ class TaskTypeFlowTests(TestCase):
         contact = Contact.objects.create(
             name="Contacto intervalo",
             phone="600555222",
-            contact_type="buyer",
+            is_buyer=True,
         )
         Appointment.objects.create(
             related_property=property_obj,

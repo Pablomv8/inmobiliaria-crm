@@ -67,7 +67,7 @@ class ListingForm(forms.ModelForm):
 
         owners = Contact.objects.filter(
             properties=property_obj,
-            contact_type="owner",
+            is_owner=True,
         ).distinct()
         self.fields["owner"].queryset = owners
         self.fields["owner"].required = True

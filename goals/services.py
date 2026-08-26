@@ -57,7 +57,7 @@ def _metric_queryset(goal, agent_ids):
             Q(created_by_id__in=agent_ids)
             | Q(
                 created_by__isnull=True,
-                contacts__contact_type="owner",
+                contacts__is_owner=True,
                 contacts__assigned_agent_id__in=agent_ids,
             )
         )

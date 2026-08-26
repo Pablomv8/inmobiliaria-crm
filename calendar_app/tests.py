@@ -39,7 +39,7 @@ class AppointmentResultFlowTests(TestCase):
         self.contact = Contact.objects.create(
             name="Ana",
             phone="600000000",
-            contact_type="owner",
+            is_owner=True,
         )
         self.contact.properties.add(self.property)
         self.news = News.objects.create(
@@ -224,7 +224,7 @@ class AppointmentEditTests(TestCase):
         self.contact = Contact.objects.create(
             name="Contacto edición",
             phone="600444555",
-            contact_type="buyer",
+            is_buyer=True,
             assigned_agent=self.agent,
         )
         self.appointment = Appointment.objects.create(
@@ -534,13 +534,13 @@ class SaleAppointmentFlowTests(TestCase):
         self.buyer = Contact.objects.create(
             name="Comprador",
             phone="600100100",
-            contact_type="buyer",
+            is_buyer=True,
             assigned_agent=self.contact_agent,
         )
         self.owner = Contact.objects.create(
             name="Propietaria venta",
             phone="600200200",
-            contact_type="owner",
+            is_owner=True,
         )
         self.zone = Zone.objects.create(name="Centro ventas")
         self.property = Property.objects.create(
@@ -1123,7 +1123,7 @@ class CallFlowTests(TestCase):
         self.contact = Contact.objects.create(
             name="Contacto llamada",
             phone="600777777",
-            contact_type="buyer",
+            is_buyer=True,
             assigned_agent=self.agent,
         )
         self.call = Call.objects.create(
@@ -1334,7 +1334,7 @@ class AvailableSlotsTests(TestCase):
         contact = Contact.objects.create(
             name="Contacto horario",
             phone="600300300",
-            contact_type="owner",
+            is_owner=True,
         )
         Appointment.objects.create(
             related_property=property_obj,
@@ -1645,7 +1645,7 @@ class AppointmentResultFlowAdditionalTests(TestCase):
         other_owner = Contact.objects.create(
             name="Propietario ajeno",
             phone="611111111",
-            contact_type="owner",
+            is_owner=True,
         )
         self.appointment.status = "completed"
         self.appointment.result_comment = "El propietario acepta el encargo."

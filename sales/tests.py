@@ -25,7 +25,7 @@ class MonetaryCommissionTests(TestCase):
         self.buyer = Contact.objects.create(
             name="Compradora comisión",
             phone="600999001",
-            contact_type="buyer",
+            is_buyer=True,
         )
         self.property = Property.objects.create(
             street="Calle Comisión",
@@ -71,13 +71,13 @@ class ContractClosingFlowTests(TestCase):
         self.owner = Contact.objects.create(
             name="Propietaria anterior",
             phone="600990001",
-            contact_type="owner",
+            is_owner=True,
             assigned_agent=self.agent,
         )
         self.client_contact = Contact.objects.create(
             name="Cliente adquirente",
             phone="600990002",
-            contact_type="buyer",
+            is_buyer=True,
             assigned_agent=self.agent,
         )
         self.client.force_login(self.agent)
@@ -173,7 +173,8 @@ class ContractClosingFlowTests(TestCase):
         self.assertTrue(
             property_obj.contacts.filter(pk=self.client_contact.pk).exists()
         )
-        self.assertEqual(self.client_contact.contact_type, "owner")
+        self.assertTrue(self.client_contact.is_owner)
+        self.assertTrue(self.client_contact.is_buyer)
         self.assertEqual(order.status, "closed")
         self.assertIs(appointment.result_success, True)
 
@@ -229,7 +230,8 @@ class ContractClosingFlowTests(TestCase):
         self.assertTrue(
             property_obj.contacts.filter(pk=self.client_contact.pk).exists()
         )
-        self.assertEqual(self.client_contact.contact_type, "buyer")
+        self.assertFalse(self.client_contact.is_owner)
+        self.assertTrue(self.client_contact.is_buyer)
         self.assertEqual(order.status, "closed")
         list_response = self.client.get(reverse("rental_contract_list"))
         self.assertContains(list_response, property_obj.full_address)

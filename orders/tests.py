@@ -26,13 +26,13 @@ class OrderCrudTests(TestCase):
         self.buyer = Contact.objects.create(
             name="Compradora",
             phone="600000001",
-            contact_type="buyer",
+            is_buyer=True,
             assigned_agent=self.contact_agent,
         )
         self.owner = Contact.objects.create(
             name="Propietario",
             phone="600000002",
-            contact_type="owner",
+            is_owner=True,
         )
         self.zone = Zone.objects.create(name="Centro")
         self.client.force_login(self.user)
@@ -71,6 +71,22 @@ class OrderCrudTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertFalse(Order.objects.exists())
+
+    def test_general_form_accepts_contact_with_both_roles_as_buyer(self):
+        both_roles = Contact.objects.create(
+            name="Propietario que también compra",
+            phone="600000003",
+            is_owner=True,
+            is_buyer=True,
+        )
+        data = self.order_data()
+        data["buyer"] = both_roles.pk
+
+        response = self.client.post(reverse("order_create"), data)
+
+        order = Order.objects.get()
+        self.assertRedirects(response, reverse("order_detail", args=[order.pk]))
+        self.assertEqual(order.buyer, both_roles)
 
     def test_order_requires_purchase_or_rental_operation(self):
         data = self.order_data()

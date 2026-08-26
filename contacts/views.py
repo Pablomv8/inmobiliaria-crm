@@ -28,7 +28,7 @@ def contact_list(request):
     ).prefetch_related("properties")
 
     search = request.GET.get("search", "").strip()
-    contact_type = request.GET.get("contact_type", "")
+    role = request.GET.get("role", "")
     agent = request.GET.get("agent", "")
     ordering = request.GET.get("ordering", "")
 
@@ -42,8 +42,13 @@ def contact_list(request):
             | Q(city__icontains=search)
         )
 
-    if contact_type in dict(Contact.CONTACT_TYPE_CHOICES):
-        contacts = contacts.filter(contact_type=contact_type)
+    role_filters = {
+        "owner": {"is_owner": True},
+        "buyer": {"is_buyer": True},
+        "both": {"is_owner": True, "is_buyer": True},
+    }
+    if role in role_filters:
+        contacts = contacts.filter(**role_filters[role])
 
     if agent:
         contacts = contacts.filter(assigned_agent_id=agent)
@@ -60,7 +65,11 @@ def contact_list(request):
         "contacts": contacts,
         "page_obj": contacts,
         "agents": assignable_agents(),
-        "contact_type_choices": Contact.CONTACT_TYPE_CHOICES,
+        "role_choices": [
+            ("owner", "Propietarios"),
+            ("buyer", "Compradores"),
+            ("both", "Ambos roles"),
+        ],
     })
 
 @login_required
@@ -228,7 +237,7 @@ def contact_detail(request, pk):
     listings = Listing.objects.none()
     orders = Order.objects.none()
 
-    if contact.contact_type == "owner":
+    if contact.is_owner:
         news_items = News.objects.filter(
             related_property__contacts=contact,
         ).select_related(
@@ -242,7 +251,7 @@ def contact_detail(request, pk):
             "owner",
             "agent",
         ).distinct().order_by("-created_at")
-    elif contact.contact_type == "buyer":
+    if contact.is_buyer:
         orders = Order.objects.filter(buyer=contact).select_related(
             "zone",
             "agent",

@@ -32,7 +32,7 @@ class Order(models.Model):
         Contact,
         on_delete=models.PROTECT,
         related_name="orders",
-        limit_choices_to={"contact_type": "buyer"},
+        limit_choices_to={"is_buyer": True},
     )
     agent = models.ForeignKey(
         "users.User",

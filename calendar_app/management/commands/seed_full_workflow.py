@@ -37,7 +37,7 @@ class Command(BaseCommand):
             last_name="Propietaria Integral",
             phone="610 000 101",
             email="elena.integral@example.com",
-            contact_type="owner",
+            is_owner=True,
             assigned_agent=agent,
             notes="Propietaria para los escenarios integrales de prueba.",
         )
@@ -47,7 +47,7 @@ class Command(BaseCommand):
             last_name="Comprador Integral",
             phone="610 000 202",
             email="javier.integral@example.com",
-            contact_type="buyer",
+            is_buyer=True,
             assigned_agent=agent,
             notes="Comprador para los escenarios integrales de prueba.",
         )

@@ -30,7 +30,7 @@ class ContactRelatedWorkflowTests(TestCase):
         owner = Contact.objects.create(
             name="Propietaria relacionada",
             phone="600111222",
-            contact_type="owner",
+            is_owner=True,
             assigned_agent=self.agent,
         )
         owner.properties.add(self.property)
@@ -69,7 +69,7 @@ class ContactRelatedWorkflowTests(TestCase):
         buyer = Contact.objects.create(
             name="Compradora relacionada",
             phone="600333444",
-            contact_type="buyer",
+            is_buyer=True,
             assigned_agent=self.agent,
         )
         zone = Zone.objects.create(name="Centro contacto")
@@ -91,50 +91,67 @@ class ContactRelatedWorkflowTests(TestCase):
         self.assertNotContains(response, "Noticias relacionadas")
         self.assertNotContains(response, "Encargos relacionados")
 
-    def test_contact_list_shows_contact_type_column(self):
+    def test_contact_list_shows_roles_column(self):
         Contact.objects.create(
             name="Propietario del listado",
             phone="600555111",
-            contact_type="owner",
+            is_owner=True,
             assigned_agent=self.agent,
         )
         Contact.objects.create(
             name="Compradora del listado",
             phone="600555222",
-            contact_type="buyer",
+            is_buyer=True,
             assigned_agent=self.agent,
         )
 
         response = self.client.get(reverse("contact_list"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Tipo de contacto")
+        self.assertContains(response, "Roles")
+
+    def test_contact_with_both_roles_shows_owner_and_buyer_sections(self):
+        contact = Contact.objects.create(
+            name="Cliente con doble rol",
+            phone="600555223",
+            is_owner=True,
+            is_buyer=True,
+            assigned_agent=self.agent,
+        )
+
+        response = self.client.get(reverse("contact_detail", args=[contact.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Propietario y comprador")
+        self.assertContains(response, "Noticias relacionadas")
+        self.assertContains(response, "Encargos relacionados")
+        self.assertContains(response, "Pedidos de búsqueda")
 
     def test_contact_list_is_paginated_and_keeps_filters(self):
         for index in range(17):
             Contact.objects.create(
                 name=f"Comprador paginado {index:02d}",
                 phone=f"611000{index:03d}",
-                contact_type="buyer",
+                is_buyer=True,
                 assigned_agent=self.agent,
             )
         Contact.objects.create(
             name="Propietario fuera del filtro",
             phone="622000000",
-            contact_type="owner",
+            is_owner=True,
             assigned_agent=self.agent,
         )
 
         response = self.client.get(
             reverse("contact_list"),
-            {"contact_type": "buyer", "page": 2},
+            {"role": "buyer", "page": 2},
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["page_obj"].number, 2)
         self.assertEqual(response.context["page_obj"].paginator.count, 17)
         self.assertEqual(len(response.context["contacts"]), 2)
-        self.assertContains(response, "contact_type=buyer")
+        self.assertContains(response, "role=buyer")
         self.assertContains(response, "Mostrando")
         self.assertContains(response, "Propietario")
         self.assertContains(response, "Comprador")
@@ -148,7 +165,7 @@ class ContactRelatedWorkflowTests(TestCase):
         contact = Contact.objects.create(
             name="Contacto sin responsable",
             phone="600555333",
-            contact_type="owner",
+            is_owner=True,
         )
         self.client.force_login(manager)
 
@@ -167,7 +184,7 @@ class ContactRelatedWorkflowTests(TestCase):
         contact = Contact.objects.create(
             name="Contacto del administrador",
             phone="600555334",
-            contact_type="owner",
+            is_owner=True,
         )
         self.client.force_login(administrator)
 
@@ -189,19 +206,19 @@ class ContactRelatedWorkflowTests(TestCase):
         own_contact = Contact.objects.create(
             name="Contacto propio visible",
             phone="600555401",
-            contact_type="buyer",
+            is_buyer=True,
             assigned_agent=self.agent,
         )
         other_contact = Contact.objects.create(
             name="Contacto de otro agente visible",
             phone="600555402",
-            contact_type="owner",
+            is_owner=True,
             assigned_agent=other_agent,
         )
         unassigned_contact = Contact.objects.create(
             name="Contacto sin responsable visible",
             phone="600555403",
-            contact_type="owner",
+            is_owner=True,
         )
 
         response = self.client.get(reverse("contact_list"))
@@ -221,23 +238,23 @@ class ContactRelatedWorkflowTests(TestCase):
             [other_contact],
         )
 
-    def test_contact_list_can_filter_by_contact_type(self):
+    def test_contact_list_can_filter_by_role(self):
         owner = Contact.objects.create(
             name="Propietario filtrado",
             phone="600666111",
-            contact_type="owner",
+            is_owner=True,
             assigned_agent=self.agent,
         )
         buyer = Contact.objects.create(
             name="Comprador excluido",
             phone="600666222",
-            contact_type="buyer",
+            is_buyer=True,
             assigned_agent=self.agent,
         )
 
         response = self.client.get(
             reverse("contact_list"),
-            {"contact_type": "owner"},
+            {"role": "owner"},
         )
 
         self.assertEqual(response.status_code, 200)
@@ -246,13 +263,36 @@ class ContactRelatedWorkflowTests(TestCase):
         self.assertContains(response, owner.name)
         self.assertNotContains(response, buyer.name)
 
+    def test_contact_list_can_filter_contacts_with_both_roles(self):
+        both = Contact.objects.create(
+            name="Cliente con ambos roles filtrado",
+            phone="600666333",
+            is_owner=True,
+            is_buyer=True,
+            assigned_agent=self.agent,
+        )
+        Contact.objects.create(
+            name="Solo comprador fuera",
+            phone="600666444",
+            is_buyer=True,
+            assigned_agent=self.agent,
+        )
+
+        response = self.client.get(
+            reverse("contact_list"),
+            {"role": "both"},
+        )
+
+        self.assertQuerySetEqual(response.context["contacts"], [both])
+        self.assertContains(response, "Ambos roles")
+
     def test_contact_search_includes_document_and_city(self):
         matching_contact = Contact.objects.create(
             name="Contacto encontrado",
             phone="600777111",
             identification_number="12345678Z",
             city="Alcalá de Henares",
-            contact_type="buyer",
+            is_buyer=True,
             assigned_agent=self.agent,
         )
         Contact.objects.create(
@@ -260,7 +300,7 @@ class ContactRelatedWorkflowTests(TestCase):
             phone="600777222",
             identification_number="87654321X",
             city="Toledo",
-            contact_type="buyer",
+            is_buyer=True,
             assigned_agent=self.agent,
         )
 
@@ -314,7 +354,7 @@ class ContactRelatedWorkflowTests(TestCase):
             "postal_code": "11630",
             "identification_number": "12345678-z",
             "marital_status": "single",
-            "contact_type": "buyer",
+            "is_buyer": "on",
             "assigned_agent": self.agent.pk,
         })
 
@@ -323,6 +363,87 @@ class ContactRelatedWorkflowTests(TestCase):
         self.assertEqual(form.cleaned_data["email"], "cliente@example.com")
         self.assertEqual(form.cleaned_data["identification_number"], "12345678Z")
 
+    def test_contact_form_accepts_owner_and_buyer_roles_together(self):
+        form = ContactForm(data={
+            "name": "Cliente doble",
+            "last_name": "Rol Válido",
+            "phone": "612 345 679",
+            "identification_number": "87654321X",
+            "marital_status": "single",
+            "is_owner": "on",
+            "is_buyer": "on",
+            "assigned_agent": self.agent.pk,
+        })
+
+        self.assertTrue(form.is_valid(), form.errors)
+        contact = form.save()
+        self.assertTrue(contact.is_owner)
+        self.assertTrue(contact.is_buyer)
+
+    def test_buyer_only_cannot_receive_properties_from_contact_form(self):
+        form = ContactForm(data={
+            "name": "Comprador sin inmueble",
+            "last_name": "Formulario Seguro",
+            "phone": "612 345 681",
+            "identification_number": "12345678Z",
+            "marital_status": "single",
+            "is_buyer": "on",
+            "properties": [self.property.pk],
+            "assigned_agent": self.agent.pk,
+        })
+
+        self.assertTrue(form.is_valid(), form.errors)
+        contact = form.save()
+        self.assertFalse(contact.properties.exists())
+
+    def test_editing_buyer_only_preserves_historical_property_relations(self):
+        buyer = Contact.objects.create(
+            name="Comprador histórico",
+            last_name="Con relación",
+            phone="+34612345682",
+            identification_number="87654321X",
+            marital_status="single",
+            is_buyer=True,
+            assigned_agent=self.agent,
+        )
+        buyer.properties.add(self.property)
+        form = ContactForm(data={
+            "name": buyer.name,
+            "last_name": buyer.last_name,
+            "phone": "612 345 682",
+            "identification_number": buyer.identification_number,
+            "marital_status": buyer.marital_status,
+            "is_buyer": "on",
+            "assigned_agent": self.agent.pk,
+        }, instance=buyer)
+
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save()
+        self.assertTrue(buyer.properties.filter(pk=self.property.pk).exists())
+
+    def test_contact_form_hides_properties_until_owner_role_is_selected(self):
+        response = self.client.get(reverse("contact_create"))
+
+        self.assertContains(
+            response,
+            'id="contact-properties-field" class="md:col-span-2 hidden"',
+            html=False,
+        )
+        self.assertContains(response, "updatePropertiesVisibility")
+
+    def test_contact_form_requires_at_least_one_role(self):
+        form = ContactForm(data={
+            "name": "Cliente sin rol",
+            "last_name": "No válido",
+            "phone": "612 345 680",
+            "identification_number": "X1234567L",
+            "marital_status": "single",
+            "assigned_agent": self.agent.pk,
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("Selecciona al menos un rol", form.non_field_errors()[0])
+
     def test_contact_form_rejects_invalid_email_phone_document_and_postal_code(self):
         form = ContactForm(data={
             "name": "Cliente no válido",
@@ -330,7 +451,7 @@ class ContactRelatedWorkflowTests(TestCase):
             "email": "correo-sin-formato",
             "postal_code": "99000",
             "identification_number": "12345678A",
-            "contact_type": "owner",
+            "is_owner": "on",
         })
 
         self.assertFalse(form.is_valid())

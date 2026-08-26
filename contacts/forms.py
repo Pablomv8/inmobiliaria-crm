@@ -153,7 +153,8 @@ class ContactForm(forms.ModelForm):
             "occupation",
             "phone",
             "email",
-            "contact_type",
+            "is_owner",
+            "is_buyer",
             "notes",
             "properties",
             "assigned_agent",
@@ -178,7 +179,8 @@ class ContactForm(forms.ModelForm):
             "phone": "Teléfono",
             "email": "Correo electrónico",
 
-            "contact_type": "Tipo de contacto",
+            "is_owner": "Propietario",
+            "is_buyer": "Comprador",
 
             "notes": "Notas",
 
@@ -248,8 +250,12 @@ class ContactForm(forms.ModelForm):
                 "autocomplete": "email",
             }),
 
-            "contact_type": forms.Select(attrs={
-                "class": SELECT_CLASS,
+            "is_owner": forms.CheckboxInput(attrs={
+                "class": "h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500",
+            }),
+
+            "is_buyer": forms.CheckboxInput(attrs={
+                "class": "h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500",
             }),
 
             "notes": forms.Textarea(attrs={
@@ -330,3 +336,21 @@ class ContactForm(forms.ModelForm):
 
     def clean_postal_code(self):
         return self.cleaned_data.get("postal_code", "").strip()
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        if not cleaned_data.get("is_owner") and not cleaned_data.get("is_buyer"):
+            raise forms.ValidationError(
+                "Selecciona al menos un rol: propietario o comprador."
+            )
+
+        if not cleaned_data.get("is_owner"):
+            # Un comprador no puede recibir inmuebles desde este formulario.
+            # En edición conservamos relaciones históricas ya existentes.
+            if self.instance and self.instance.pk:
+                cleaned_data["properties"] = self.instance.properties.all()
+            else:
+                cleaned_data["properties"] = Property.objects.none()
+
+        return cleaned_data

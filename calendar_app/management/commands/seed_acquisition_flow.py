@@ -45,7 +45,7 @@ class Command(BaseCommand):
                 identification_number="DEMO-FLUJO-001",
                 phone="600 123 456",
                 email="carmen.demo@example.com",
-                contact_type="owner",
+                is_owner=True,
                 assigned_agent=agent,
                 notes="Contacto creado para probar el flujo de adquisición.",
             )

@@ -191,11 +191,11 @@ def property_detail(request, pk):
     property.sync_status()
 
     owners = property.contacts.filter(
-        contact_type="owner"
+        is_owner=True
     )
 
     buyers = property.contacts.filter(
-        contact_type="buyer"
+        is_buyer=True
     )
 
     return render(request, 'properties/detail.html', {
@@ -498,16 +498,17 @@ def add_owner_to_property(request, property_id):
             id=request.POST.get("contact_id")
         )
 
-        # aseguramos tipo propietario
-        contact.contact_type = "owner"
-        contact.save()
+        # Añadimos el rol sin retirar su posible rol de comprador.
+        if not contact.is_owner:
+            contact.is_owner = True
+            contact.save(update_fields=["is_owner"])
 
         contact.properties.add(property_obj)
 
         return redirect("property_detail", property_obj.id)
 
     contacts = Contact.objects.filter(
-        contact_type="owner"
+        is_owner=True
     )
 
     return render(

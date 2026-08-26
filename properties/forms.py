@@ -459,7 +459,7 @@ class OwnerContactForm(forms.ModelForm):
 
         contact = super().save(commit=False)
 
-        contact.contact_type = "owner"
+        contact.is_owner = True
 
         if commit:
             contact.save()

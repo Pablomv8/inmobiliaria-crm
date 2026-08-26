@@ -191,14 +191,15 @@ class Command(BaseCommand):
         agent.save()
         return agent
 
-    def create_contact(self, identity, name, last_name, contact_type, agent):
+    def create_contact(self, identity, name, last_name, role, agent):
         contact = Contact.objects.filter(identification_number=identity).first()
         values = {
             "name": name,
             "last_name": last_name,
             "phone": f"610 8{identity[-2:]} 000",
             "email": f"{identity.lower()}@example.com",
-            "contact_type": contact_type,
+            "is_owner": role == "owner",
+            "is_buyer": role == "buyer",
             "assigned_agent": agent,
             "notes": f"{self.marker} Contacto para operaciones cerradas.",
         }
@@ -335,8 +336,8 @@ class Command(BaseCommand):
         if data["status"] == "signed":
             property_obj.contacts.remove(owner)
             property_obj.contacts.add(buyer)
-            buyer.contact_type = "owner"
-            buyer.save(update_fields=["contact_type"])
+            buyer.is_owner = True
+            buyer.save(update_fields=["is_owner"])
             property_obj.occupied_by = "owner"
         property_obj.save()
         return sale

@@ -60,28 +60,29 @@ class Command(BaseCommand):
             name="Juan Pérez",
             phone="600111222",
             email="juan@test.com",
-            status="interested"
+            is_owner=True,
         )
 
         c2 = Contact.objects.create(
             name="Laura Gómez",
             phone="611333444",
             email="laura@test.com",
-            status="visit"
+            is_owner=True,
+            is_buyer=True,
         )
 
         c3 = Contact.objects.create(
             name="Pedro Ruiz",
             phone="699888777",
             email="pedro@test.com",
-            status="negotiation"
+            is_buyer=True,
         )
 
         c4 = Contact.objects.create(
             name="Ana Torres",
             phone="644222111",
             email="ana@test.com",
-            status="new"
+            is_buyer=True,
         )
 
         self.stdout.write(self.style.SUCCESS('Creating users...'))

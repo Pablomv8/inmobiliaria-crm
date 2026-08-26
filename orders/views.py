@@ -86,7 +86,7 @@ def order_create(request, buyer_id=None):
         buyer = get_object_or_404(
             Contact,
             pk=buyer_id,
-            contact_type="buyer",
+            is_buyer=True,
         )
 
     form = OrderForm(request.POST or None, buyer_obj=buyer, user=request.user)

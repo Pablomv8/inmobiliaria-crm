@@ -61,15 +61,17 @@
                                 <span class="
                                     px-3 py-1 rounded-full text-xs font-semibold
 
-                                    {% if contact.contact_type == 'owner' %}
+                                    {% if contact.is_owner and contact.is_buyer %}
+                                        bg-violet-100 text-violet-800
+                                    {% elif contact.is_owner %}
                                         bg-blue-100 text-blue-700
-                                    {% elif contact.contact_type == 'buyer' %}
+                                    {% elif contact.is_buyer %}
                                         bg-green-100 text-green-700
                                     {% else %}
                                         bg-gray-100 text-gray-700
                                     {% endif %}
                                 ">
-                                    {{ contact.get_contact_type_display }}
+                                    {{ contact.get_roles_display }}
                                 </span>
 
                             </div>
@@ -464,7 +466,7 @@
 
             </div>
 
-            {% if contact.contact_type == "owner" %}
+            {% if contact.is_owner %}
                 <section class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
                     <div class="flex items-center justify-between gap-4 mb-6">
                         <div>
@@ -528,7 +530,7 @@
                 </section>
             {% endif %}
 
-            {% if contact.contact_type == "buyer" %}
+            {% if contact.is_buyer %}
                 <!-- PEDIDOS -->
                 <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8">
                     <div class="flex items-center justify-between gap-4 mb-6">

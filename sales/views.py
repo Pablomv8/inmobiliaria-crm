@@ -296,9 +296,9 @@ def create_closing_from_contract(request, appointment_id):
                 if owner and owner.pk != client.pk:
                     property_obj.contacts.remove(owner)
                 property_obj.contacts.add(client)
-                if client.contact_type != "owner":
-                    client.contact_type = "owner"
-                    client.save(update_fields=["contact_type"])
+                if not client.is_owner:
+                    client.is_owner = True
+                    client.save(update_fields=["is_owner"])
 
                 locked_listing.status = "sold"
                 locked_listing.workflow_status = "closed"

@@ -5,11 +5,6 @@ from django.conf import settings
 
 class Contact(models.Model):
 
-    CONTACT_TYPE_CHOICES = [
-        ("owner", "Propietario"),
-        ("buyer", "Comprador"),
-    ]
-
     MARITAL_STATUS_CHOICES = [
         ("single", "Soltero/a"),
         ("married", "Casado/a"),
@@ -120,11 +115,32 @@ class Contact(models.Model):
         related_name="contacts"
     )
     
-    contact_type = models.CharField(
-        max_length=20,
-        choices=CONTACT_TYPE_CHOICES,
-        default="owner",
+    is_owner = models.BooleanField(
+        default=False,
+        verbose_name="Es propietario",
     )
+
+    is_buyer = models.BooleanField(
+        default=False,
+        verbose_name="Es comprador",
+    )
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(is_owner=True) | models.Q(is_buyer=True),
+                name="contact_has_at_least_one_role",
+            ),
+        ]
+
+    def get_roles_display(self):
+        if self.is_owner and self.is_buyer:
+            return "Propietario y comprador"
+        if self.is_owner:
+            return "Propietario"
+        if self.is_buyer:
+            return "Comprador"
+        return "Sin rol"
 
     def __str__(self):
         return f"{self.name} {self.last_name}".strip()

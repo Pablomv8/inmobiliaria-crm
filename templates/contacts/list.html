@@ -17,9 +17,9 @@
                 <input type="search" name="search" value="{{ request.GET.search }}" placeholder="Buscar contacto..." class="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 text-sm">
             </div>
 
-            <select name="contact_type" class="rounded-xl border border-gray-200 px-4 py-2.5 text-sm">
-                <option value="">Todos los tipos</option>
-                {% for value, label in contact_type_choices %}<option value="{{ value }}" {% if request.GET.contact_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            <select name="role" class="rounded-xl border border-gray-200 px-4 py-2.5 text-sm">
+                <option value="">Todos los roles</option>
+                {% for value, label in role_choices %}<option value="{{ value }}" {% if request.GET.role == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
             </select>
 
             <select name="agent" class="rounded-xl border border-gray-200 px-4 py-2.5 text-sm">
@@ -41,8 +41,8 @@
 
     <div class="mb-4 flex items-center justify-between gap-4">
         <p class="text-sm text-gray-500">{{ contacts.paginator.count }} contacto{{ contacts.paginator.count|pluralize }}</p>
-        {% if request.GET.contact_type %}
-            <span class="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-600">Filtro: {% if request.GET.contact_type == "owner" %}Propietarios{% else %}Compradores{% endif %}</span>
+        {% if request.GET.role %}
+            <span class="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-600">Filtro: {% if request.GET.role == "owner" %}Propietarios{% elif request.GET.role == "buyer" %}Compradores{% else %}Ambos roles{% endif %}</span>
         {% endif %}
     </div>
 
@@ -54,7 +54,7 @@
                         <a href="{% url 'contact_detail' contact.id %}" class="block truncate text-lg font-bold text-gray-900 hover:text-indigo-700">{{ contact.name }} {{ contact.last_name }}</a>
                         <p class="mt-1 truncate text-sm text-gray-500">{{ contact.email|default:"Sin correo electrónico" }}</p>
                     </div>
-                    <span class="shrink-0 rounded-full px-3 py-1 text-xs font-semibold {% if contact.contact_type == 'owner' %}bg-blue-100 text-blue-700{% else %}bg-green-100 text-green-700{% endif %}">{{ contact.get_contact_type_display }}</span>
+                    <span class="shrink-0 rounded-full px-3 py-1 text-xs font-semibold {% if contact.is_owner and contact.is_buyer %}bg-violet-100 text-violet-800{% elif contact.is_owner %}bg-blue-100 text-blue-700{% else %}bg-green-100 text-green-700{% endif %}">{{ contact.get_roles_display }}</span>
                 </div>
 
                 <div class="mt-5 grid grid-cols-2 gap-3 text-sm">
@@ -86,7 +86,7 @@
                 <thead class="border-b border-gray-200 bg-gray-50">
                     <tr>
                         <th class="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500">Contacto</th>
-                        <th class="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500">Tipo de contacto</th>
+                        <th class="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500">Roles</th>
                         <th class="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500">Teléfono y documento</th>
                         <th class="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500">Inmuebles</th>
                         <th class="whitespace-nowrap px-6 py-4 text-left text-xs font-semibold uppercase text-gray-500">Responsable</th>
@@ -100,7 +100,7 @@
                                 <a href="{% url 'contact_detail' contact.id %}" class="font-semibold text-gray-900 hover:text-indigo-700">{{ contact.name }} {{ contact.last_name }}</a>
                                 <p class="mt-1 text-xs text-gray-500">{{ contact.email|default:"Sin correo electrónico" }}</p>
                             </td>
-                            <td class="px-6 py-4"><span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {% if contact.contact_type == 'owner' %}bg-blue-100 text-blue-700{% else %}bg-green-100 text-green-700{% endif %}">{{ contact.get_contact_type_display }}</span></td>
+                            <td class="px-6 py-4"><span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {% if contact.is_owner and contact.is_buyer %}bg-violet-100 text-violet-800{% elif contact.is_owner %}bg-blue-100 text-blue-700{% else %}bg-green-100 text-green-700{% endif %}">{{ contact.get_roles_display }}</span></td>
                             <td class="px-6 py-4 text-sm"><p class="font-medium text-gray-800">{{ contact.phone|default:"—" }}</p><p class="mt-1 text-xs text-gray-500">{{ contact.identification_number|default:"Sin documento" }}</p></td>
                             <td class="px-6 py-4 text-sm">
                                 <div class="max-w-64 space-y-1">{% for property in contact.properties.all|slice:":2" %}<a href="{% url 'property_detail' property.id %}" class="block truncate text-gray-700 hover:text-indigo-700">{{ property.full_address }}</a>{% empty %}<span class="text-gray-400">Sin inmuebles</span>{% endfor %}</div>

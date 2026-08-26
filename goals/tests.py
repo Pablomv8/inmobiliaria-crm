@@ -109,11 +109,25 @@ class GoalProgressTests(GoalTestMixin, TestCase):
 
         self.assertEqual(calculate_progress(self.goal), 1)
 
+    def test_property_progress_accepts_owner_who_is_also_buyer(self):
+        self.goal.metric = "properties"
+        self.goal.save(update_fields=["metric"])
+        dual_role_contact = Contact.objects.create(
+            name="Propietario y comprador objetivo",
+            phone="600000099",
+            is_owner=True,
+            is_buyer=True,
+            assigned_agent=self.agent,
+        )
+        self.property.contacts.add(dual_role_contact)
+
+        self.assertEqual(calculate_progress(self.goal), 1)
+
     def test_cancelled_sale_appointments_do_not_count(self):
         contact = Contact.objects.create(
             name="Cliente",
             phone="600000000",
-            contact_type="buyer",
+            is_buyer=True,
             assigned_agent=self.agent,
         )
         self.goal.metric = "sale_appointments"
@@ -145,7 +159,7 @@ class GoalProgressTests(GoalTestMixin, TestCase):
         buyer = Contact.objects.create(
             name="Compradora de otro responsable",
             phone="600000010",
-            contact_type="buyer",
+            is_buyer=True,
             assigned_agent=self.other_agent,
         )
         self.goal.metric = "orders"

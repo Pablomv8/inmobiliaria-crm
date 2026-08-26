@@ -36,7 +36,7 @@ class ListingFollowUpTests(TestCase):
         self.owner = Contact.objects.create(
             name="Propietaria",
             phone="600000003",
-            contact_type="owner",
+            is_owner=True,
         )
         self.owner.properties.add(self.property)
         self.listing = Listing.objects.create(

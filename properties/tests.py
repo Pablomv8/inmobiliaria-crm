@@ -603,12 +603,12 @@ class PropertyAutomaticStatusTests(TestCase):
         self.owner = Contact.objects.create(
             name="Propietaria estados",
             phone="600111222",
-            contact_type="owner",
+            is_owner=True,
         )
         self.buyer = Contact.objects.create(
             name="Comprador estados",
             phone="600333444",
-            contact_type="buyer",
+            is_buyer=True,
         )
         self.client.force_login(self.agent)
 
@@ -873,6 +873,6 @@ class OwnerContactFormTests(TestCase):
             response,
             reverse("property_detail", args=[self.property.pk]),
         )
-        self.assertEqual(owner.contact_type, "owner")
+        self.assertTrue(owner.is_owner)
         self.assertEqual(owner.assigned_agent, self.agent)
         self.assertTrue(owner.properties.filter(pk=self.property.pk).exists())

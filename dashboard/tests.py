@@ -36,19 +36,19 @@ class DashboardScopeTests(TestCase):
         self.agent_owner = Contact.objects.create(
             name="Propietaria dashboard",
             phone="600400001",
-            contact_type="owner",
+            is_owner=True,
             assigned_agent=self.agent,
         )
         self.agent_buyer = Contact.objects.create(
             name="Compradora dashboard",
             phone="600400002",
-            contact_type="buyer",
+            is_buyer=True,
             assigned_agent=self.agent,
         )
         self.other_buyer = Contact.objects.create(
             name="Comprador de otro agente",
             phone="600400003",
-            contact_type="buyer",
+            is_buyer=True,
             assigned_agent=self.other_agent,
         )
         self.agent_property = Property.objects.create(
@@ -589,6 +589,25 @@ class DashboardScopeTests(TestCase):
         self.assertContains(response, "Objetivos cumplidos")
         self.assertContains(response, "1 cumplidos de 1 objetivos iniciados")
         self.assertContains(response, "Embudo comercial del agente")
+
+    def test_contact_with_both_roles_counts_in_both_worker_categories(self):
+        Contact.objects.create(
+            name="Cliente doble dashboard",
+            phone="600400099",
+            is_owner=True,
+            is_buyer=True,
+            assigned_agent=self.agent,
+        )
+        self.client.force_login(self.manager)
+
+        response = self.client.get(
+            reverse("team_member_detail", args=[self.agent.pk])
+        )
+
+        self.assertEqual(response.context["contacts_total"], 3)
+        self.assertEqual(response.context["owners_total"], 2)
+        self.assertEqual(response.context["buyers_total"], 2)
+        self.assertContains(response, "Propietario y comprador")
         self.assertContains(response, "¿Qué significa cada fase del embudo?")
         self.assertEqual(
             [stage["count"] for stage in response.context["worker_funnel"]["stages"]],

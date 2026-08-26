@@ -140,17 +140,28 @@
             </div>
 
             <div class="grid gap-5 md:grid-cols-2">
-                <div>
-                    <label for="{{ form.contact_type.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Tipo de contacto</label>
-                    {{ form.contact_type }}
-                    {% if form.contact_type.errors %}<p class="mt-1 text-sm text-red-600">{{ form.contact_type.errors.0 }}</p>{% endif %}
-                </div>
+                <fieldset>
+                    <legend class="mb-2 block text-sm font-semibold text-gray-700">Roles <span class="text-red-600" aria-hidden="true">*</span></legend>
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <label for="{{ form.is_owner.id_for_label }}" class="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 transition hover:border-indigo-300 hover:bg-indigo-50">
+                            {{ form.is_owner }}
+                            <span><span class="block text-sm font-semibold text-gray-900">Propietario</span><span class="mt-1 block text-xs text-gray-500">Tiene o tendrá inmuebles vinculados.</span></span>
+                        </label>
+                        <label for="{{ form.is_buyer.id_for_label }}" class="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 transition hover:border-emerald-300 hover:bg-emerald-50">
+                            {{ form.is_buyer }}
+                            <span><span class="block text-sm font-semibold text-gray-900">Comprador</span><span class="mt-1 block text-xs text-gray-500">Puede crear pedidos y nuevos procesos de compra.</span></span>
+                        </label>
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500">Puedes seleccionar los dos roles.</p>
+                    {% if form.is_owner.errors %}<p class="mt-1 text-sm text-red-600">{{ form.is_owner.errors.0 }}</p>{% endif %}
+                    {% if form.is_buyer.errors %}<p class="mt-1 text-sm text-red-600">{{ form.is_buyer.errors.0 }}</p>{% endif %}
+                </fieldset>
                 <div>
                     <label for="{{ form.assigned_agent.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Responsable</label>
                     {{ form.assigned_agent }}
                     {% if form.assigned_agent.errors %}<p class="mt-1 text-sm text-red-600">{{ form.assigned_agent.errors.0 }}</p>{% endif %}
                 </div>
-                <div class="md:col-span-2">
+                <div id="contact-properties-field" class="md:col-span-2 {% if not form.is_owner.value %}hidden{% endif %}">
                     <label for="{{ form.properties.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Inmuebles asociados</label>
                     {{ form.properties }}
                     {% if form.properties.errors %}<p class="mt-1 text-sm text-red-600">{{ form.properties.errors.0 }}</p>{% endif %}
@@ -181,6 +192,19 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const ownerCheckbox = document.querySelector('#id_is_owner');
+    const propertiesField = document.querySelector('#contact-properties-field');
+
+    function updatePropertiesVisibility() {
+        if (!ownerCheckbox || !propertiesField) return;
+        propertiesField.classList.toggle('hidden', !ownerCheckbox.checked);
+    }
+
+    if (ownerCheckbox) {
+        ownerCheckbox.addEventListener('change', updatePropertiesVisibility);
+        updatePropertiesVisibility();
+    }
+
     const propertySelect = document.querySelector('#id_properties');
     if (propertySelect && !propertySelect.tomselect) {
         new TomSelect(propertySelect, {
