@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Max, Q, Sum
 from django.db.models.functions import TruncMonth
 from django.core.exceptions import PermissionDenied
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
@@ -163,6 +164,60 @@ def build_commercial_funnel(
             "active": bool(date_from or date_to),
         },
     }
+
+
+@login_required
+def commercial_funnel_data(request):
+    scope = request.GET.get("scope", "personal")
+    date_from, date_to = get_funnel_period(request)
+
+    if scope == "office":
+        if not user_can_see_office(request.user):
+            raise PermissionDenied
+        user = None
+        news = News.objects.all()
+        listings = Listing.objects.all()
+        appointments = Appointment.objects.all()
+        proposals = ProposalAppointment.objects.all()
+        sales = Sale.objects.all()
+        rentals = RentalContract.objects.all()
+    elif scope == "agent":
+        if not user_can_see_office(request.user):
+            raise PermissionDenied
+        user = get_object_or_404(
+            User,
+            pk=request.GET.get("agent_id"),
+            role="agent",
+            is_active=True,
+        )
+        news = News.objects.filter(agent=user)
+        listings = Listing.objects.filter(agent=user)
+        appointments = Appointment.objects.filter(agent=user)
+        proposals = ProposalAppointment.objects.filter(agent=user)
+        sales = Sale.objects.filter(agent=user)
+        rentals = RentalContract.objects.filter(agent=user)
+    elif scope == "personal":
+        user = request.user
+        news = News.objects.filter(agent=user)
+        listings = Listing.objects.filter(agent=user)
+        appointments = Appointment.objects.filter(agent=user)
+        proposals = ProposalAppointment.objects.filter(agent=user)
+        sales = Sale.objects.filter(agent=user)
+        rentals = RentalContract.objects.filter(agent=user)
+    else:
+        return JsonResponse({"error": "Ámbito de embudo no válido."}, status=400)
+
+    return JsonResponse(build_commercial_funnel(
+        news,
+        listings,
+        appointments,
+        proposals,
+        sales,
+        rentals,
+        user=user,
+        date_from=date_from,
+        date_to=date_to,
+    ))
 
 
 def build_economic_summary(sales, rentals, *, user=None):
@@ -959,6 +1014,10 @@ def dashboard(request):
 
     if show_office_dashboard:
         all_signed_sales = Sale.objects.filter(status="signed")
+        agent_comparisons = {
+            str(days): build_agent_comparison(days)
+            for days in (7, 30, 90)
+        }
         office_funnel = build_commercial_funnel(
             News.objects.all(),
             Listing.objects.all(),
@@ -1034,7 +1093,8 @@ def dashboard(request):
             "office_goal_rows": office_goal_rows,
             "office_analytics": office_analytics,
             "office_commercial_health": office_commercial_health,
-            "agent_comparison": build_agent_comparison(selected_days),
+            "agent_comparison": agent_comparisons[str(selected_days)],
+            "agent_comparisons": agent_comparisons,
             "office_action_items": office_action_items,
             "user_rows": build_user_rows(),
         })

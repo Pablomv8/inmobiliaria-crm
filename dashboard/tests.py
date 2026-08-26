@@ -221,6 +221,40 @@ class DashboardScopeTests(TestCase):
             if item["label"] == "Pedidos sin cita de venta"
         )
         self.assertEqual(order_alert["count"], 1)
+        self.assertContains(response, 'data-funnel-scope="personal"', html=False)
+        self.assertContains(response, reverse("dashboard_funnel_data"))
+        self.assertContains(response, "/static/dashboard-funnel.js")
+
+    def test_personal_funnel_data_can_be_updated_without_rendering_dashboard(self):
+        self.client.force_login(self.agent)
+
+        response = self.client.get(
+            reverse("dashboard_funnel_data"),
+            {
+                "scope": "personal",
+                "funnel_from": "2026-08-20",
+                "funnel_to": "2026-08-20",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(
+            [stage["count"] for stage in data["stages"]],
+            [0, 0, 1, 0, 0, 0],
+        )
+        self.assertEqual(data["period"]["from_value"], "2026-08-20")
+        self.assertEqual(data["period"]["to_value"], "2026-08-20")
+
+    def test_agent_cannot_request_office_funnel_data(self):
+        self.client.force_login(self.agent)
+
+        response = self.client.get(
+            reverse("dashboard_funnel_data"),
+            {"scope": "office"},
+        )
+
+        self.assertEqual(response.status_code, 403)
 
     def test_base_layout_has_no_search_and_only_one_scrollable_sidebar(self):
         self.client.force_login(self.agent)
@@ -261,6 +295,14 @@ class DashboardScopeTests(TestCase):
         self.assertIn("dashboard-other", comparison["labels"])
         self.assertIn("dashboard-manager", comparison["labels"])
         self.assertEqual(len(comparison["contacts"]), len(comparison["labels"]))
+        self.assertEqual(
+            set(response.context["agent_comparisons"]),
+            {"7", "30", "90"},
+        )
+        self.assertContains(response, 'id="agent-comparison-period"', html=False)
+        self.assertContains(response, 'id="agent-comparisons-data"', html=False)
+        self.assertNotContains(response, "this.form.submit()")
+        self.assertContains(response, "comparisonChart.update()")
 
     def test_commercial_health_detects_stale_opportunities(self):
         stale_at = timezone.now() - timedelta(days=40)
@@ -599,6 +641,27 @@ class DashboardScopeTests(TestCase):
         )
         self.assertContains(response, "Periodo aplicado:")
         self.assertContains(response, "20/08/2026")
+        self.assertContains(response, 'data-funnel-scope="agent"', html=False)
+        self.assertContains(
+            response,
+            f'data-funnel-agent-id="{self.agent.pk}"',
+            html=False,
+        )
+
+        async_response = self.client.get(
+            reverse("dashboard_funnel_data"),
+            {
+                "scope": "agent",
+                "agent_id": self.agent.pk,
+                "funnel_from": "2026-08-20",
+                "funnel_to": "2026-08-20",
+            },
+        )
+        self.assertEqual(async_response.status_code, 200)
+        self.assertEqual(
+            [stage["count"] for stage in async_response.json()["stages"]],
+            [0, 0, 1, 0, 0, 0],
+        )
 
     def test_agent_cannot_access_team_tracking(self):
         self.client.force_login(self.agent)

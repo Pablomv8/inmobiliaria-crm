@@ -147,7 +147,7 @@
     </section>
 
     <section class="grid gap-6 xl:grid-cols-2">
-        {% include "dashboard/partials/funnel.html" with funnel=personal_funnel funnel_title="Mi embudo comercial" funnel_subtitle="Avance de los elementos asignados a tu cartera." %}
+        {% include "dashboard/partials/funnel.html" with funnel=personal_funnel funnel_title="Mi embudo comercial" funnel_subtitle="Avance de los elementos asignados a tu cartera." funnel_scope="personal" %}
         {% include "dashboard/partials/goals.html" with goal_rows=personal_goal_rows goals_title="Mis objetivos activos" goals_subtitle="Progreso calculado automáticamente con tu actividad." %}
     </section>
 
@@ -206,7 +206,7 @@
             <div class="grid gap-6 xl:grid-cols-2">
                 {% include "dashboard/partials/action_center.html" with action_items=office_action_items action_title="Acciones de la oficina" action_subtitle="Pendientes combinados de todos los responsables." %}
                 {% include "dashboard/partials/economics.html" with economics=office_economics economics_title="Resumen económico global" economics_subtitle="Ventas y alquileres firmados por toda la oficina." %}
-                {% include "dashboard/partials/funnel.html" with funnel=office_funnel funnel_title="Embudo comercial global" funnel_subtitle="Conversión acumulada de toda la cartera." %}
+                {% include "dashboard/partials/funnel.html" with funnel=office_funnel funnel_title="Embudo comercial global" funnel_subtitle="Conversión acumulada de toda la cartera." funnel_scope="office" %}
                 {% include "dashboard/partials/goals.html" with goal_rows=office_goal_rows goals_title="Objetivos activos de la oficina" goals_subtitle="Los tres objetivos más próximos a vencer." %}
             </div>
 
@@ -221,16 +221,17 @@
                         <h3 class="mt-1 text-lg font-semibold text-gray-900">Comparación de actividad por agente</h3>
                         <p class="mt-1 text-sm text-gray-500">Hasta diez usuarios, ordenados por actividad registrada en el periodo.</p>
                     </div>
-                    <form method="get">
-                        <input type="hidden" name="view" value="{{ dashboard_view }}">
-                        <select name="days" onchange="this.form.submit()" class="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-700">
+                    <div>
+                        <label for="agent-comparison-period" class="sr-only">Periodo de comparación</label>
+                        <select id="agent-comparison-period" name="days" aria-controls="agentComparisonChart" class="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-700">
                             <option value="7" {% if selected_days == 7 %}selected{% endif %}>Últimos 7 días</option>
                             <option value="30" {% if selected_days == 30 %}selected{% endif %}>Últimos 30 días</option>
                             <option value="90" {% if selected_days == 90 %}selected{% endif %}>Últimos 90 días</option>
                         </select>
-                    </form>
+                        <span id="agent-comparison-status" class="sr-only" aria-live="polite"></span>
+                    </div>
                 </div>
-                {{ agent_comparison|json_script:"agent-comparison-data" }}
+                {{ agent_comparisons|json_script:"agent-comparisons-data" }}
                 <div class="h-96"><canvas id="agentComparisonChart" aria-label="Comparación de actividad entre agentes"></canvas></div>
             </div>
 
@@ -373,8 +374,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const comparisonCanvas = document.getElementById("agentComparisonChart");
     if (comparisonCanvas) {
-        const data = JSON.parse(document.getElementById("agent-comparison-data").textContent);
-        new Chart(comparisonCanvas, {
+        const periodSelector = document.getElementById("agent-comparison-period");
+        const periodStatus = document.getElementById("agent-comparison-status");
+        const comparisons = JSON.parse(document.getElementById("agent-comparisons-data").textContent);
+        const datasetKeys = ["contacts", "news", "listings", "orders", "appointments"];
+        const initialPeriod = periodSelector ? periodSelector.value : "30";
+        const data = comparisons[initialPeriod];
+        const comparisonChart = new Chart(comparisonCanvas, {
             type: "bar",
             data: {
                 labels: data.labels,
@@ -394,6 +400,28 @@ document.addEventListener("DOMContentLoaded", function () {
                 scales: {y: {beginAtZero: true, ticks: {precision: 0}}, x: {grid: {display: false}}}
             }
         });
+
+        if (periodSelector) {
+            periodSelector.addEventListener("change", function () {
+                const nextData = comparisons[this.value];
+                if (!nextData) return;
+
+                comparisonChart.data.labels = nextData.labels;
+                comparisonChart.data.datasets.forEach((dataset, index) => {
+                    dataset.data = nextData[datasetKeys[index]];
+                });
+                comparisonChart.update();
+
+                const url = new URL(window.location.href);
+                url.searchParams.set("days", this.value);
+                window.history.replaceState(
+                    {},
+                    "",
+                    `${url.pathname}${url.search}${url.hash}`,
+                );
+                periodStatus.textContent = `Gráfica actualizada a los últimos ${this.value} días.`;
+            });
+        }
     }
 });
 </script>
