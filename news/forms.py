@@ -1,5 +1,6 @@
 from django import forms
 from .models import News, NewsComment
+from properties.models import Property
 from users.permissions import assignable_agents, can_manage_assignments
 
 INPUT_CLASS = """
@@ -28,6 +29,9 @@ class NewsForm(forms.ModelForm):
 
     def __init__(self, *args, property_obj=None, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["related_property"].queryset = Property.objects.filter(
+            is_archived=False,
+        )
 
         if property_obj is not None:
             self.fields.pop("related_property")

@@ -1,6 +1,4 @@
 from django.views.generic import ListView
-from django.views.generic import CreateView
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
@@ -12,11 +10,11 @@ from django.views.decorators.http import require_POST
 
 from django.urls import reverse_lazy
 
-from .models import RentalContract, Sale
+from .models import RentalContract, Sale, SaleCorrection
 from .forms import (
     RentalContractClosingForm,
     SaleClosingForm,
-    SaleForm,
+    SaleCorrectionForm,
 )
 
 from django.views.decorators.http import require_POST
@@ -125,34 +123,6 @@ class SaleListView(ListView):
 
     ordering = ["-sale_date"]
     paginate_by = 15
-
-
-class SaleCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-
-    model = Sale
-
-    form_class = SaleForm
-
-    template_name = "sales/sale_form.html"
-
-    success_url = reverse_lazy("sale_list")
-
-    def test_func(self):
-        return can_manage_assignments(self.request.user)
-
-    def form_valid(self, form):
-
-        response = super().form_valid(form)
-
-        sale = self.object
-
-        log_activity(
-            self.request.user,
-            "sale_created",
-            f"Registró la venta de '{sale.related_property.full_address}'"
-        )
-
-        return response
 
 
 def _contract_appointment_for_user(request, appointment_id):
@@ -399,11 +369,54 @@ def sale_detail(request, pk):
         or request.user.role in ["admin", "manager"]
     ):
         sales = sales.filter(agent=request.user)
+    sale = get_object_or_404(sales, pk=pk)
     return render(
         request,
         "sales/sale_detail.html",
-        {"sale": get_object_or_404(sales, pk=pk)},
+        {"sale": sale, "corrections": sale.corrections.select_related("corrected_by")},
     )
+
+
+@login_required
+def sale_correct(request, pk):
+    if not can_manage_assignments(request.user):
+        raise PermissionDenied
+    sale = get_object_or_404(Sale, pk=pk, status="signed")
+    tracked_fields = (
+        "sale_price", "deposit_amount", "earnest_money_amount",
+        "seller_commission", "buyer_commission", "sale_date",
+        "contract_reference", "notes",
+    )
+    initial = {field: getattr(sale, field) for field in tracked_fields}
+    form = SaleCorrectionForm(request.POST or None, initial=initial)
+    if request.method == "POST" and form.is_valid():
+        previous_values = {
+            field: str(getattr(sale, field) or "") for field in tracked_fields
+        }
+        updated_values = {field: form.cleaned_data[field] for field in tracked_fields}
+        updated_values["commission_amount"] = (
+            updated_values["seller_commission"] + updated_values["buyer_commission"]
+        )
+        new_values = {
+            field: str(value or "") for field, value in updated_values.items()
+        }
+        with transaction.atomic():
+            Sale.objects.filter(pk=sale.pk).update(**updated_values)
+            SaleCorrection.objects.create(
+                sale=sale,
+                corrected_by=request.user,
+                reason=form.cleaned_data["reason"],
+                previous_values=previous_values,
+                new_values=new_values,
+            )
+            log_activity(
+                request.user,
+                "sale_corrected",
+                f"Registró una corrección auditada en la compraventa #{sale.pk}.",
+            )
+        messages.success(request, "La corrección se ha aplicado y registrado en el historial.")
+        return redirect("sale_detail", pk=sale.pk)
+    return render(request, "sales/sale_correction_form.html", {"sale": sale, "form": form})
 
 
 @login_required
@@ -564,16 +577,30 @@ def rental_contract_reassign(request, pk):
 @require_POST
 @login_required
 def sale_update_status(request, pk):
+    if not can_manage_assignments(request.user):
+        raise PermissionDenied
 
-    sale = get_object_or_404(
-        scope_to_user(Sale.objects.all(), request.user),
-        pk=pk,
-    )
+    sale = get_object_or_404(Sale, pk=pk)
+
+    if sale.status == "signed":
+        messages.error(
+            request,
+            "Una compraventa firmada es inmutable. Registra una corrección "
+            "auditada en lugar de modificar su estado.",
+        )
+        return redirect("sale_list")
 
     status = request.POST.get("status")
     if status not in dict(Sale.STATUS_CHOICES):
         raise PermissionDenied
+    previous_status = sale.get_status_display()
     sale.status = status
     sale.save()
+    log_activity(
+        request.user,
+        "sale_status_corrected",
+        f"Corrigió el estado de la venta #{sale.pk}: "
+        f"{previous_status} → {sale.get_status_display()}",
+    )
 
     return redirect("sale_list")

@@ -204,11 +204,10 @@ def listing_detail(request, listing_id):
 
 @login_required
 def listing_update(request, listing_id):
-    if not can_manage_assignments(request.user):
-        raise PermissionDenied
-
     listing = get_object_or_404(
-        Listing.objects.select_related("property", "owner", "agent"),
+        get_user_listings(request.user).select_related(
+            "property", "owner", "agent"
+        ),
         pk=listing_id,
     )
     form = ListingForm(
@@ -230,7 +229,10 @@ def listing_update(request, listing_id):
             "listing": listing,
             "property": listing.property,
             "agent": listing.agent,
-            "has_owners": form.fields["owner"].queryset.exists(),
+            "has_owners": listing.property.contacts.filter(
+                is_owner=True,
+                is_archived=False,
+            ).exists(),
         },
     )
 

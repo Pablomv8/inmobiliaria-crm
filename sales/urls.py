@@ -2,7 +2,6 @@ from django.urls import path
 
 from .views import (
     SaleListView,
-    SaleCreateView,
     sale_update_status,
     sale_list,
     contract_signing_decision,
@@ -11,6 +10,7 @@ from .views import (
     rental_contract_reassign,
     rental_contract_list,
     sale_detail,
+    sale_correct,
     sale_reassign,
 )
 
@@ -19,12 +19,6 @@ urlpatterns = [
         "",
         sale_list,
         name="sale_list"
-    ),
-
-    path(
-        "create/",
-        SaleCreateView.as_view(),
-        name="sale_create"
     ),
 
     path(
@@ -38,6 +32,7 @@ urlpatterns = [
         name="create_closing_from_contract",
     ),
     path("<int:pk>/", sale_detail, name="sale_detail"),
+    path("<int:pk>/correct/", sale_correct, name="sale_correct"),
     path("<int:pk>/reassign/", sale_reassign, name="sale_reassign"),
     path(
         "rentals/",

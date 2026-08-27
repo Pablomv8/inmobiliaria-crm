@@ -1,0 +1,14 @@
+<div class="mt-3 flex flex-wrap items-center gap-3 text-xs">
+    {% if comment.edited_at %}<span class="text-gray-400">Editado {{ comment.edited_at|date:"d/m/Y H:i" }}</span>{% endif %}
+    {% if comment.user_id == request.user.id and comment.is_editable %}
+        <a href="{% url 'comment_edit' kind comment.id %}" class="font-semibold text-indigo-700 hover:text-indigo-900">Corregir</a>
+    {% endif %}
+    {% if not comment.is_hidden %}
+        {% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" %}
+            <form method="post" action="{% url 'comment_hide' kind comment.id %}" onsubmit="return confirm('¿Ocultar este comentario? El texto se conservará para auditoría.');">
+                {% csrf_token %}
+                <button type="submit" class="font-semibold text-red-600 hover:text-red-800">Ocultar</button>
+            </form>
+        {% endif %}
+    {% endif %}
+</div>

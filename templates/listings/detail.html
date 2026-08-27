@@ -34,9 +34,7 @@
             <div class="flex flex-wrap items-center gap-2">
                 <span class="px-3 py-2 rounded-full bg-green-100 text-green-700 text-sm">{{ listing.get_status_display }}</span>
                 <span class="px-3 py-2 rounded-full bg-violet-50 text-violet-700 text-sm">{{ listing.get_workflow_status_display }}</span>
-                {% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" %}
-                    <a href="{% url 'listing_update' listing.id %}" class="px-4 py-2 rounded-xl border border-gray-300 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-50">✏️ Editar y reasignar</a>
-                {% endif %}
+                <a href="{% url 'listing_update' listing.id %}" class="px-4 py-2 rounded-xl border border-gray-300 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-50">✏️ {% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" %}Editar y reasignar{% else %}Editar fechas{% endif %}</a>
                 {% if listing.owner %}
                     <a href="{% url 'create_listing_call' listing.id %}"
                        class="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm hover:bg-black">📞 Programar llamada</a>
@@ -309,7 +307,8 @@
                             <span class="font-medium text-gray-900">{{ comment.user|default:"Usuario eliminado" }}</span>
                             <span class="text-xs text-gray-400">{{ comment.created_at|date:"d/m/Y H:i" }}</span>
                         </div>
-                        <p class="text-sm text-gray-700 whitespace-pre-line">{{ comment.text }}</p>
+                        <p class="text-sm text-gray-700 whitespace-pre-line">{{ comment.display_text }}</p>
+                        {% include "comments/actions.html" with kind="listing" %}
                     </div>
                 {% empty %}
                     <p class="text-center text-gray-400 py-6">Sin comentarios todavía.</p>

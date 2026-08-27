@@ -189,7 +189,8 @@ class OrderCrudTests(TestCase):
 
         response = self.client.post(reverse("order_delete", args=[order.pk]))
         self.assertRedirects(response, reverse("order_list"))
-        self.assertFalse(Order.objects.exists())
+        order.refresh_from_db()
+        self.assertEqual(order.status, "cancelled")
 
     def test_manager_can_reassign_order(self):
         order = Order.objects.create(

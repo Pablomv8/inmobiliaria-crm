@@ -92,6 +92,11 @@
                     {{ form.zone }}
                     {% if form.zone.errors %}<p class="mt-1 text-sm text-red-600">{{ form.zone.errors.0 }}</p>{% endif %}
                 </div>
+                {% if form.assigned_agent %}<div class="md:col-span-2">
+                    <label for="{{ form.assigned_agent.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Agente responsable</label>
+                    {{ form.assigned_agent }}
+                    {% if form.assigned_agent.errors %}<p class="mt-1 text-sm text-red-600">{{ form.assigned_agent.errors.0 }}</p>{% endif %}
+                </div>{% endif %}
 
                 {{ form.latitude }}
                 {{ form.longitude }}

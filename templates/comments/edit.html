@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mx-auto max-w-2xl px-4 py-10">
+    <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+        <h1 class="text-2xl font-bold text-gray-900">Corregir comentario</h1>
+        <p class="mt-2 text-sm text-gray-500">Puedes corregirlo durante los 15 minutos posteriores a su creación. El texto original se conservará para auditoría.</p>
+        <form method="post" class="mt-6 space-y-5">
+            {% csrf_token %}
+            <textarea name="text" rows="6" required maxlength="2000" class="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100">{{ comment.text }}</textarea>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="history.back()" class="rounded-xl border border-gray-300 px-5 py-3 text-gray-700">Cancelar</button>
+                <button type="submit" class="rounded-xl bg-gray-900 px-5 py-3 font-semibold text-white hover:bg-black">Guardar corrección</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

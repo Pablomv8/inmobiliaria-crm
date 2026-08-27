@@ -289,4 +289,5 @@ class NewsCrudTests(TestCase):
         response = self.client.post(reverse("news_delete", args=[news.pk]))
 
         self.assertRedirects(response, reverse("news_list"))
-        self.assertFalse(News.objects.filter(pk=news.pk).exists())
+        news.refresh_from_db()
+        self.assertEqual(news.status, "closed")

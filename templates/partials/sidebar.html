@@ -42,6 +42,11 @@
                 <span>Agenda</span>
             </a>
 
+            <a href="{% url 'appointment_list' %}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition {% if current == 'appointment_list' %}bg-gray-900 text-white shadow-sm{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                <i class="fa-regular fa-clock w-5 text-center"></i>
+                <span>Citas</span>
+            </a>
+
             <a href="{% url 'task_list' %}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition {% if current == 'task_list' or current == 'task_detail' or current == 'task_create' or current == 'task_update' %}bg-gray-900 text-white shadow-sm{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
                 <i class="fa-regular fa-clipboard w-5 text-center"></i>
                 <span>Tareas</span>
@@ -83,7 +88,7 @@
 
         <p class="mb-2 mt-6 px-4 text-xs font-bold uppercase tracking-wider text-gray-400">Control</p>
         <div class="space-y-1">
-            <a href="{% url 'sale_list' %}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition {% if current == 'sale_list' or current == 'sale_detail' or current == 'sale_create' %}bg-gray-900 text-white shadow-sm{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+            <a href="{% url 'sale_list' %}" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition {% if current == 'sale_list' or current == 'sale_detail' %}bg-gray-900 text-white shadow-sm{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
                 <i class="fa-solid fa-euro-sign w-5 text-center"></i>
                 <span>Ventas</span>
             </a>

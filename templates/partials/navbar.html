@@ -1,4 +1,4 @@
-<header class="sticky top-0 z-30 flex h-20 shrink-0 items-center border-b border-gray-200 bg-white px-4 sm:px-6 lg:px-8">
+{% if request.user.is_authenticated %}<header class="sticky top-0 z-30 flex h-20 shrink-0 items-center border-b border-gray-200 bg-white px-4 sm:px-6 lg:px-8">
     <button
         type="button"
         class="inline-flex h-11 w-11 items-center justify-center rounded-xl text-xl text-gray-700 hover:bg-gray-100 lg:hidden"
@@ -36,4 +36,4 @@
 
     </div>
 
-</header>
+</header>{% endif %}

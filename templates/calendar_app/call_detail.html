@@ -164,7 +164,8 @@
                         <p class="text-sm font-medium text-gray-900">{{ comment.user|default:"Usuario eliminado" }}</p>
                         <time class="text-xs text-gray-500">{{ comment.created_at|date:"d/m/Y H:i" }}</time>
                     </div>
-                    <p class="text-sm text-gray-700 whitespace-pre-line">{{ comment.text }}</p>
+                    <p class="text-sm text-gray-700 whitespace-pre-line">{{ comment.display_text }}</p>
+                    {% include "comments/actions.html" with kind="call" %}
                 </article>
             {% empty %}
                 <div class="rounded-xl bg-gray-50 p-5 text-sm text-gray-500">Todavía no hay comentarios en esta llamada.</div>

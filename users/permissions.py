@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 
 
@@ -40,6 +41,24 @@ def scope_to_user(queryset, user, assignment_field="agent"):
     if can_manage_office(user):
         return queryset
     return queryset.filter(**{assignment_field: user})
+
+
+def has_related_records(instance):
+    """Indica si un borrado físico destruiría o desconectaría historial."""
+    for relation in instance._meta.related_objects:
+        accessor = relation.get_accessor_name()
+        if not accessor:
+            continue
+        try:
+            related = getattr(instance, accessor)
+        except ObjectDoesNotExist:
+            continue
+        if relation.one_to_one:
+            if related is not None:
+                return True
+        elif related.exists():
+            return True
+    return False
 
 
 def assignable_agents(current_agent=None):

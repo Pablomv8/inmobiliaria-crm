@@ -23,6 +23,122 @@ from .models import (
 )
 
 
+class AppointmentListTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        self.agent = User.objects.create_user(
+            username="appointment-list-agent",
+            password="test-password",
+            role="agent",
+        )
+        self.other_agent = User.objects.create_user(
+            username="appointment-list-other",
+            password="test-password",
+            role="agent",
+        )
+        self.manager = User.objects.create_user(
+            username="appointment-list-manager",
+            password="test-password",
+            role="manager",
+        )
+        self.property = Property.objects.create(
+            street="Calle Citas",
+            number="8",
+            city="Arcos de la Frontera",
+            property_type="house",
+            created_by=self.agent,
+        )
+        self.contact = Contact.objects.create(
+            name="Cliente listado",
+            phone="600123456",
+            is_owner=True,
+            assigned_agent=self.agent,
+        )
+        self.own_appointment = Appointment.objects.create(
+            related_property=self.property,
+            contact=self.contact,
+            agent=self.agent,
+            appointment_type="acquisition",
+            date=date(2026, 9, 10),
+            time=time(10, 0),
+            end_time=time(11, 0),
+            status="scheduled",
+        )
+        self.other_appointment = Appointment.objects.create(
+            related_property=self.property,
+            contact=self.contact,
+            agent=self.other_agent,
+            appointment_type="contract",
+            date=date(2026, 9, 11),
+            time=time(12, 0),
+            end_time=time(13, 0),
+            status="completed",
+        )
+        self.client.force_login(self.agent)
+
+    def test_list_is_shared_but_other_agents_appointments_are_read_only(self):
+        response = self.client.get(reverse("appointment_list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["appointments"].paginator.count, 2)
+        self.assertContains(response, "Adquisición")
+        self.assertContains(response, "Contrato")
+        self.assertContains(
+            response,
+            reverse("appointment_detail", args=[self.own_appointment.pk]),
+        )
+        self.assertNotContains(
+            response,
+            reverse("appointment_detail", args=[self.other_appointment.pk]),
+        )
+        self.assertContains(response, "Solo lectura")
+
+    def test_list_filters_by_type_status_agent_and_dates(self):
+        response = self.client.get(
+            reverse("appointment_list"),
+            {
+                "type": "contract",
+                "status": "completed",
+                "agent": self.other_agent.pk,
+                "date_from": "2026-09-11",
+                "date_to": "2026-09-11",
+            },
+        )
+
+        self.assertQuerySetEqual(
+            response.context["appointments"],
+            [self.other_appointment],
+        )
+
+    def test_list_is_paginated(self):
+        for index in range(15):
+            Appointment.objects.create(
+                related_property=self.property,
+                contact=self.contact,
+                agent=self.agent,
+                appointment_type="sale",
+                date=date(2026, 10, 1) + timedelta(days=index),
+                time=time(9, 0),
+                end_time=time(10, 0),
+            )
+
+        response = self.client.get(reverse("appointment_list"), {"page": 2})
+
+        self.assertEqual(response.context["page_obj"].paginator.count, 17)
+        self.assertEqual(response.context["page_obj"].number, 2)
+        self.assertEqual(len(response.context["appointments"]), 2)
+
+    def test_manager_can_open_any_appointment_from_list(self):
+        self.client.force_login(self.manager)
+
+        response = self.client.get(reverse("appointment_list"))
+
+        self.assertContains(
+            response,
+            reverse("appointment_detail", args=[self.other_appointment.pk]),
+        )
+
+
 class AppointmentResultFlowTests(TestCase):
 
     def setUp(self):

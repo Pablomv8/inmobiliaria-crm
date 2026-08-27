@@ -68,6 +68,7 @@ class ListingForm(forms.ModelForm):
         owners = Contact.objects.filter(
             properties=property_obj,
             is_owner=True,
+            is_archived=False,
         ).distinct()
         self.fields["owner"].queryset = owners
         self.fields["owner"].required = True
@@ -88,8 +89,16 @@ class ListingForm(forms.ModelForm):
             self.fields["agent"].empty_label = "Selecciona un responsable"
         else:
             self.fields.pop("agent")
+            if self.instance.pk:
+                for sensitive_field in (
+                    "owner",
+                    "agreed_price",
+                    "commission_amount",
+                    "is_exclusive",
+                ):
+                    self.fields.pop(sensitive_field)
 
-        if not self.is_bound:
+        if not self.is_bound and "owner" in self.fields:
             self.fields["owner"].initial = owners.first()
 
     def clean(self):

@@ -14,8 +14,16 @@ from django.apps import apps
 from django.views.decorators.http import require_GET, require_POST
 from django.http import JsonResponse
 from django.urls import reverse
+from django.utils import timezone
 from config.pagination import paginate
-from users.permissions import require_object_management
+from users.permissions import (
+    assignable_agents,
+    can_manage_office,
+    has_related_records,
+    require_object_management,
+    scope_to_user,
+)
+from news.models import News
 
 
 from django.db.models import Q
@@ -100,12 +108,16 @@ def apply_automatic_geocoding(form, property_obj, creating=False):
 def property_list(request):
     Property.refresh_aged_contact_statuses()
 
-    properties = Property.objects.all()
+    properties = Property.objects.filter(is_archived=False).select_related(
+        "assigned_agent",
+        "zone",
+    )
 
     search = request.GET.get("search")
     status = request.GET.get("status")
     property_type = request.GET.get("type")
     city = request.GET.get("city")
+    agent = request.GET.get("agent")
 
     bedrooms = request.GET.get("bedrooms")
     bathrooms = request.GET.get("bathrooms")
@@ -145,6 +157,9 @@ def property_list(request):
             city__icontains=city
         )
 
+    if agent and can_manage_office(request.user):
+        properties = properties.filter(assigned_agent_id=agent)
+
     if bedrooms:
         properties = properties.filter(
             bedrooms__gte=bedrooms
@@ -181,6 +196,11 @@ def property_list(request):
             "zones": zones,
             "property_types": Property.PROPERTY_TYPE_CHOICES,
             "status_choices": Property.STATUS_CHOICES,
+            "agents": (
+                assignable_agents()
+                if can_manage_office(request.user)
+                else ()
+            ),
         }
     )
 
@@ -198,13 +218,21 @@ def property_detail(request, pk):
     buyers = property.contacts.filter(
         is_buyer=True
     )
+    news_items = scope_to_user(
+        News.objects.filter(related_property=property).select_related("agent"),
+        request.user,
+    )
+    comments = property.comments.select_related("user")
+    if not can_manage_office(request.user) and property.assigned_agent_id != request.user.pk:
+        comments = comments.none()
 
     return render(request, 'properties/detail.html', {
         'property': property,
         'owners': owners,
-        'comments': property.comments.select_related("user"),
+        'comments': comments,
         'comment_form': PropertyCommentForm(),
         'timeline': build_property_timeline(property, request.user),
+        'news_items': news_items,
     })
 
 
@@ -216,13 +244,16 @@ def property_create(request):
 
         form = PropertyForm(
             request.POST,
-            request.FILES
+            request.FILES,
+            user=request.user,
         )
 
         if form.is_valid():
 
             property_obj = form.save(commit=False)
             property_obj.created_by = request.user
+            if "assigned_agent" not in form.fields:
+                property_obj.assigned_agent = request.user
             geocoding_result = apply_automatic_geocoding(
                 form,
                 property_obj,
@@ -250,7 +281,7 @@ def property_create(request):
 
     else:
 
-        form = PropertyForm()
+        form = PropertyForm(user=request.user)
 
     return render(
         request,
@@ -262,7 +293,7 @@ def property_create(request):
 @login_required
 def property_map(request):
     Property.refresh_aged_contact_statuses()
-    all_properties = Property.objects.all()
+    all_properties = Property.objects.filter(is_archived=False)
     properties = all_properties.filter(
         latitude__isnull=False,
         longitude__isnull=False,
@@ -341,15 +372,16 @@ def property_map(request):
 @login_required
 def property_update(request, pk):
 
-    property = get_object_or_404(Property, pk=pk)
-    require_object_management(request.user, property, "created_by")
+    property = get_object_or_404(Property, pk=pk, is_archived=False)
+    require_object_management(request.user, property, "assigned_agent")
 
     if request.method == 'POST':
 
         form = PropertyForm(
             request.POST,
             request.FILES,
-            instance=property
+            instance=property,
+            user=request.user,
         )
 
         if form.is_valid():
@@ -378,7 +410,7 @@ def property_update(request, pk):
 
     else:
 
-        form = PropertyForm(instance=property)
+        form = PropertyForm(instance=property, user=request.user)
 
     return render(
         request,
@@ -430,17 +462,33 @@ def property_geocode(request):
 @login_required
 def property_delete(request, pk):
 
-    property = get_object_or_404(Property, pk=pk)
-    require_object_management(request.user, property, "created_by")
+    property = get_object_or_404(Property, pk=pk, is_archived=False)
+    require_object_management(request.user, property, "assigned_agent")
+
+    will_archive = (
+        not can_manage_office(request.user)
+        or has_related_records(property)
+    )
 
     if request.method == 'POST':
 
-        property.delete()
+        if will_archive:
+            property.is_archived = True
+            property.archived_at = timezone.now()
+            property.save(update_fields=["is_archived", "archived_at", "status"])
+            messages.success(
+                request,
+                "El inmueble se ha archivado sin perder su historial.",
+            )
+        else:
+            property.delete()
+            messages.success(request, "El inmueble se ha eliminado definitivamente.")
 
         return redirect('properties')
 
     return render(request, 'properties/delete.html', {
-        'property': property
+        'property': property,
+        'will_archive': will_archive,
     })
 
 
@@ -450,9 +498,10 @@ def property_update_status(request, pk):
 
     property_obj = get_object_or_404(
         Property,
-        pk=pk
+        pk=pk,
+        is_archived=False,
     )
-    require_object_management(request.user, property_obj, "created_by")
+    require_object_management(request.user, property_obj, "assigned_agent")
 
     property_obj.sync_status()
 
@@ -466,8 +515,8 @@ def property_update_status(request, pk):
 @login_required
 @require_POST
 def property_add_comment(request, pk):
-    property_obj = get_object_or_404(Property, pk=pk)
-    require_object_management(request.user, property_obj, "created_by")
+    property_obj = get_object_or_404(Property, pk=pk, is_archived=False)
+    require_object_management(request.user, property_obj, "assigned_agent")
     form = PropertyCommentForm(request.POST)
 
     if form.is_valid():
@@ -494,8 +543,8 @@ def property_add_comment(request, pk):
 @login_required
 def add_owner_to_property(request, property_id):
 
-    property_obj = get_object_or_404(Property, id=property_id)
-    require_object_management(request.user, property_obj, "created_by")
+    property_obj = get_object_or_404(Property, id=property_id, is_archived=False)
+    require_object_management(request.user, property_obj, "assigned_agent")
 
     if request.method == "POST":
 
@@ -514,7 +563,8 @@ def add_owner_to_property(request, property_id):
         return redirect("property_detail", property_obj.id)
 
     contacts = Contact.objects.filter(
-        is_owner=True
+        is_owner=True,
+        is_archived=False,
     )
 
     return render(
@@ -529,8 +579,8 @@ def add_owner_to_property(request, property_id):
 @login_required
 def create_owner_for_property(request, property_id):
 
-    property_obj = get_object_or_404(Property, id=property_id)
-    require_object_management(request.user, property_obj, "created_by")
+    property_obj = get_object_or_404(Property, id=property_id, is_archived=False)
+    require_object_management(request.user, property_obj, "assigned_agent")
 
     if request.method == "POST":
 

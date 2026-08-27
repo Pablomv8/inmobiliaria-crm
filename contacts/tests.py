@@ -75,6 +75,7 @@ class ContactRelatedWorkflowTests(TestCase):
         zone = Zone.objects.create(name="Centro contacto")
         order = Order.objects.create(
             buyer=buyer,
+            agent=self.agent,
             operation_type="sale",
             zone=zone,
             max_price="275000",

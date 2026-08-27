@@ -4,6 +4,8 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth import get_user_model
+from django.contrib import messages
+from django.utils import timezone
 
 from .models import Contact
 from .forms import ContactForm
@@ -19,6 +21,9 @@ from users.permissions import (
     assignable_agents,
     can_manage_assignments,
     require_object_management,
+    can_manage_office,
+    has_related_records,
+    scope_to_user,
 )
 
 
@@ -27,7 +32,7 @@ User = get_user_model()
 @login_required
 def contact_list(request):
 
-    contacts = Contact.objects.select_related(
+    contacts = Contact.objects.filter(is_archived=False).select_related(
         "assigned_agent",
     ).prefetch_related("properties")
 
@@ -112,7 +117,7 @@ def contact_create(request):
 @login_required
 def contact_update(request, pk):
 
-    contact = get_object_or_404(Contact, pk=pk)
+    contact = get_object_or_404(Contact, pk=pk, is_archived=False)
     require_object_management(request.user, contact, "assigned_agent")
 
     if request.method == 'POST':
@@ -144,26 +149,40 @@ def contact_update(request, pk):
 @login_required
 def contact_delete(request, pk):
 
-    contact = get_object_or_404(Contact, pk=pk)
+    contact = get_object_or_404(Contact, pk=pk, is_archived=False)
     require_object_management(request.user, contact, "assigned_agent")
 
+    will_archive = (
+        not can_manage_office(request.user)
+        or has_related_records(contact)
+    )
+
     if request.method == 'POST':
-
-        contact.delete()
-        name = contact.name
-
-        log_activity(
-            request.user,
-            "contact_deleted",
-            f"Eliminó el contacto {name}",
-            contact=contact
-        )
-        
-
+        name = str(contact)
+        if will_archive:
+            contact.is_archived = True
+            contact.archived_at = timezone.now()
+            contact.save(update_fields=["is_archived", "archived_at"])
+            log_activity(
+                request.user,
+                "contact_archived",
+                f"Archivó el contacto {name}",
+                contact=contact,
+            )
+            messages.success(request, "El contacto se ha archivado sin perder su historial.")
+        else:
+            contact.delete()
+            log_activity(
+                request.user,
+                "contact_deleted",
+                f"Eliminó definitivamente el contacto {name}",
+            )
+            messages.success(request, "El contacto se ha eliminado definitivamente.")
         return redirect('contact_list')
 
     return render(request, 'contacts/delete.html', {
-        'contact': contact
+        'contact': contact,
+        'will_archive': will_archive,
     })
     
 
@@ -171,7 +190,7 @@ def contact_delete(request, pk):
 @login_required
 def contact_update_status(request, pk):
 
-    contact = get_object_or_404(Contact, pk=pk)
+    contact = get_object_or_404(Contact, pk=pk, is_archived=False)
 
     if request.user.role == "agent" and contact.assigned_agent != request.user:
         return JsonResponse({"success": False}, status=403)
@@ -202,7 +221,7 @@ def contact_update_status(request, pk):
 @login_required
 def contact_assign_agent(request, pk):
 
-    contact = get_object_or_404(Contact, pk=pk)
+    contact = get_object_or_404(Contact, pk=pk, is_archived=False)
 
     if not can_manage_assignments(request.user):
         return JsonResponse({"success": False}, status=403)
@@ -241,7 +260,10 @@ def contact_detail(request, pk):
         contact=contact
     ).select_related(
         "user"
-    )[:20]
+    )
+    if not can_manage_office(request.user):
+        activities = activities.filter(user=request.user)
+    activities = activities[:20]
 
     news_items = News.objects.none()
     listings = Listing.objects.none()
@@ -254,6 +276,7 @@ def contact_detail(request, pk):
             "related_property",
             "agent",
         ).distinct().order_by("-created_at")
+        news_items = scope_to_user(news_items, request.user)
         listings = Listing.objects.filter(
             Q(owner=contact) | Q(property__contacts=contact),
         ).select_related(
@@ -261,18 +284,22 @@ def contact_detail(request, pk):
             "owner",
             "agent",
         ).distinct().order_by("-created_at")
+        listings = scope_to_user(listings, request.user)
     if contact.is_buyer:
         orders = Order.objects.filter(buyer=contact).select_related(
             "zone",
             "agent",
         ).order_by("-created_at")
+        orders = scope_to_user(orders, request.user)
 
     completed_sales = Sale.objects.filter(
         Q(buyer=contact) | Q(former_owner=contact),
     ).select_related("related_property", "buyer", "former_owner").distinct()
+    completed_sales = scope_to_user(completed_sales, request.user)
     rental_contracts = RentalContract.objects.filter(
         Q(tenant=contact) | Q(owner=contact),
     ).select_related("related_property", "tenant", "owner").distinct()
+    rental_contracts = scope_to_user(rental_contracts, request.user)
 
     return render(
         request,

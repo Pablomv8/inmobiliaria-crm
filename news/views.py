@@ -10,7 +10,8 @@ from calendar_app.models import Appointment, Call
 from properties.models import Property
 from users.models import User
 from config.pagination import paginate
-from users.permissions import scope_to_user
+from users.permissions import can_manage_office, has_related_records, scope_to_user
+from django.contrib import messages
 
 from .forms import NewsCommentForm, NewsForm
 from .models import News
@@ -193,11 +194,28 @@ def news_delete(request, pk):
         pk=pk,
     )
 
+    will_close = (
+        not can_manage_office(request.user)
+        or has_related_records(news)
+    )
     if request.method == "POST":
-        news.delete()
+        if will_close:
+            news.status = "closed"
+            news.save(update_fields=["status"])
+            messages.success(
+                request,
+                "La noticia se ha cerrado y su historial se conserva.",
+            )
+        else:
+            news.delete()
+            messages.success(request, "La noticia se ha eliminado definitivamente.")
         return redirect("news_list")
 
-    return render(request, "news/delete.html", {"news": news})
+    return render(
+        request,
+        "news/delete.html",
+        {"news": news, "will_archive": will_close},
+    )
 
 
 @login_required

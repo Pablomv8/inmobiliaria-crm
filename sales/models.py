@@ -5,6 +5,7 @@ from contacts.models import Contact
 from users.models import User
 from django.core.validators import MinValueValidator
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 
 class Sale(models.Model):
@@ -155,7 +156,35 @@ class Sale(models.Model):
         old_status = None
 
         if not is_new:
-            old_status = Sale.objects.get(pk=self.pk).status
+            previous = Sale.objects.get(pk=self.pk)
+            old_status = previous.status
+            immutable_fields = (
+                "related_property_id",
+                "buyer_id",
+                "sale_price",
+                "commission_amount",
+                "seller_commission",
+                "buyer_commission",
+                "deposit_amount",
+                "earnest_money_amount",
+                "sale_date",
+                "listing_id",
+                "order_id",
+                "proposal_id",
+                "source_contract_appointment_id",
+                "former_owner_id",
+                "contract_reference",
+                "status",
+                "notes",
+            )
+            if previous.status == "signed" and any(
+                getattr(previous, field) != getattr(self, field)
+                for field in immutable_fields
+            ):
+                raise ValidationError(
+                    "Una compraventa firmada no se modifica directamente; "
+                    "debe registrarse una corrección auditada."
+                )
 
         super().save(*args, **kwargs)
 
@@ -173,6 +202,28 @@ class Sale(models.Model):
         result = super().delete(*args, **kwargs)
         property_obj.sync_status()
         return result
+
+
+class SaleCorrection(models.Model):
+    sale = models.ForeignKey(
+        Sale,
+        on_delete=models.PROTECT,
+        related_name="corrections",
+    )
+    corrected_by = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        related_name="sale_corrections",
+    )
+    reason = models.TextField(verbose_name="Motivo de la corrección")
+    previous_values = models.JSONField()
+    new_values = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Corrección de compraventa"
+        verbose_name_plural = "Correcciones de compraventas"
 
 
 class RentalContract(models.Model):

@@ -125,6 +125,13 @@
 
             </select>
 
+            {% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" %}
+            <select name="agent" onchange="this.form.submit()" class="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700">
+                <option value="">Todos los responsables</option>
+                {% for agent in agents %}<option value="{{ agent.id }}" {% if request.GET.agent == agent.id|stringformat:"s" %}selected{% endif %}>{{ agent.get_full_name|default:agent.username }}</option>{% endfor %}
+            </select>
+            {% endif %}
+
             <!-- CIUDAD -->
             <input
                 type="text"
@@ -219,6 +226,10 @@
                 {{ property.get_property_type_display }} · Ocupado por {{ property.get_occupied_by_display|lower }}
             </p>
 
+            <p class="mt-1 text-xs text-gray-400">
+                Responsable: {% if property.assigned_agent %}{{ property.assigned_agent.get_full_name|default:property.assigned_agent.username }}{% else %}Sin asignar{% endif %}
+            </p>
+
         </a>
         {% endfor %}
 
@@ -237,6 +248,7 @@
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Estado</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Ocupado por</th>
                     <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Ciudad</th>
+                    <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Responsable</th>
                 </tr>
             </thead>
 
@@ -270,6 +282,10 @@
 
                     <td class="px-6 py-4 text-gray-500">
                         {{ property.city }}
+                    </td>
+
+                    <td class="px-6 py-4 text-gray-500">
+                        {% if property.assigned_agent %}{{ property.assigned_agent.get_full_name|default:property.assigned_agent.username }}{% else %}Sin asignar{% endif %}
                     </td>
 
                 </tr>

@@ -39,8 +39,18 @@ SELECT_CLASS = INPUT_CLASS
 
 class PropertyForm(forms.ModelForm):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        if can_manage_assignments(user):
+            self.fields["assigned_agent"].queryset = assignable_agents(
+                self.instance.assigned_agent if self.instance.pk else None
+            )
+            self.fields["assigned_agent"].required = True
+            self.fields["assigned_agent"].empty_label = "Selecciona un responsable"
+            if not self.is_bound and not self.instance.pk:
+                self.fields["assigned_agent"].initial = user
+        else:
+            self.fields.pop("assigned_agent")
         self.fields["zone"].queryset = Zone.objects.order_by("name")
         self.fields["zone"].empty_label = "Selecciona una zona"
         self.fields["zone"].required = True
@@ -120,6 +130,7 @@ class PropertyForm(forms.ModelForm):
             'latitude',
             'longitude',
             'zone',
+            'assigned_agent',
             "bedrooms",
             "bathrooms",
             "area",
@@ -142,6 +153,7 @@ class PropertyForm(forms.ModelForm):
             "latitude": "Latitud",
             "longitude": "Longitud",
             "zone": "Zona",
+            "assigned_agent": "Agente responsable",
             "bedrooms": "Habitaciones",
             "bathrooms": "Baños",
             "area": "Superficie útil",
@@ -210,6 +222,10 @@ class PropertyForm(forms.ModelForm):
             'longitude': forms.HiddenInput(),
 
             'zone': forms.Select(attrs={
+                'class': SELECT_CLASS,
+            }),
+
+            'assigned_agent': forms.Select(attrs={
                 'class': SELECT_CLASS,
             }),
 

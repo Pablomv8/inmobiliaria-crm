@@ -9,6 +9,7 @@ from users.models import User
 from contacts.models import Contact
 from properties.models import Property
 from news.models import News
+from config.comment_audit import AuditedComment
 
 
 
@@ -258,7 +259,7 @@ class Call(models.Model):
         )
 
 
-class CallComment(models.Model):
+class CallComment(AuditedComment):
     call = models.ForeignKey(
         Call,
         on_delete=models.CASCADE,
@@ -351,7 +352,7 @@ class ProposalAppointment(models.Model):
         return f"Propuesta de {self.buyer} para {self.listing.property}"
 
 
-class ProposalComment(models.Model):
+class ProposalComment(AuditedComment):
     proposal = models.ForeignKey(
         ProposalAppointment,
         on_delete=models.CASCADE,

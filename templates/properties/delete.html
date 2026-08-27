@@ -7,16 +7,22 @@
     <div class="bg-white rounded-2xl shadow-sm p-8 text-center">
 
         <h1 class="text-3xl font-bold text-gray-800 mb-4">
-            Eliminar inmueble
+            {% if will_archive %}Archivar inmueble{% else %}Eliminar inmueble{% endif %}
         </h1>
 
         <p class="text-gray-600 mb-8">
 
-            ¿Seguro que quieres eliminar:
+            ¿Seguro que quieres {% if will_archive %}archivar{% else %}eliminar definitivamente{% endif %}:
 
             <strong>{{ property.full_address }}</strong>?
 
         </p>
+
+        {% if will_archive %}
+            <p class="mb-8 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
+                Se ocultará de los listados y selectores, conservando sus contactos, citas y trazabilidad.
+            </p>
+        {% endif %}
 
         <form method="POST">
 
@@ -26,9 +32,9 @@
 
                 <button
                     type="submit"
-                    class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl transition"
+                    class="{% if will_archive %}bg-amber-600 hover:bg-amber-700{% else %}bg-red-600 hover:bg-red-700{% endif %} text-white px-6 py-3 rounded-xl transition"
                 >
-                    Eliminar
+                    {% if will_archive %}Archivar{% else %}Eliminar definitivamente{% endif %}
                 </button>
 
                 <a

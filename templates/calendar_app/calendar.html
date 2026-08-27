@@ -36,9 +36,10 @@
 <div class="w-full px-4 sm:px-6 lg:px-10">
 
     <!-- HEADER -->
-    <div class="mb-8">
-        <h1 class="text-2xl sm:text-3xl font-bold">Agenda del equipo</h1>
-        <p class="text-gray-500">Calendario compartido de llamadas, citas y tareas</p>
+    <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div><h1 class="text-2xl sm:text-3xl font-bold">Agenda del equipo</h1>
+        <p class="text-gray-500">Calendario compartido de llamadas, citas y tareas</p></div>
+        <a href="{% url 'appointment_list' %}" class="w-fit rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"><i class="fa-solid fa-list mr-2"></i>Ver listado de citas</a>
     </div>
 
     <!-- FILTER AGENTS -->

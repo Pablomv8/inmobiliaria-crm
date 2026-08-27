@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from .comment_views import comment_edit, comment_hide
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -34,6 +35,8 @@ urlpatterns = [
     path("orders/", include("orders.urls")),
     path("goals/", include("goals.urls")),
     path("select2/", include("django_select2.urls")),
+    path("comments/<str:kind>/<int:pk>/edit/", comment_edit, name="comment_edit"),
+    path("comments/<str:kind>/<int:pk>/hide/", comment_hide, name="comment_hide"),
 ]
 
 urlpatterns += static(

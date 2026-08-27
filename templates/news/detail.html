@@ -207,8 +207,10 @@
                             </div>
 
                             <p class="text-gray-700 text-sm leading-relaxed">
-                                {{ comment.text }}
+                                {{ comment.display_text }}
                             </p>
+
+                            {% include "comments/actions.html" with kind="news" %}
 
                         </div>
 

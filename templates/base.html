@@ -44,6 +44,7 @@
     class="flex min-h-dvh"
 >
 
+    {% if request.user.is_authenticated %}
     <!-- Overlay -->
     <div
         x-show="sidebarOpen"
@@ -60,6 +61,7 @@
     >
         {% include 'partials/sidebar.html' %}
     </aside>
+    {% endif %}
 
 
 
@@ -67,10 +69,10 @@
     <div class="flex min-w-0 flex-1 flex-col">
 
         <!-- Navbar -->
-        {% include 'partials/navbar.html' %}
+        {% if request.user.is_authenticated %}{% include 'partials/navbar.html' %}{% endif %}
 
         <!-- Page Content -->
-        <main class="p-4 sm:p-6 lg:p-8">
+        <main class="{% if request.user.is_authenticated %}p-4 sm:p-6 lg:p-8{% else %}min-h-dvh{% endif %}">
 
             {% if messages %}
 

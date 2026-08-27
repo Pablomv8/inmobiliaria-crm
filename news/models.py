@@ -2,6 +2,7 @@ from django.db import models, transaction
 
 from properties.models import Property
 from users.models import User
+from config.comment_audit import AuditedComment
 
 
 class News(models.Model):
@@ -98,7 +99,7 @@ class News(models.Model):
             return result
     
 
-class NewsComment(models.Model):
+class NewsComment(AuditedComment):
 
     news = models.ForeignKey(
         News,

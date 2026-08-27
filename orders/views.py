@@ -10,7 +10,8 @@ from users.models import User
 from .forms import OrderCommentForm, OrderForm
 from .models import Order
 from config.pagination import paginate
-from users.permissions import scope_to_user
+from users.permissions import can_manage_office, has_related_records, scope_to_user
+from django.contrib import messages
 
 
 @login_required
@@ -214,8 +215,25 @@ def order_delete(request, pk):
         pk=pk,
     )
 
+    will_cancel = (
+        not can_manage_office(request.user)
+        or has_related_records(order)
+    )
     if request.method == "POST":
-        order.delete()
+        if will_cancel:
+            order.status = "cancelled"
+            order.save(update_fields=["status", "updated_at"])
+            messages.success(
+                request,
+                "El pedido se ha cancelado y su historial se conserva.",
+            )
+        else:
+            order.delete()
+            messages.success(request, "El pedido se ha eliminado definitivamente.")
         return redirect("order_list")
 
-    return render(request, "orders/delete.html", {"order": order})
+    return render(
+        request,
+        "orders/delete.html",
+        {"order": order, "will_archive": will_cancel},
+    )

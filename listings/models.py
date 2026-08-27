@@ -4,6 +4,7 @@ from django.db import models
 from django.db import transaction
 from django.utils import timezone
 from django.core.validators import MinValueValidator
+from config.comment_audit import AuditedComment
 
 class Listing(models.Model):
 
@@ -159,7 +160,7 @@ class Listing(models.Model):
             return result
 
 
-class ListingComment(models.Model):
+class ListingComment(AuditedComment):
     listing = models.ForeignKey(
         Listing,
         on_delete=models.CASCADE,

@@ -66,7 +66,8 @@
                         <span class="font-medium text-gray-900">{{ comment.user|default:"Usuario eliminado" }}</span>
                         <time class="text-xs text-gray-400">{{ comment.created_at|date:"d/m/Y H:i" }}</time>
                     </div>
-                    <p class="whitespace-pre-line text-sm text-gray-700">{{ comment.text }}</p>
+                    <p class="whitespace-pre-line text-sm text-gray-700">{{ comment.display_text }}</p>
+                    {% include "comments/actions.html" with kind="proposal" %}
                 </article>
             {% empty %}
                 <div class="rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500">

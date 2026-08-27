@@ -125,6 +125,17 @@ class Contact(models.Model):
         verbose_name="Es comprador",
     )
 
+    is_archived = models.BooleanField(
+        default=False,
+        verbose_name="Archivado",
+    )
+
+    archived_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de archivo",
+    )
+
     class Meta:
         constraints = [
             models.CheckConstraint(

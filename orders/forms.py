@@ -61,7 +61,10 @@ class OrderForm(forms.ModelForm):
 
     def __init__(self, *args, buyer_obj=None, user=None, **kwargs):
         super().__init__(*args, **kwargs)
-        buyers = Contact.objects.filter(is_buyer=True).order_by(
+        buyers = Contact.objects.filter(
+            is_buyer=True,
+            is_archived=False,
+        ).order_by(
             "name", "last_name"
         )
         self.fields["buyer"].queryset = buyers

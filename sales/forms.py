@@ -196,6 +196,27 @@ class SaleClosingForm(forms.ModelForm):
         return cleaned_data
 
 
+class SaleCorrectionForm(forms.Form):
+    sale_price = forms.DecimalField(label="Precio de compra (€)", min_value=0.01, widget=forms.NumberInput(attrs={"class": INPUT_CLASS, "step": "0.01"}))
+    deposit_amount = forms.DecimalField(label="Señal (€)", min_value=0, widget=forms.NumberInput(attrs={"class": INPUT_CLASS, "step": "0.01"}))
+    earnest_money_amount = forms.DecimalField(label="Arras (€)", min_value=0, widget=forms.NumberInput(attrs={"class": INPUT_CLASS, "step": "0.01"}))
+    seller_commission = forms.DecimalField(label="Comisión del vendedor (€)", min_value=0, widget=forms.NumberInput(attrs={"class": INPUT_CLASS, "step": "0.01"}))
+    buyer_commission = forms.DecimalField(label="Comisión del comprador (€)", min_value=0, widget=forms.NumberInput(attrs={"class": INPUT_CLASS, "step": "0.01"}))
+    sale_date = forms.DateField(label="Fecha", widget=forms.DateInput(attrs={"class": INPUT_CLASS, "type": "date"}))
+    contract_reference = forms.CharField(label="Referencia", required=False, widget=forms.TextInput(attrs={"class": INPUT_CLASS}))
+    notes = forms.CharField(label="Notas", required=False, widget=forms.Textarea(attrs={"class": INPUT_CLASS, "rows": 3}))
+    reason = forms.CharField(label="Motivo de la corrección", widget=forms.Textarea(attrs={"class": INPUT_CLASS, "rows": 3, "placeholder": "Explica por qué se corrige el registro firmado..."}))
+
+    def clean(self):
+        cleaned_data = super().clean()
+        price = cleaned_data.get("sale_price")
+        deposit = cleaned_data.get("deposit_amount") or Decimal("0")
+        earnest = cleaned_data.get("earnest_money_amount") or Decimal("0")
+        if price is not None and deposit + earnest > price:
+            raise ValidationError("La suma de señal y arras no puede superar el precio.")
+        return cleaned_data
+
+
 class RentalContractClosingForm(forms.ModelForm):
     class Meta:
         model = RentalContract

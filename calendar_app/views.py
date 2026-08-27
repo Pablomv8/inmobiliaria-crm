@@ -2,6 +2,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.http import JsonResponse
 from django.urls import reverse
 from django.db import transaction
+from django.db.models import Q
 from django.core.exceptions import PermissionDenied
 
 from .models import Appointment, Call, CounterOffer, ProposalAppointment
@@ -32,7 +33,7 @@ from datetime import date, timedelta
 from itertools import groupby
 from users.models import User
 from users.forms import AgentReassignmentForm
-from users.permissions import can_manage_assignments, scope_to_user
+from users.permissions import assignable_agents, can_manage_assignments, scope_to_user
 from orders.models import Order
 from tasks.models import Task
 from tasks.scheduling import (
@@ -122,6 +123,79 @@ def build_task_events(tasks, viewer=None):
                 ),
             })
     return events
+
+
+@login_required
+def appointment_list(request):
+    """Listado compartido de las citas de toda la oficina."""
+    appointments = Appointment.objects.select_related(
+        "related_property",
+        "contact",
+        "agent",
+        "news",
+        "listing",
+        "order",
+    )
+
+    search = request.GET.get("search", "").strip()
+    appointment_type = request.GET.get("type", "")
+    status = request.GET.get("status", "")
+    agent = request.GET.get("agent", "")
+    date_from = request.GET.get("date_from", "")
+    date_to = request.GET.get("date_to", "")
+    ordering = request.GET.get("ordering", "date_desc")
+
+    if search:
+        appointments = appointments.filter(
+            Q(contact__name__icontains=search)
+            | Q(contact__last_name__icontains=search)
+            | Q(related_property__street__icontains=search)
+            | Q(related_property__number__icontains=search)
+            | Q(related_property__city__icontains=search)
+            | Q(agent__username__icontains=search)
+            | Q(agent__first_name__icontains=search)
+            | Q(agent__last_name__icontains=search)
+            | Q(notes__icontains=search)
+        )
+    if appointment_type in dict(Appointment.TYPE_CHOICES):
+        appointments = appointments.filter(appointment_type=appointment_type)
+    if status in dict(Appointment.STATUS_CHOICES):
+        appointments = appointments.filter(status=status)
+    if agent.isdigit():
+        appointments = appointments.filter(agent_id=agent)
+    if date_from:
+        try:
+            appointments = appointments.filter(date__gte=date.fromisoformat(date_from))
+        except ValueError:
+            date_from = ""
+    if date_to:
+        try:
+            appointments = appointments.filter(date__lte=date.fromisoformat(date_to))
+        except ValueError:
+            date_to = ""
+
+    ordering_options = {
+        "date_desc": ("-date", "-time"),
+        "date_asc": ("date", "time"),
+        "created_desc": ("-created_at",),
+        "type": ("appointment_type", "-date", "-time"),
+    }
+    appointments = appointments.order_by(
+        *ordering_options.get(ordering, ordering_options["date_desc"])
+    )
+    appointments = paginate(request, appointments)
+
+    return render(
+        request,
+        "calendar_app/appointment_list.html",
+        {
+            "appointments": appointments,
+            "page_obj": appointments,
+            "appointment_types": Appointment.TYPE_CHOICES,
+            "status_choices": Appointment.STATUS_CHOICES,
+            "agents": assignable_agents(),
+        },
+    )
 
 
 def get_user_order_or_404(user, order_id):

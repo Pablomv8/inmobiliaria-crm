@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.conf import settings
 
 from datetime import timedelta
+from config.comment_audit import AuditedComment
 
 
 class Zone(models.Model):
@@ -127,6 +128,26 @@ class Property(models.Model):
         verbose_name="Creado por",
     )
 
+    assigned_agent = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_properties",
+        verbose_name="Agente responsable",
+    )
+
+    is_archived = models.BooleanField(
+        default=False,
+        verbose_name="Archivado",
+    )
+
+    archived_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de archivo",
+    )
+
 
     status = models.CharField(
         max_length=30,
@@ -240,6 +261,8 @@ class Property(models.Model):
         return refreshed
 
     def save(self, *args, **kwargs):
+        if self.pk is None and self.assigned_agent_id is None and self.created_by_id:
+            self.assigned_agent_id = self.created_by_id
         previous_status = None
         if self.pk:
             previous_status = self.__class__.objects.filter(pk=self.pk).values_list(
@@ -275,7 +298,7 @@ class Property(models.Model):
         return self.full_address
 
 
-class PropertyComment(models.Model):
+class PropertyComment(AuditedComment):
     property = models.ForeignKey(
         Property,
         on_delete=models.CASCADE,

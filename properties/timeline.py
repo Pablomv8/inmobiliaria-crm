@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from calendar_app.models import Appointment, Call, CounterOffer, ProposalAppointment
+from users.permissions import can_manage_office
 
 
 def aware_datetime(day, value=time.min):
@@ -27,6 +28,7 @@ def can_open_agent_event(viewer, agent):
 
 
 def build_property_timeline(property_obj, viewer):
+    can_see_all = can_manage_office(viewer)
     events = [{
         "timestamp": property_obj.created_at,
         "type": "creation",
@@ -51,17 +53,21 @@ def build_property_timeline(property_obj, viewer):
             "url": "",
         })
 
-    for comment in property_obj.comments.select_related("user"):
-        events.append({
-            "timestamp": comment.created_at,
-            "type": "comment",
-            "icon": "💬",
-            "title": "Contacto registrado",
-            "description": f"{comment.text} · {user_name(comment.user)}",
-            "url": "",
-        })
+    if can_see_all or property_obj.assigned_agent_id == viewer.pk:
+        for comment in property_obj.comments.select_related("user"):
+            events.append({
+                "timestamp": comment.created_at,
+                "type": "comment",
+                "icon": "💬",
+                "title": "Contacto registrado",
+                "description": f"{comment.display_text} · {user_name(comment.user)}",
+                "url": "",
+            })
 
-    for news in property_obj.news.select_related("agent"):
+    news_items = property_obj.news.select_related("agent")
+    if not can_see_all:
+        news_items = news_items.filter(agent=viewer)
+    for news in news_items:
         news_url = reverse("news_detail", args=[news.pk])
         events.append({
             "timestamp": news.created_at,
@@ -80,11 +86,14 @@ def build_property_timeline(property_obj, viewer):
                 "type": "comment",
                 "icon": "💬",
                 "title": "Comentario en la noticia",
-                "description": f"{comment.text} · {user_name(comment.user)}",
+                "description": f"{comment.display_text} · {user_name(comment.user)}",
                 "url": news_url,
             })
 
-    for listing in property_obj.listings.select_related("owner", "agent"):
+    listings = property_obj.listings.select_related("owner", "agent")
+    if not can_see_all:
+        listings = listings.filter(agent=viewer)
+    for listing in listings:
         listing_url = reverse("listing_detail", args=[listing.pk])
         events.append({
             "timestamp": listing.created_at,
@@ -103,13 +112,15 @@ def build_property_timeline(property_obj, viewer):
                 "type": "comment",
                 "icon": "💬",
                 "title": "Comentario en el encargo",
-                "description": f"{comment.text} · {user_name(comment.user)}",
+                "description": f"{comment.display_text} · {user_name(comment.user)}",
                 "url": listing_url,
             })
 
     appointments = Appointment.objects.filter(
         related_property=property_obj,
     ).select_related("agent", "contact")
+    if not can_see_all:
+        appointments = appointments.filter(agent=viewer)
     for appointment in appointments:
         appointment_description = (
             f"{appointment.time.strftime('%H:%M')}–"
@@ -138,6 +149,8 @@ def build_property_timeline(property_obj, viewer):
         Q(news__related_property=property_obj)
         | Q(listing__property=property_obj)
     ).select_related("agent", "contact").distinct()
+    if not can_see_all:
+        calls = calls.filter(agent=viewer)
     for call in calls:
         call_url = (
             reverse("call_detail", args=[call.pk])
@@ -161,13 +174,15 @@ def build_property_timeline(property_obj, viewer):
                 "type": "comment",
                 "icon": "💬",
                 "title": "Comentario en la llamada",
-                "description": f"{comment.text} · {user_name(comment.user)}",
+                "description": f"{comment.display_text} · {user_name(comment.user)}",
                 "url": call_url,
             })
 
     proposals = ProposalAppointment.objects.filter(
         listing__property=property_obj,
     ).select_related("buyer", "agent").prefetch_related("comments__user")
+    if not can_see_all:
+        proposals = proposals.filter(agent=viewer)
     for proposal in proposals:
         proposal_url = (
             reverse("proposal_appointment_detail", args=[proposal.pk])
@@ -191,13 +206,15 @@ def build_property_timeline(property_obj, viewer):
                 "type": "comment",
                 "icon": "💬",
                 "title": "Comentario en la propuesta",
-                "description": f"{comment.text} · {user_name(comment.user)}",
+                "description": f"{comment.display_text} · {user_name(comment.user)}",
                 "url": proposal_url,
             })
 
     counteroffers = CounterOffer.objects.filter(
         proposal__listing__property=property_obj,
     ).select_related("proposal__agent")
+    if not can_see_all:
+        counteroffers = counteroffers.filter(proposal__agent=viewer)
     for counteroffer in counteroffers:
         events.append({
             "timestamp": aware_datetime(counteroffer.counteroffer_date),
@@ -212,7 +229,10 @@ def build_property_timeline(property_obj, viewer):
             ),
         })
 
-    for sale in property_obj.sales.select_related("buyer", "agent"):
+    sales = property_obj.sales.select_related("buyer", "agent")
+    if not can_see_all:
+        sales = sales.filter(agent=viewer)
+    for sale in sales:
         events.append({
             "timestamp": aware_datetime(sale.sale_date),
             "type": "sale",
@@ -225,11 +245,14 @@ def build_property_timeline(property_obj, viewer):
             "url": reverse("sale_detail", args=[sale.pk]),
         })
 
-    for contract in property_obj.rental_contracts.select_related(
+    contracts = property_obj.rental_contracts.select_related(
         "tenant",
         "owner",
         "agent",
-    ):
+    )
+    if not can_see_all:
+        contracts = contracts.filter(agent=viewer)
+    for contract in contracts:
         events.append({
             "timestamp": aware_datetime(contract.contract_date),
             "type": "rental",

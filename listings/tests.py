@@ -95,12 +95,16 @@ class ListingFollowUpTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("commission_amount", form.errors)
 
-    def test_agent_cannot_open_listing_reassignment_form(self):
+    def test_agent_can_edit_dates_but_not_sensitive_listing_fields(self):
         response = self.client.get(
             reverse("listing_update", args=[self.listing.pk])
         )
 
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("start_date", response.context["form"].fields)
+        self.assertIn("end_date", response.context["form"].fields)
+        for field in ("owner", "agent", "agreed_price", "commission_amount", "is_exclusive"):
+            self.assertNotIn(field, response.context["form"].fields)
 
     def test_add_comment_to_listing(self):
         response = self.client.post(

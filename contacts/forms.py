@@ -72,6 +72,9 @@ class ContactForm(forms.ModelForm):
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["properties"].queryset = Property.objects.filter(
+            is_archived=False,
+        )
 
         for field_name in (
             "last_name",

@@ -9,7 +9,7 @@
         </div>
         <div class="flex flex-col gap-2 sm:flex-row">
             <a href="{% url 'rental_contract_list' %}" class="rounded-xl bg-gray-100 px-5 py-3 text-center font-medium text-gray-700 transition hover:bg-gray-200">Ver alquileres</a>
-            {% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" %}<a href="{% url 'sale_create' %}" class="rounded-xl bg-gray-900 px-5 py-3 text-center text-white transition hover:bg-black">+ Nueva venta</a>{% endif %}
+            <span class="rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm text-gray-600">Las ventas se crean al completar una cita de contrato</span>
         </div>
     </div>
 
@@ -87,9 +87,11 @@
                         <td class="whitespace-nowrap px-6 py-4 text-right font-semibold text-gray-900">{{ sale.commission_amount }} €</td>
                         <td class="px-6 py-4">
                             <div data-sale-status-wrapper="{{ sale.id }}" class="inline-flex rounded-full px-3 py-1 text-xs font-medium {% if sale.status == 'signed' %}bg-green-100 text-green-700{% elif sale.status == 'draft' %}bg-yellow-100 text-yellow-700{% else %}bg-red-100 text-red-700{% endif %}">
+                                {% if sale.status != "signed" %}{% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" %}
                                 <select data-sale-id="{{ sale.id }}" data-url="{% url 'sale_update_status' sale.id %}" data-previous-value="{{ sale.status }}" onchange="updateSaleStatus(this)" class="cursor-pointer border-0 bg-transparent p-0 text-xs font-medium focus:ring-0">
                                     {% for value, label in sale.STATUS_CHOICES %}<option value="{{ value }}" {% if sale.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
                                 </select>
+                                {% else %}{{ sale.get_status_display }}{% endif %}{% else %}{{ sale.get_status_display }}{% endif %}
                             </div>
                         </td>
                     </tr>

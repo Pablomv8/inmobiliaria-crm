@@ -2,6 +2,7 @@ from django.db import models
 
 from contacts.models import Contact
 from properties.models import Property, Zone
+from config.comment_audit import AuditedComment
 
 
 class Order(models.Model):
@@ -101,7 +102,7 @@ class Order(models.Model):
         )
 
 
-class OrderComment(models.Model):
+class OrderComment(AuditedComment):
     order = models.ForeignKey(
         Order,
         on_delete=models.CASCADE,

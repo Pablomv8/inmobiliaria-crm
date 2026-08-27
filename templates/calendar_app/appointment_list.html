@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-4 sm:p-6">
+    <header class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 sm:text-3xl">Citas</h1>
+            <p class="mt-1 text-gray-500">Consulta las citas programadas, completadas y canceladas de toda la oficina.</p>
+        </div>
+        <a href="{% url 'calendar' %}" class="rounded-xl border border-gray-300 bg-white px-5 py-3 text-center font-semibold text-gray-700 hover:bg-gray-50"><i class="fa-regular fa-calendar mr-2"></i>Ver agenda</a>
+    </header>
+
+    <form method="get" class="mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div class="flex flex-wrap items-end gap-3">
+            <div class="min-w-56 flex-1">
+                <label for="appointment-search" class="sr-only">Buscar cita</label>
+                <div class="relative">
+                    <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400" aria-hidden="true"><i class="fa-solid fa-magnifying-glass text-sm"></i></span>
+                    <input id="appointment-search" type="search" name="search" value="{{ request.GET.search }}" placeholder="Buscar por cliente, inmueble o agente..." class="block w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 text-sm">
+                </div>
+            </div>
+            <div><label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Tipo</label><select name="type" class="rounded-xl border border-gray-200 px-3 py-2.5 text-sm"><option value="">Todos</option>{% for value, label in appointment_types %}<option value="{{ value }}" {% if request.GET.type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+            <div><label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Estado</label><select name="status" class="rounded-xl border border-gray-200 px-3 py-2.5 text-sm"><option value="">Todos</option>{% for value, label in status_choices %}<option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+            <div><label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Agente</label><select name="agent" class="max-w-52 rounded-xl border border-gray-200 px-3 py-2.5 text-sm"><option value="">Todo el equipo</option>{% for agent in agents %}<option value="{{ agent.id }}" {% if request.GET.agent == agent.id|stringformat:"s" %}selected{% endif %}>{{ agent.get_full_name|default:agent.username }}</option>{% endfor %}</select></div>
+            <div><label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Desde</label><input type="date" name="date_from" value="{{ request.GET.date_from }}" class="rounded-xl border border-gray-200 px-3 py-2.5 text-sm"></div>
+            <div><label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Hasta</label><input type="date" name="date_to" value="{{ request.GET.date_to }}" class="rounded-xl border border-gray-200 px-3 py-2.5 text-sm"></div>
+            <div><label class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">Orden</label><select name="ordering" class="rounded-xl border border-gray-200 px-3 py-2.5 text-sm"><option value="date_desc" {% if request.GET.ordering == "date_desc" or not request.GET.ordering %}selected{% endif %}>Más recientes</option><option value="date_asc" {% if request.GET.ordering == "date_asc" %}selected{% endif %}>Más antiguas</option><option value="created_desc" {% if request.GET.ordering == "created_desc" %}selected{% endif %}>Últimas creadas</option><option value="type" {% if request.GET.ordering == "type" %}selected{% endif %}>Por tipo</option></select></div>
+            <button type="submit" class="rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-black">Filtrar</button>
+            <a href="{% url 'appointment_list' %}" class="rounded-xl bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-200">Limpiar</a>
+        </div>
+    </form>
+
+    <p class="mb-4 text-sm text-gray-500">{{ appointments.paginator.count }} cita{{ appointments.paginator.count|pluralize }}</p>
+
+    <div class="space-y-3 sm:hidden">
+        {% for appointment in appointments %}
+        <article class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div class="flex items-start justify-between gap-3"><div class="flex items-center gap-2">{% include "calendar_app/partials/appointment_status_icon.html" with status=appointment.status %}{% include "calendar_app/partials/appointment_type_badge.html" with appointment_type=appointment.appointment_type label=appointment.get_appointment_type_display %}</div><span class="text-right text-sm font-bold text-gray-900">{{ appointment.date|date:"d/m/Y" }}<span class="mt-1 block text-xs font-medium text-gray-500">{{ appointment.time|time:"H:i" }}–{{ appointment.end_time|time:"H:i" }}</span></span></div>
+            <h2 class="mt-4 font-semibold text-gray-900">{{ appointment.contact }}</h2>
+            <p class="mt-1 text-sm text-gray-600">{{ appointment.related_property.full_address }}</p>
+            <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-3"><p class="text-xs text-gray-500">Agente: <span class="font-semibold text-gray-700">{{ appointment.agent.get_full_name|default:appointment.agent.username|default:"Sin asignar" }}</span></p>{% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" or appointment.agent_id == request.user.id %}<a href="{% url 'appointment_detail' appointment.id %}" class="text-sm font-semibold text-indigo-700">Ver cita →</a>{% else %}<span class="text-xs font-medium text-gray-400">Solo lectura</span>{% endif %}</div>
+        </article>
+        {% empty %}<div class="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center text-gray-500">No hay citas que coincidan con los filtros.</div>{% endfor %}
+    </div>
+
+    <div class="hidden overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-sm sm:block">
+        <table class="w-full min-w-[1100px]">
+            <thead class="border-b border-gray-200 bg-gray-50"><tr><th class="whitespace-nowrap px-5 py-4 text-left text-xs font-semibold uppercase text-gray-500">Fecha y hora</th><th class="px-5 py-4 text-left text-xs font-semibold uppercase text-gray-500">Tipo</th><th class="px-5 py-4 text-left text-xs font-semibold uppercase text-gray-500">Cliente</th><th class="px-5 py-4 text-left text-xs font-semibold uppercase text-gray-500">Inmueble</th><th class="px-5 py-4 text-left text-xs font-semibold uppercase text-gray-500">Agente</th><th class="px-5 py-4 text-left text-xs font-semibold uppercase text-gray-500">Estado</th><th class="px-5 py-4 text-right text-xs font-semibold uppercase text-gray-500">Acciones</th></tr></thead>
+            <tbody class="divide-y divide-gray-100">{% for appointment in appointments %}<tr class="hover:bg-gray-50"><td class="whitespace-nowrap px-5 py-4"><p class="font-semibold text-gray-900">{{ appointment.date|date:"d/m/Y" }}</p><p class="mt-1 text-xs text-gray-500">{{ appointment.time|time:"H:i" }}–{{ appointment.end_time|time:"H:i" }}</p></td><td class="px-5 py-4">{% include "calendar_app/partials/appointment_type_badge.html" with appointment_type=appointment.appointment_type label=appointment.get_appointment_type_display %}</td><td class="px-5 py-4 text-gray-700">{{ appointment.contact }}</td><td class="px-5 py-4 text-gray-600">{{ appointment.related_property.full_address }}</td><td class="px-5 py-4 text-gray-600">{{ appointment.agent.get_full_name|default:appointment.agent.username|default:"Sin asignar" }}</td><td class="px-5 py-4"><div class="flex items-center gap-2">{% include "calendar_app/partials/appointment_status_icon.html" with status=appointment.status %}<span class="text-sm font-medium {% if appointment.status == 'completed' %}text-emerald-700{% elif appointment.status == 'cancelled' %}text-red-700{% else %}text-blue-700{% endif %}">{{ appointment.get_status_display }}</span></div></td><td class="px-5 py-4 text-right">{% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" or appointment.agent_id == request.user.id %}<div class="flex justify-end gap-2"><a href="{% url 'appointment_detail' appointment.id %}" class="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100">Ver</a><a href="{% url 'appointment_update' appointment.id %}" class="rounded-lg bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-black">Editar</a></div>{% else %}<span class="text-xs font-medium text-gray-400">Solo lectura</span>{% endif %}</td></tr>{% empty %}<tr><td colspan="7" class="px-6 py-16 text-center text-gray-500">No hay citas que coincidan con los filtros.</td></tr>{% endfor %}</tbody>
+        </table>
+    </div>
+    {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

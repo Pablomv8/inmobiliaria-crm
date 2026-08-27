@@ -3,6 +3,7 @@ from . import views
 from listings.views import create_listing_from_appointment
 
 urlpatterns = [
+    path("appointments/", views.appointment_list, name="appointment_list"),
     path("appointment/<int:news_id>/create/", views.create_appointment, name="create_appointment"),
     path("call/<int:news_id>/create/", views.create_call, name="create_call"),
     path(
