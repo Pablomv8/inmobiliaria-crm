@@ -21,6 +21,11 @@ urlpatterns = [
         views.create_order_sale_appointment,
         name="create_order_sale_appointment",
     ),
+    path(
+        "order/<int:order_id>/financial-advice/create/",
+        views.create_financial_advice_appointment,
+        name="create_financial_advice_appointment",
+    ),
     path("agenda/",views.agenda,name="agenda"),
     path(
         "",

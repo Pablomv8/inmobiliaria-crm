@@ -55,7 +55,7 @@
                             </div>
 
                             <p class="mt-1">
-                                {{ event.object.related_property }}
+                                {% if event.object.related_property %}{{ event.object.related_property }}{% elif event.object.appointment_type == "financial_advice" %}{{ event.object.financial_entity }} · {{ event.object.contact }}{% endif %}
                             </p>
 
                         {% endif %}

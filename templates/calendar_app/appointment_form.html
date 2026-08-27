@@ -19,7 +19,7 @@
             <div class="mb-6">
                 <p class="text-sm font-semibold text-indigo-700">1. Contexto de la cita</p>
                 <h2 class="mt-1 text-xl font-bold text-gray-900">Información relacionada</h2>
-                <p class="mt-2 text-sm text-gray-500">El tipo, contacto e inmueble se mantienen para conservar el flujo de trabajo.</p>
+                    <p class="mt-2 text-sm text-gray-500">El tipo y el contacto se mantienen para conservar el flujo de trabajo.</p>
             </div>
 
             <div class="grid gap-4 sm:grid-cols-3">
@@ -32,8 +32,8 @@
                     <p class="mt-2 font-semibold text-gray-900">{{ appointment.contact }}</p>
                 </div>
                 <div class="rounded-2xl bg-gray-50 p-4">
-                    <p class="text-xs font-medium uppercase tracking-wide text-gray-400">Inmueble</p>
-                    <p class="mt-2 font-semibold text-gray-900">{{ appointment.related_property }}</p>
+                    <p class="text-xs font-medium uppercase tracking-wide text-gray-400">{% if appointment.appointment_type == "financial_advice" %}Financiera{% else %}Inmueble{% endif %}</p>
+                    <p class="mt-2 font-semibold text-gray-900">{% if appointment.appointment_type == "financial_advice" %}{{ appointment.financial_entity }}{% else %}{{ appointment.related_property }}{% endif %}</p>
                 </div>
             </div>
         </section>
@@ -66,6 +66,7 @@
                     {{ form.end_time }}
                     {% if form.end_time.errors %}<p class="mt-1 text-sm text-red-600">{{ form.end_time.errors.0 }}</p>{% endif %}
                 </div>
+                {% if form.financial_entity %}<div class="md:col-span-2"><label for="{{ form.financial_entity.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Financiera</label>{{ form.financial_entity }}{% if form.financial_entity.errors %}<p class="mt-1 text-sm text-red-600">{{ form.financial_entity.errors.0 }}</p>{% endif %}</div>{% endif %}
                 <div class="md:col-span-2">
                     <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div>

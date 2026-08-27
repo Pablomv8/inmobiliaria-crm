@@ -166,6 +166,12 @@ def sync_order_status(order_id):
         status="scheduled",
     ).exists():
         status = "sale_appointment"
+    elif Appointment.objects.filter(
+        order_id=order_id,
+        appointment_type="financial_advice",
+        status="scheduled",
+    ).exists():
+        status = "financial_advice_appointment"
     else:
         status = "active"
 

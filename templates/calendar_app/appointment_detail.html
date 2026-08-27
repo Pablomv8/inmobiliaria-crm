@@ -79,6 +79,7 @@
                 </p>
             </div>
 
+            {% if appointment.related_property %}
             <div class="bg-gray-50 rounded-xl p-4 md:col-span-2">
                 <p class="text-gray-500 text-sm">Inmueble</p>
 
@@ -90,6 +91,15 @@
                 </a>
 
             </div>
+            {% endif %}
+
+            {% if appointment.appointment_type == "financial_advice" %}
+            <div class="rounded-xl bg-indigo-50 p-4 md:col-span-2">
+                <p class="text-sm text-indigo-600">Financiera</p>
+                <p class="font-semibold text-indigo-950">{{ appointment.financial_entity }}</p>
+                {% if appointment.mortgage_capacity is not None %}<p class="mt-2 text-sm text-indigo-800">Capacidad hipotecaria estimada: <strong>{{ appointment.mortgage_capacity }} €</strong></p>{% endif %}
+            </div>
+            {% endif %}
 
         </div>
 
@@ -130,7 +140,7 @@
 
             </div>
 
-            {% if appointment.status != "cancelled" and appointment.appointment_type == "acquisition" or appointment.status != "cancelled" and appointment.appointment_type == "follow_up" or appointment.status != "cancelled" and appointment.appointment_type == "sale" or appointment.status != "cancelled" and appointment.appointment_type == "proposal" or appointment.status != "cancelled" and appointment.appointment_type == "proposal_acceptance" or appointment.status != "cancelled" and appointment.appointment_type == "contract" or appointment.status != "cancelled" and appointment.appointment_type == "signing" %}
+            {% if appointment.status != "cancelled" and appointment.appointment_type == "acquisition" or appointment.status != "cancelled" and appointment.appointment_type == "follow_up" or appointment.status != "cancelled" and appointment.appointment_type == "sale" or appointment.status != "cancelled" and appointment.appointment_type == "proposal" or appointment.status != "cancelled" and appointment.appointment_type == "proposal_acceptance" or appointment.status != "cancelled" and appointment.appointment_type == "contract" or appointment.status != "cancelled" and appointment.appointment_type == "signing" or appointment.status != "cancelled" and appointment.appointment_type == "financial_advice" %}
                 <div class="mt-8 rounded-2xl border border-gray-200 bg-gray-50 p-6">
                     <div class="flex items-start justify-between gap-4 mb-4">
                         <div>
@@ -158,6 +168,14 @@
                         {{ result_form.result_comment }}
                         {% if result_form.result_comment.errors %}
                             <p class="text-sm text-red-600">{{ result_form.result_comment.errors.0 }}</p>
+                        {% endif %}
+                        {% if result_form.mortgage_capacity %}
+                            <div>
+                                <label for="{{ result_form.mortgage_capacity.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Capacidad hipotecaria estimada (€)</label>
+                                {{ result_form.mortgage_capacity }}
+                                <p class="mt-1 text-xs text-gray-500">Déjalo vacío si la financiera no ha concretado un importe.</p>
+                                {% if result_form.mortgage_capacity.errors %}<p class="mt-1 text-sm text-red-600">{{ result_form.mortgage_capacity.errors.0 }}</p>{% endif %}
+                            </div>
                         {% endif %}
                         <div class="flex justify-end">
                             <button type="submit"

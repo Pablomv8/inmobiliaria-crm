@@ -11,6 +11,7 @@ from .forms import (
     AppointmentForm,
     AppointmentResultForm,
     FollowUpDecisionForm,
+    FinancialAdviceAppointmentForm,
     CallForm,
     CallEditForm,
     CallCommentForm,
@@ -56,6 +57,7 @@ APPOINTMENT_CALENDAR_COLORS = {
     "proposal_acceptance": "#ec4899",
     "contract": "#f97316",
     "signing": "#e11d48",
+    "financial_advice": "#4f46e5",
 }
 
 
@@ -152,6 +154,7 @@ def appointment_list(request):
             | Q(related_property__street__icontains=search)
             | Q(related_property__number__icontains=search)
             | Q(related_property__city__icontains=search)
+            | Q(financial_entity__icontains=search)
             | Q(agent__username__icontains=search)
             | Q(agent__first_name__icontains=search)
             | Q(agent__last_name__icontains=search)
@@ -440,6 +443,48 @@ def create_order_sale_appointment(request, order_id):
         },
     )
 
+
+@login_required
+def create_financial_advice_appointment(request, order_id):
+    order = get_user_order_or_404(request.user, order_id)
+    if order.payment_type != "financing":
+        messages.error(
+            request,
+            "El asesoramiento financiero solo se programa para pedidos con financiación.",
+        )
+        return redirect("order_detail", pk=order.pk)
+
+    assigned_agent = order.agent or request.user
+    form = FinancialAdviceAppointmentForm(
+        request.POST or None,
+        user=assigned_agent,
+    )
+    if request.method == "POST" and form.is_valid():
+        appointment = form.save(commit=False)
+        appointment.appointment_type = "financial_advice"
+        appointment.order = order
+        appointment.contact = order.buyer
+        appointment.agent = assigned_agent
+        appointment.related_property = None
+        appointment.save()
+        messages.success(
+            request,
+            "Cita de asesoramiento financiero programada correctamente.",
+        )
+        return redirect("order_detail", pk=order.pk)
+
+    return render(
+        request,
+        "appointments/form.html",
+        {
+            "form": form,
+            "order": order,
+            "page_title": "Nueva cita de asesoramiento financiero",
+            "schedule_agent": assigned_agent,
+            "financial_advice": True,
+        },
+    )
+
 @login_required
 def appointment_detail(request, pk):
 
@@ -563,7 +608,10 @@ def add_appointment_result(request, pk):
     if form.is_valid():
         appointment = form.save(commit=False)
         appointment.status = "completed"
-        appointment.save(update_fields=["result_comment", "status"])
+        result_fields = ["result_comment", "status"]
+        if appointment.appointment_type == "financial_advice":
+            result_fields.append("mortgage_capacity")
+        appointment.save(update_fields=result_fields)
         if appointment.appointment_type == "acquisition":
             success_message = (
                 "Comentario guardado. Indica ahora si la cita tuvo éxito."
@@ -592,6 +640,10 @@ def add_appointment_result(request, pk):
             )
         elif appointment.appointment_type == "signing":
             success_message = "Comentario guardado y cita completada."
+        elif appointment.appointment_type == "financial_advice":
+            success_message = (
+                "Resultado financiero y capacidad hipotecaria guardados."
+            )
         else:
             success_message = "Comentario guardado y cita completada."
         messages.success(request, success_message)
@@ -1525,7 +1577,7 @@ def calendar_events(request):
             "id": f"appointment-{appointment.id}",
             "title": (
                 f"{title_prefix}📅 Cita de {appointment.get_appointment_type_display()}\n"
-                f"{appointment.related_property.full_address}\n"
+                f"{appointment.related_property.full_address if appointment.related_property else appointment.financial_entity or appointment.contact}\n"
                 f"👤 {user_display_name(appointment.agent)}"
             ),
             "start": (

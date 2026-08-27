@@ -13,6 +13,7 @@ class Order(models.Model):
 
     STATUS_CHOICES = [
         ("active", "Activo"),
+        ("financial_advice_appointment", "Asesoramiento financiero programado"),
         ("sale_appointment", "Cita de venta programada"),
         ("proposal_appointment", "Cita de propuesta programada"),
         ("proposal", "Propuesta realizada"),

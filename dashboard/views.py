@@ -523,6 +523,7 @@ def build_appointment_outcomes(appointments, days=90):
         ("Propuesta", ["proposal"]),
         ("Aceptación", ["proposal_acceptance"]),
         ("Contrato/firma", ["contract", "signing"]),
+        ("Asesoramiento financiero", ["financial_advice"]),
     ]
     data = {
         "labels": [],

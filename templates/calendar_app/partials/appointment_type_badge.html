@@ -7,6 +7,7 @@
     {% elif appointment_type == 'proposal_acceptance' %}bg-pink-100 text-pink-800
     {% elif appointment_type == 'contract' %}bg-orange-100 text-orange-800
     {% elif appointment_type == 'signing' %}bg-rose-100 text-rose-800
+    {% elif appointment_type == 'financial_advice' %}bg-indigo-100 text-indigo-800
     {% else %}bg-gray-100 text-gray-700{% endif %}">
     <span class="mr-1.5 h-2 w-2 rounded-full
         {% if appointment_type == 'acquisition' %}bg-sky-500
@@ -17,6 +18,7 @@
         {% elif appointment_type == 'proposal_acceptance' %}bg-pink-500
         {% elif appointment_type == 'contract' %}bg-orange-500
         {% elif appointment_type == 'signing' %}bg-rose-500
+        {% elif appointment_type == 'financial_advice' %}bg-indigo-500
         {% else %}bg-gray-400{% endif %}"></span>
     {{ label }}
 </span>

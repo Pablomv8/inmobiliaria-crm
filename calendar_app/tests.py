@@ -705,6 +705,125 @@ class SaleAppointmentFlowTests(TestCase):
         )
         return response, Appointment.objects.get()
 
+    def test_financing_order_can_schedule_financial_advice(self):
+        response = self.client.post(
+            reverse(
+                "create_financial_advice_appointment",
+                args=[self.order.pk],
+            ),
+            {
+                "financial_entity": "Financiera Sierra",
+                "date": "2026-08-21",
+                "time": "09:00",
+                "end_time": "10:00",
+                "notes": "Estudiar capacidad hipotecaria.",
+            },
+        )
+
+        appointment = Appointment.objects.get(appointment_type="financial_advice")
+        self.assertRedirects(response, reverse("order_detail", args=[self.order.pk]))
+        self.assertEqual(appointment.order, self.order)
+        self.assertEqual(appointment.contact, self.buyer)
+        self.assertEqual(appointment.agent, self.agent)
+        self.assertIsNone(appointment.related_property)
+        self.assertEqual(appointment.financial_entity, "Financiera Sierra")
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, "financial_advice_appointment")
+
+        detail_response = self.client.get(reverse("order_detail", args=[self.order.pk]))
+        self.assertContains(detail_response, "Asesoramiento financiero")
+        self.assertContains(detail_response, "Financiera Sierra")
+
+        appointment_response = self.client.get(
+            reverse("appointment_detail", args=[appointment.pk])
+        )
+        self.assertContains(appointment_response, "Financiera Sierra")
+        self.assertContains(appointment_response, "Cancelar cita")
+
+    def test_financial_advice_respects_agent_schedule(self):
+        Appointment.objects.create(
+            related_property=self.property,
+            contact=self.buyer,
+            agent=self.agent,
+            appointment_type="valuation",
+            date=date(2026, 8, 21),
+            time=time(9, 30),
+            end_time=time(10, 30),
+        )
+
+        response = self.client.post(
+            reverse(
+                "create_financial_advice_appointment",
+                args=[self.order.pk],
+            ),
+            {
+                "financial_entity": "Financiera Sierra",
+                "date": "2026-08-21",
+                "time": "09:00",
+                "end_time": "10:00",
+                "notes": "",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "se solapa con ese intervalo")
+        self.assertFalse(
+            Appointment.objects.filter(appointment_type="financial_advice").exists()
+        )
+
+    def test_cash_order_cannot_schedule_financial_advice(self):
+        self.order.payment_type = "cash"
+        self.order.save(update_fields=["payment_type"])
+
+        response = self.client.get(
+            reverse(
+                "create_financial_advice_appointment",
+                args=[self.order.pk],
+            )
+        )
+
+        self.assertRedirects(response, reverse("order_detail", args=[self.order.pk]))
+        self.assertFalse(
+            Appointment.objects.filter(appointment_type="financial_advice").exists()
+        )
+
+    def test_financial_result_stores_mortgage_capacity_and_reopens_order(self):
+        appointment = Appointment.objects.create(
+            contact=self.buyer,
+            agent=self.agent,
+            appointment_type="financial_advice",
+            date=date(2026, 8, 21),
+            time=time(9, 0),
+            end_time=time(10, 0),
+            order=self.order,
+            financial_entity="Financiera Sierra",
+        )
+
+        response = self.client.post(
+            reverse("appointment_add_result", args=[appointment.pk]),
+            {
+                "result_comment": "La operación es viable.",
+                "mortgage_capacity": "215000.00",
+            },
+            follow=True,
+        )
+
+        appointment.refresh_from_db()
+        self.order.refresh_from_db()
+        self.assertEqual(appointment.status, "completed")
+        self.assertEqual(str(appointment.mortgage_capacity), "215000.00")
+        self.assertEqual(self.order.status, "active")
+        self.assertContains(response, "Capacidad hipotecaria estimada")
+
+        calendar_response = self.client.get(reverse("calendar_events"))
+        event = next(
+            item
+            for item in calendar_response.json()
+            if item["id"] == f"appointment-{appointment.pk}"
+        )
+        self.assertIn("Financiera Sierra", event["title"])
+        self.assertEqual(event["color"], "#4f46e5")
+
     def create_registered_proposal(self):
         proposal_meeting = Appointment.objects.create(
             related_property=self.property,
@@ -1683,6 +1802,7 @@ class AvailableSlotsTests(TestCase):
                 "08:30",
                 "09:00",
                 "09:30",
+                "10:00",
             ],
         )
         self.assertEqual(

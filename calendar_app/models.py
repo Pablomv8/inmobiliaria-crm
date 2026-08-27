@@ -24,6 +24,7 @@ class Appointment(models.Model):
         ("proposal", "Propuesta"),
         ("proposal_acceptance", "Aceptación de propuesta"),
         ("contract", "Contrato"),
+        ("financial_advice", "Asesoramiento financiero"),
     ]
 
     STATUS_CHOICES = [
@@ -40,7 +41,9 @@ class Appointment(models.Model):
 
     related_property = models.ForeignKey(
         Property,
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
     )
 
     contact = models.ForeignKey(
@@ -80,6 +83,20 @@ class Appointment(models.Model):
         null=True,
         blank=True,
         verbose_name="Cita con éxito",
+    )
+
+    financial_entity = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name="Financiera",
+    )
+
+    mortgage_capacity = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Capacidad hipotecaria estimada (€)",
     )
 
     follow_up_action = models.CharField(

@@ -45,7 +45,7 @@ class AppointmentResultForm(forms.ModelForm):
 
     class Meta:
         model = Appointment
-        fields = ["result_comment"]
+        fields = ["result_comment", "mortgage_capacity"]
         widgets = {
             "result_comment": forms.Textarea(attrs={
                 "class": "w-full border border-gray-300 rounded-xl p-3 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 focus:outline-none",
@@ -53,7 +53,21 @@ class AppointmentResultForm(forms.ModelForm):
                 "maxlength": 1000,
                 "placeholder": "Resume el resultado de la cita...",
             }),
+            "mortgage_capacity": forms.NumberInput(attrs={
+                "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 focus:outline-none",
+                "min": "0",
+                "step": "0.01",
+                "placeholder": "Ej: 180000,00",
+            }),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.appointment_type != "financial_advice":
+            self.fields.pop("mortgage_capacity")
+        else:
+            self.fields["mortgage_capacity"].required = False
+            self.fields["mortgage_capacity"].min_value = Decimal("0")
 
     def clean_result_comment(self):
         comment = self.cleaned_data["result_comment"].strip()
@@ -151,12 +165,13 @@ class FollowUpDecisionForm(forms.Form):
 class AppointmentEditForm(forms.ModelForm):
     class Meta:
         model = Appointment
-        fields = ["agent", "date", "time", "end_time", "notes"]
+        fields = ["agent", "date", "time", "end_time", "financial_entity", "notes"]
         labels = {
             "agent": "Agente asignado",
             "date": "Fecha",
             "time": "Hora",
             "end_time": "Hora de fin",
+            "financial_entity": "Financiera",
             "notes": "Notas",
         }
         widgets = {
@@ -177,6 +192,10 @@ class AppointmentEditForm(forms.ModelForm):
                 "step": "1800",
                 "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100",
             }),
+            "financial_entity": forms.TextInput(attrs={
+                "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100",
+                "placeholder": "Nombre de la entidad financiera",
+            }),
             "notes": forms.Textarea(attrs={
                 "rows": 4,
                 "placeholder": "Indicaciones o información relevante para la cita...",
@@ -188,6 +207,10 @@ class AppointmentEditForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["agent"].queryset = assignable_agents(self.instance.agent)
         self.fields["agent"].empty_label = None
+        if self.instance.appointment_type != "financial_advice":
+            self.fields.pop("financial_entity")
+        else:
+            self.fields["financial_entity"].required = True
 
     def clean(self):
         cleaned_data = super().clean()
@@ -324,6 +347,21 @@ class AppointmentForm(forms.ModelForm):
             )
 
         return cleaned_data
+
+class FinancialAdviceAppointmentForm(AppointmentForm):
+    class Meta(AppointmentForm.Meta):
+        fields = ["date", "time", "end_time", "financial_entity", "notes"]
+        widgets = AppointmentForm.Meta.widgets | {
+            "financial_entity": forms.TextInput(attrs={
+                "class": "w-full border rounded-lg p-2",
+                "placeholder": "Ej: CaixaBank, Unicaja, intermediario financiero...",
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["financial_entity"].required = True
+
 
 class CallForm(forms.ModelForm):
 
