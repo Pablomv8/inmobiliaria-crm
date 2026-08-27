@@ -447,13 +447,6 @@ def create_order_sale_appointment(request, order_id):
 @login_required
 def create_financial_advice_appointment(request, order_id):
     order = get_user_order_or_404(request.user, order_id)
-    if order.payment_type != "financing":
-        messages.error(
-            request,
-            "El asesoramiento financiero solo se programa para pedidos con financiación.",
-        )
-        return redirect("order_detail", pk=order.pk)
-
     assigned_agent = order.agent or request.user
     form = FinancialAdviceAppointmentForm(
         request.POST or None,

@@ -771,19 +771,34 @@ class SaleAppointmentFlowTests(TestCase):
             Appointment.objects.filter(appointment_type="financial_advice").exists()
         )
 
-    def test_cash_order_cannot_schedule_financial_advice(self):
+    def test_cash_order_can_also_schedule_financial_advice(self):
         self.order.payment_type = "cash"
         self.order.save(update_fields=["payment_type"])
 
-        response = self.client.get(
+        detail_response = self.client.get(
+            reverse("order_detail", args=[self.order.pk])
+        )
+        self.assertContains(
+            detail_response,
+            reverse("create_financial_advice_appointment", args=[self.order.pk]),
+        )
+
+        response = self.client.post(
             reverse(
                 "create_financial_advice_appointment",
                 args=[self.order.pk],
-            )
+            ),
+            {
+                "financial_entity": "Financiera Sierra",
+                "date": "2026-08-21",
+                "time": "09:00",
+                "end_time": "10:00",
+                "notes": "Valorar si cambia a financiación.",
+            },
         )
 
         self.assertRedirects(response, reverse("order_detail", args=[self.order.pk]))
-        self.assertFalse(
+        self.assertTrue(
             Appointment.objects.filter(appointment_type="financial_advice").exists()
         )
 
