@@ -27,3 +27,8 @@ theme/static_src/node_modules/
 
 # Logs
 *.log
+logs/
+
+# Backups and local secrets
+backups/
+*.zip.tmp

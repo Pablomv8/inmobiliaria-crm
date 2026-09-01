@@ -40,6 +40,9 @@ class Activity(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "created_at"], name="activity_user_created"),
+        ]
 
     def __str__(self):
         return self.description

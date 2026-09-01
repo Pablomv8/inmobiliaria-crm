@@ -66,6 +66,19 @@ class Goal(models.Model):
         ordering = ["-start_date", "-created_at"]
         verbose_name = "Objetivo"
         verbose_name_plural = "Objetivos"
+        indexes = [
+            models.Index(fields=["start_date", "end_date", "metric"], name="goal_period_metric"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(end_date__gte=models.F("start_date")),
+                name="goal_end_after_start",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(target_count__gt=0),
+                name="goal_positive_target",
+            ),
+        ]
 
     def clean(self):
         super().clean()

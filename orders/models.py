@@ -95,6 +95,15 @@ class Order(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["agent", "status", "updated_at"], name="order_agent_status_updated"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(max_price__gt=0),
+                name="order_positive_max_price",
+            ),
+        ]
 
     def __str__(self):
         return (

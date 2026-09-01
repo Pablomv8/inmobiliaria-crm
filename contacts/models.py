@@ -137,6 +137,11 @@ class Contact(models.Model):
     )
 
     class Meta:
+        indexes = [
+            models.Index(fields=["assigned_agent", "is_archived"], name="contact_agent_archived"),
+            models.Index(fields=["identification_number"], name="contact_identity_idx"),
+            models.Index(fields=["phone"], name="contact_phone_idx"),
+        ]
         constraints = [
             models.CheckConstraint(
                 condition=models.Q(is_owner=True) | models.Q(is_buyer=True),

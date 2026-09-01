@@ -59,6 +59,17 @@ class News(models.Model):
         auto_now_add=True
     )
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["agent", "status", "created_at"], name="news_agent_status_created"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(client_price__gt=0) & models.Q(estimated_price__gt=0),
+                name="news_positive_prices",
+            ),
+        ]
+
     @property
     def price_difference(self):
 

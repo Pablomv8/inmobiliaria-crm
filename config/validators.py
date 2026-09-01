@@ -1,11 +1,15 @@
 import re
 
 from django.core.exceptions import ValidationError
+from PIL import Image, UnidentifiedImageError
 
 
 DNI_LETTERS = "TRWAGMYFPDXBNJZSQVHLCKE"
 DOCUMENT_SEPARATORS = re.compile(r"[\s-]+")
 PHONE_SEPARATORS = re.compile(r"[\s().-]+")
+MAX_PROPERTY_IMAGE_BYTES = 8 * 1024 * 1024
+MAX_PROPERTY_IMAGE_PIXELS = 40_000_000
+ALLOWED_PROPERTY_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
 
 
 def normalize_identity_document(value):
@@ -96,3 +100,34 @@ def validate_spanish_postal_code(value):
             "Introduce un código postal español válido de 5 cifras.",
             code="invalid_postal_code",
         )
+
+
+def validate_property_image(upload):
+    if upload.size > MAX_PROPERTY_IMAGE_BYTES:
+        raise ValidationError(
+            "La imagen no puede superar los 8 MB.",
+            code="image_too_large",
+        )
+    initial_position = upload.tell()
+    try:
+        image = Image.open(upload)
+        image.verify()
+        upload.seek(initial_position)
+        image = Image.open(upload)
+        if image.format not in ALLOWED_PROPERTY_IMAGE_FORMATS:
+            raise ValidationError(
+                "Utiliza una imagen JPEG, PNG o WEBP.",
+                code="invalid_image_format",
+            )
+        if image.width * image.height > MAX_PROPERTY_IMAGE_PIXELS:
+            raise ValidationError(
+                "La resolución de la imagen es demasiado grande.",
+                code="image_dimensions_too_large",
+            )
+    except (UnidentifiedImageError, OSError, ValueError) as exc:
+        raise ValidationError(
+            "El archivo no contiene una imagen válida.",
+            code="invalid_image",
+        ) from exc
+    finally:
+        upload.seek(initial_position)

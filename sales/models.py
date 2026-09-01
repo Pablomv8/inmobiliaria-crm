@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 
 from properties.models import Property
 from contacts.models import Contact
@@ -146,62 +146,78 @@ class Sale(models.Model):
         auto_now_add=True
     )
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["agent", "status", "sale_date"], name="sale_agent_status_date"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(sale_price__gt=0)
+                    & models.Q(commission_amount__gte=0)
+                    & models.Q(seller_commission__gte=0)
+                    & models.Q(buyer_commission__gte=0)
+                    & models.Q(deposit_amount__gte=0)
+                    & models.Q(earnest_money_amount__gte=0)
+                ),
+                name="sale_valid_amounts",
+            ),
+        ]
+
     def __str__(self):
         return f"Venta de {self.related_property.full_address}"
 
     def save(self, *args, **kwargs):
-
         is_new = self.pk is None
-
         old_status = None
-
-        if not is_new:
-            previous = Sale.objects.get(pk=self.pk)
-            old_status = previous.status
-            immutable_fields = (
-                "related_property_id",
-                "buyer_id",
-                "sale_price",
-                "commission_amount",
-                "seller_commission",
-                "buyer_commission",
-                "deposit_amount",
-                "earnest_money_amount",
-                "sale_date",
-                "listing_id",
-                "order_id",
-                "proposal_id",
-                "source_contract_appointment_id",
-                "former_owner_id",
-                "contract_reference",
-                "status",
-                "notes",
-            )
-            if previous.status == "signed" and any(
-                getattr(previous, field) != getattr(self, field)
-                for field in immutable_fields
-            ):
-                raise ValidationError(
-                    "Una compraventa firmada no se modifica directamente; "
-                    "debe registrarse una corrección auditada."
+        with transaction.atomic():
+            if not is_new:
+                previous = Sale.objects.select_for_update().get(pk=self.pk)
+                old_status = previous.status
+                immutable_fields = (
+                    "related_property_id",
+                    "buyer_id",
+                    "sale_price",
+                    "commission_amount",
+                    "seller_commission",
+                    "buyer_commission",
+                    "deposit_amount",
+                    "earnest_money_amount",
+                    "sale_date",
+                    "listing_id",
+                    "order_id",
+                    "proposal_id",
+                    "source_contract_appointment_id",
+                    "former_owner_id",
+                    "contract_reference",
+                    "status",
+                    "notes",
                 )
+                if previous.status == "signed" and any(
+                    getattr(previous, field) != getattr(self, field)
+                    for field in immutable_fields
+                ):
+                    raise ValidationError(
+                        "Una compraventa firmada no se modifica directamente; "
+                        "debe registrarse una corrección auditada."
+                    )
 
-        super().save(*args, **kwargs)
-
-        # SOLO reaccionar si cambia estado o es nueva
-        if is_new or old_status != self.status:
-
-            if self.status == "signed":
-                self.buyer.status = "closed"
-                self.buyer.save()
-
-            self.related_property.sync_status()
+            result = super().save(*args, **kwargs)
+            if is_new or old_status != self.status:
+                property_obj = Property.objects.select_for_update().get(
+                    pk=self.related_property_id
+                )
+                property_obj.sync_status()
+            return result
 
     def delete(self, *args, **kwargs):
-        property_obj = self.related_property
-        result = super().delete(*args, **kwargs)
-        property_obj.sync_status()
-        return result
+        with transaction.atomic():
+            property_obj = Property.objects.select_for_update().get(
+                pk=self.related_property_id
+            )
+            result = super().delete(*args, **kwargs)
+            property_obj.sync_status()
+            return result
 
 
 class SaleCorrection(models.Model):
@@ -346,6 +362,26 @@ class RentalContract(models.Model):
         ordering = ["-contract_date", "-created_at"]
         verbose_name = "Contrato de alquiler"
         verbose_name_plural = "Contratos de alquiler"
+        indexes = [
+            models.Index(fields=["agent", "status", "contract_date"], name="rental_agent_status_date"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(end_date__isnull=True)
+                | models.Q(end_date__gte=models.F("start_date")),
+                name="rental_end_after_start",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(rent_price__gt=0)
+                    & models.Q(deposit_amount__gte=0)
+                    & models.Q(owner_commission__gte=0)
+                    & models.Q(tenant_commission__gte=0)
+                    & models.Q(earnest_money_amount__gte=0)
+                ),
+                name="rental_valid_amounts",
+            ),
+        ]
 
     @property
     def commission_amount(self):

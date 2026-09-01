@@ -13,6 +13,7 @@ from django.contrib import messages
 from django.apps import apps
 from django.views.decorators.http import require_GET, require_POST
 from django.http import JsonResponse
+from django.http import FileResponse, Http404
 from django.urls import reverse
 from django.utils import timezone
 from config.pagination import paginate
@@ -24,6 +25,7 @@ from users.permissions import (
     scope_to_user,
 )
 from news.models import News
+import mimetypes
 
 
 from django.db.models import Q
@@ -234,6 +236,24 @@ def property_detail(request, pk):
         'timeline': build_property_timeline(property, request.user),
         'news_items': news_items,
     })
+
+
+@login_required
+@require_GET
+def property_image(request, pk):
+    property_obj = get_object_or_404(Property, pk=pk)
+    if not property_obj.image:
+        raise Http404("El inmueble no tiene imagen.")
+    try:
+        image_file = property_obj.image.open("rb")
+    except (FileNotFoundError, OSError):
+        raise Http404("La imagen ya no está disponible.")
+    content_type = mimetypes.guess_type(property_obj.image.name)[0] or "application/octet-stream"
+    response = FileResponse(image_file, content_type=content_type)
+    response["Content-Disposition"] = f'inline; filename="inmueble-{property_obj.pk}"'
+    response["Cache-Control"] = "private, max-age=3600"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 

@@ -16,11 +16,17 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.conf import settings
-from django.conf.urls.static import static
+from config.health import live, ready
+
+handler400 = "config.error_views.bad_request"
+handler403 = "config.error_views.permission_denied"
+handler404 = "config.error_views.page_not_found"
+handler500 = "config.error_views.server_error"
 from .comment_views import comment_edit, comment_hide
 
 urlpatterns = [
+    path("health/live/", live, name="health_live"),
+    path("health/ready/", ready, name="health_ready"),
     path('admin/', admin.site.urls),
     path('', include('dashboard.urls')),
     path('contacts/', include('contacts.urls')),
@@ -38,8 +44,3 @@ urlpatterns = [
     path("comments/<str:kind>/<int:pk>/edit/", comment_edit, name="comment_edit"),
     path("comments/<str:kind>/<int:pk>/hide/", comment_hide, name="comment_hide"),
 ]
-
-urlpatterns += static(
-    settings.MEDIA_URL,
-    document_root=settings.MEDIA_ROOT
-)

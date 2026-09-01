@@ -40,6 +40,10 @@
 
         </div>
 
+        {% if property.image %}
+            <img src="{% url 'property_image' property.pk %}" alt="Imagen de {{ property.full_address }}" class="max-h-96 w-full rounded-2xl bg-gray-100 object-cover" loading="lazy">
+        {% endif %}
+
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
 
             <!-- Zona -->

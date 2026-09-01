@@ -128,6 +128,28 @@ class Listing(models.Model):
         auto_now_add=True
     )
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["agent", "status", "end_date"], name="listing_agent_status_end"),
+            models.Index(fields=["status", "workflow_status"], name="listing_status_workflow"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(end_date__isnull=True)
+                | models.Q(end_date__gte=models.F("start_date")),
+                name="listing_end_after_start",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(owner_price__gte=0)
+                    & models.Q(agency_price__gte=0)
+                    & models.Q(agreed_price__gt=0)
+                    & (models.Q(commission_amount__isnull=True) | models.Q(commission_amount__gte=0))
+                ),
+                name="listing_valid_amounts",
+            ),
+        ]
+
     def __str__(self):
         return f"{self.property} - {self.get_listing_type_display()}"
 

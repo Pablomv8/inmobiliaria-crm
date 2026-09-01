@@ -13,6 +13,7 @@ from .views import (
     property_geocode,
     property_address_suggestions,
     property_map,
+    property_image,
 )
 
 urlpatterns = [
@@ -30,6 +31,8 @@ urlpatterns = [
     ),
 
     path('map/', property_map, name='property_map'),
+
+    path('<int:pk>/image/', property_image, name='property_image'),
 
     path('<int:pk>/', property_detail, name='property_detail'),
 

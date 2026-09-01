@@ -10,7 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+from .environment import database_from_url, env_bool, env_list
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,12 +23,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-sw5rc5lnmv3pi^ndzw_ixd*mozvv!29c5s3uhfp^lj*a-6&m0#'
+SECRET_KEY = os.getenv(
+    "DJANGO_SECRET_KEY",
+    "development-only-secret-key-change-before-production",
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env_bool("DJANGO_DEBUG", True)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,[::1]")
 
 AUTH_USER_MODEL = 'users.User'
 # Application definition
@@ -40,6 +46,7 @@ INSTALLED_APPS = [
     'tailwind',
     'theme',
     'webpack_boilerplate',
+    'dashboard',
     'contacts',
     'properties',
     'users',
@@ -59,6 +66,7 @@ TAILWIND_APP_NAME = 'theme'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'config.middleware.RequestIdMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -91,11 +99,16 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    "default": (
+        database_from_url(DATABASE_URL, BASE_DIR)
+        if DATABASE_URL
+        else {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    )
 }
 
 
@@ -123,7 +136,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Madrid'
 
 USE_I18N = True
 
@@ -138,9 +151,70 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
     BASE_DIR / 'node_modules' / 'leaflet' / 'dist',
 ]
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+BACKUP_ROOT = Path(os.getenv("CRM_BACKUP_ROOT", BASE_DIR / "backups"))
+BACKUP_MAX_ARCHIVE_BYTES = int(os.getenv("CRM_BACKUP_MAX_ARCHIVE_BYTES", 5 * 1024**3))
+BACKUP_MAX_UNCOMPRESSED_BYTES = int(
+    os.getenv("CRM_BACKUP_MAX_UNCOMPRESSED_BYTES", 10 * 1024**3)
+)
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("CRM_MAX_REQUEST_BYTES", 12 * 1024**2))
+FILE_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("CRM_MAX_FILE_MEMORY_BYTES", 5 * 1024**2))
+
+EMAIL_BACKEND = os.getenv(
+    "DJANGO_EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend",
+)
+DEFAULT_FROM_EMAIL = os.getenv("DJANGO_DEFAULT_FROM_EMAIL", "crm@localhost")
+SERVER_EMAIL = os.getenv("DJANGO_SERVER_EMAIL", DEFAULT_FROM_EMAIL)
+
+LOG_LEVEL = os.getenv("DJANGO_LOG_LEVEL", "INFO")
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{asctime} {levelname} {name} request_id={request_id} {message}",
+            "style": "{",
+        },
+    },
+    "filters": {
+        "request_id": {"()": "config.logging.RequestIdFilter"},
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+            "filters": ["request_id"],
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "crm": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "crm.security": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+    },
+}
 
 
 LOGIN_URL = 'login'

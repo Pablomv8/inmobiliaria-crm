@@ -211,6 +211,18 @@ class Appointment(models.Model):
                 "end_time": "La hora de fin debe ser posterior a la hora de inicio.",
             })
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["agent", "status", "date"], name="appt_agent_status_date"),
+            models.Index(fields=["status", "date"], name="appt_status_date"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(end_time__gt=models.F("time")),
+                name="appointment_end_after_start",
+            ),
+        ]
+
     def __str__(self):
         return (
             f"{self.get_appointment_type_display()} "
@@ -269,6 +281,12 @@ class Call(models.Model):
         blank=True,
         related_name="calls",
     )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["agent", "status", "date"], name="call_agent_status_date"),
+            models.Index(fields=["status", "date"], name="call_status_date"),
+        ]
 
     def __str__(self):
         return (
@@ -364,6 +382,23 @@ class ProposalAppointment(models.Model):
     class Meta:
         verbose_name = "Propuesta de compra"
         verbose_name_plural = "Propuestas de compra"
+        indexes = [
+            models.Index(fields=["agent", "status", "end_date"], name="proposal_agent_status_end"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(end_date__gte=models.F("proposal_date")),
+                name="proposal_end_after_start",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(listing_price__gt=0)
+                    & models.Q(offered_price__gt=0)
+                    & models.Q(deposit_amount__gte=0)
+                ),
+                name="proposal_valid_amounts",
+            ),
+        ]
 
     def __str__(self):
         return f"Propuesta de {self.buyer} para {self.listing.property}"
@@ -418,6 +453,12 @@ class CounterOffer(models.Model):
         ordering = ["-counteroffer_date", "-created_at"]
         verbose_name = "Contraoferta"
         verbose_name_plural = "Contraofertas"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(owner_price__gt=0),
+                name="counteroffer_positive_price",
+            ),
+        ]
 
     def __str__(self):
         return f"Contraoferta de {self.owner_price} €"

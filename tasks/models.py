@@ -172,6 +172,12 @@ class Task(models.Model):
         blank=True
     )
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["assigned_to", "status", "due_date"], name="task_agent_status_due"),
+            models.Index(fields=["assigned_to", "status", "schedule_date"], name="task_agent_status_sched"),
+        ]
+
     def __str__(self):
         return self.title
 

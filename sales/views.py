@@ -28,6 +28,7 @@ from users.forms import AgentReassignmentForm
 from users.permissions import can_manage_assignments, scope_to_user
 from config.pagination import paginate
 from calendar_app.models import Appointment
+from properties.models import Property
 
 
 @login_required
@@ -236,11 +237,22 @@ def create_closing_from_contract(request, appointment_id):
             locked_appointment = Appointment.objects.select_for_update().get(
                 pk=appointment.pk
             )
+            existing_sale = Sale.objects.filter(
+                source_contract_appointment=locked_appointment,
+            ).first()
+            if existing_sale:
+                return redirect("sale_detail", pk=existing_sale.pk)
+            existing_rental = RentalContract.objects.filter(
+                source_contract_appointment=locked_appointment,
+            ).first()
+            if existing_rental:
+                return redirect("rental_contract_detail", pk=existing_rental.pk)
             locked_listing = listing.__class__.objects.select_for_update().select_related(
-                "property",
                 "owner",
             ).get(pk=listing.pk)
-            property_obj = locked_listing.property
+            property_obj = Property.objects.select_for_update().get(
+                pk=locked_listing.property_id
+            )
             owner = locked_listing.owner
             agent = locked_appointment.agent or request.user
 

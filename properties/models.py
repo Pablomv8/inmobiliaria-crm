@@ -2,9 +2,19 @@ from django.db import models
 from django.db.models import Max
 from django.utils import timezone
 from django.conf import settings
+from pathlib import Path
+from uuid import uuid4
 
 from datetime import timedelta
 from config.comment_audit import AuditedComment
+from config.validators import validate_property_image
+
+
+def property_image_upload_to(instance, filename):
+    extension = Path(filename).suffix.lower()
+    if extension not in {".jpg", ".jpeg", ".png", ".webp"}:
+        extension = ".img"
+    return f"properties/{uuid4().hex}{extension}"
 
 
 class Zone(models.Model):
@@ -110,9 +120,10 @@ class Property(models.Model):
     )
 
     image = models.ImageField(
-        upload_to='properties/',
+        upload_to=property_image_upload_to,
         blank=True,
-        null=True
+        null=True,
+        validators=[validate_property_image],
     )
 
     description = models.TextField(blank=True)
@@ -198,6 +209,33 @@ class Property(models.Model):
         blank=True,
         help_text="Superficie construida en m²",
     )
+
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=["assigned_agent", "is_archived", "status"],
+                name="property_agent_archive_status",
+            ),
+            models.Index(fields=["status", "created_at"], name="property_status_created"),
+            models.Index(fields=["city", "street", "number"], name="property_address_idx"),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(latitude__isnull=True)
+                | (models.Q(latitude__gte=-90) & models.Q(latitude__lte=90)),
+                name="property_valid_latitude",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(longitude__isnull=True)
+                | (models.Q(longitude__gte=-180) & models.Q(longitude__lte=180)),
+                name="property_valid_longitude",
+            ),
+            models.CheckConstraint(
+                condition=(models.Q(latitude__isnull=True) & models.Q(longitude__isnull=True))
+                | (models.Q(latitude__isnull=False) & models.Q(longitude__isnull=False)),
+                name="property_complete_coordinates",
+            ),
+        ]
 
     def calculate_status(self):
         if self.pk:

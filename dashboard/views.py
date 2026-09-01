@@ -304,11 +304,13 @@ def build_economic_summary(sales, rentals, *, user=None):
     sale_totals = signed_sales.aggregate(
         volume=Sum("sale_price"),
         commission=Sum("commission_amount"),
+        count=Count("id"),
     )
     rental_totals = signed_rentals.aggregate(
         monthly_rent=Sum("rent_price"),
         owner_commission=Sum("owner_commission"),
         tenant_commission=Sum("tenant_commission"),
+        count=Count("id"),
     )
     sale_commission = sale_totals["commission"] or 0
     rental_commission = (
@@ -317,9 +319,9 @@ def build_economic_summary(sales, rentals, *, user=None):
     )
     agent_query = f"?agent={user.pk}" if user is not None else ""
     return {
-        "closed_operations": signed_sales.count() + signed_rentals.count(),
-        "signed_sales": signed_sales.count(),
-        "signed_rentals": signed_rentals.count(),
+        "closed_operations": sale_totals["count"] + rental_totals["count"],
+        "signed_sales": sale_totals["count"],
+        "signed_rentals": rental_totals["count"],
         "sale_volume": sale_totals["volume"] or 0,
         "monthly_rent": rental_totals["monthly_rent"] or 0,
         "commission": sale_commission + rental_commission,
@@ -593,7 +595,6 @@ def build_opportunity_aging(news, listings, orders):
 
 def build_appointment_outcomes(appointments, days=90):
     start_date = timezone.localdate() - timedelta(days=days - 1)
-    appointments = appointments.filter(date__gte=start_date)
     groups = [
         ("Adquisición", ["acquisition"]),
         ("Venta", ["sale"]),
@@ -603,6 +604,42 @@ def build_appointment_outcomes(appointments, days=90):
         ("Contrato/firma", ["contract", "signing"]),
         ("Asesoramiento financiero", ["financial_advice"]),
     ]
+    type_to_label = {
+        appointment_type: label
+        for label, appointment_types in groups
+        for appointment_type in appointment_types
+    }
+    totals = {
+        label: {
+            "successful": 0,
+            "unsuccessful": 0,
+            "without_result": 0,
+            "cancelled": 0,
+        }
+        for label, _ in groups
+    }
+    rows = appointments.filter(
+        date__gte=start_date,
+        appointment_type__in=type_to_label,
+    ).values(
+        "appointment_type",
+        "status",
+        "result_success",
+    ).annotate(total=Count("id"))
+    for row in rows:
+        label = type_to_label[row["appointment_type"]]
+        if row["status"] == "cancelled":
+            bucket = "cancelled"
+        elif row["status"] != "completed":
+            continue
+        elif row["result_success"] is True:
+            bucket = "successful"
+        elif row["result_success"] is False:
+            bucket = "unsuccessful"
+        else:
+            bucket = "without_result"
+        totals[label][bucket] += row["total"]
+
     data = {
         "labels": [],
         "successful": [],
@@ -611,15 +648,11 @@ def build_appointment_outcomes(appointments, days=90):
         "cancelled": [],
         "period_days": days,
     }
-    for label, appointment_types in groups:
-        group = appointments.filter(appointment_type__in=appointment_types)
-        successful = group.filter(status="completed", result_success=True).count()
-        unsuccessful = group.filter(status="completed", result_success=False).count()
-        without_result = group.filter(
-            status="completed",
-            result_success__isnull=True,
-        ).count()
-        cancelled = group.filter(status="cancelled").count()
+    for label, _ in groups:
+        successful = totals[label]["successful"]
+        unsuccessful = totals[label]["unsuccessful"]
+        without_result = totals[label]["without_result"]
+        cancelled = totals[label]["cancelled"]
         if successful + unsuccessful + without_result + cancelled == 0:
             continue
         data["labels"].append(label)
@@ -974,12 +1007,9 @@ def dashboard(request):
         tasks=personal_tasks,
         properties=personal_properties,
     )
-
-    signed_sales = personal_sales.filter(status="signed")
-    personal_revenue = signed_sales.aggregate(total=Sum("sale_price"))["total"] or 0
-    personal_commission = (
-        signed_sales.aggregate(total=Sum("commission_amount"))["total"] or 0
-    )
+    personal_action_counts = {
+        item["label"]: item["count"] for item in personal_action_items
+    }
 
     upcoming_appointments = list(
         personal_appointments.filter(
@@ -1009,26 +1039,10 @@ def dashboard(request):
         .select_related("contact", "zone")
         .order_by("due_date")[:6]
     )
-    acquisition_decisions = personal_appointments.filter(
-        appointment_type="acquisition",
-        status="completed",
-        result_success__isnull=True,
-    ).count()
-    sale_decisions = personal_appointments.filter(
-        appointment_type="sale",
-        status="completed",
-        result_success__isnull=True,
-    ).count()
-    offers_to_register = personal_appointments.filter(
-        appointment_type="proposal",
-        status="completed",
-        proposal__isnull=True,
-    ).count()
-    expiring_listings = personal_listings.filter(
-        status="active",
-        end_date__gte=today,
-        end_date__lte=today + timedelta(days=30),
-    ).count()
+    acquisition_decisions = personal_action_counts["Adquisiciones por decidir"]
+    sale_decisions = personal_action_counts["Visitas de venta por decidir"]
+    offers_to_register = personal_action_counts["Ofertas por registrar"]
+    expiring_listings = personal_action_counts["Encargos que vencen en 30 días"]
 
     try:
         selected_days = int(request.GET.get("days", 30))
@@ -1058,12 +1072,12 @@ def dashboard(request):
         ).count(),
         "my_pending_calls": personal_calls.filter(status="pending").count(),
         "my_pending_tasks": pending_tasks.count(),
-        "my_overdue_tasks": overdue_tasks.count(),
+        "my_overdue_tasks": personal_action_counts["Tareas vencidas"],
         "my_proposals": personal_proposals.count(),
-        "my_signed_sales": signed_sales.count(),
-        "my_signed_rentals": personal_rentals.filter(status="signed").count(),
-        "my_revenue": personal_revenue,
-        "my_commission": personal_commission,
+        "my_signed_sales": personal_economics["signed_sales"],
+        "my_signed_rentals": personal_economics["signed_rentals"],
+        "my_revenue": personal_economics["sale_volume"],
+        "my_commission": personal_economics["commission"],
         "personal_funnel": personal_funnel,
         "personal_economics": personal_economics,
         "personal_goal_rows": personal_goal_rows,

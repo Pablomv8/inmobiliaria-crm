@@ -1,0 +1,15 @@
+.git
+.github
+.env
+venv
+node_modules
+theme/static_src/node_modules
+db.sqlite3
+media
+backups
+staticfiles
+logs
+tmp
+output
+__pycache__
+*.pyc
