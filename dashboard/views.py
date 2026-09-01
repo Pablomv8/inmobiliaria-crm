@@ -24,10 +24,88 @@ from properties.models import Property
 from sales.models import RentalContract, Sale
 from tasks.models import Task
 from users.models import User
+from users.permissions import can_manage_office
+
+from .alerts import (
+    ALERT_CATEGORIES,
+    ALERT_PRIORITIES,
+    build_alerts,
+    summarize_alerts,
+)
+from .daily_work import build_daily_work
 
 
 def home(request):
     return render(request, "dashboard/home.html")
+
+
+@login_required
+def alert_center(request):
+    all_alerts = build_alerts(request.user)
+    request._crm_alerts = all_alerts
+    summary = summarize_alerts(all_alerts)
+
+    priority = request.GET.get("priority", "")
+    category = request.GET.get("category", "")
+    agent = request.GET.get("agent", "")
+    search = request.GET.get("search", "").strip().casefold()
+
+    alerts = all_alerts
+    if priority in ALERT_PRIORITIES:
+        alerts = [item for item in alerts if item.priority == priority]
+    if category in ALERT_CATEGORIES:
+        alerts = [item for item in alerts if item.category == category]
+    if can_manage_office(request.user) and agent.isdigit():
+        alerts = [item for item in alerts if item.agent_id == int(agent)]
+    if search:
+        alerts = [
+            item for item in alerts
+            if search in f"{item.title} {item.description} {item.agent_name}".casefold()
+        ]
+
+    page = paginate(request, alerts, per_page=12)
+    return render(request, "dashboard/alerts.html", {
+        "alerts": page,
+        "page_obj": page,
+        "alert_summary": summary,
+        "alert_categories": ALERT_CATEGORIES.items(),
+        "alert_priorities": ALERT_PRIORITIES.items(),
+        "can_filter_agents": can_manage_office(request.user),
+        "alert_agents": User.objects.filter(
+            is_active=True,
+            role__in=["agent", "manager", "admin"],
+        ).order_by("first_name", "last_name", "username"),
+    })
+
+
+@login_required
+def daily_work(request):
+    can_select_agent = can_manage_office(request.user)
+    selected_user = request.user
+    selected_id = request.GET.get("agent", "")
+    selectable_users = User.objects.filter(
+        is_active=True,
+        role__in=["agent", "manager", "admin"],
+    ).order_by("first_name", "last_name", "username")
+    if can_select_agent and selected_id.isdigit():
+        selected_user = get_object_or_404(selectable_users, pk=selected_id)
+
+    viewer_alerts = build_alerts(request.user)
+    request._crm_alerts = viewer_alerts
+    if can_select_agent:
+        personal_alerts = [
+            item for item in viewer_alerts
+            if item.agent_id == selected_user.pk
+        ]
+    else:
+        personal_alerts = viewer_alerts
+    work = build_daily_work(selected_user, personal_alerts)
+    return render(request, "dashboard/daily_work.html", {
+        **work,
+        "selected_user": selected_user,
+        "can_select_agent": can_select_agent,
+        "selectable_users": selectable_users,
+    })
 
 
 def user_can_see_office(user):

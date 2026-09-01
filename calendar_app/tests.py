@@ -87,6 +87,12 @@ class AppointmentListTests(TestCase):
             response,
             reverse("appointment_detail", args=[self.own_appointment.pk]),
         )
+        self.assertContains(
+            response,
+            'data-appointment-link="'
+            + reverse("appointment_detail", args=[self.own_appointment.pk])
+            + '"',
+        )
         self.assertNotContains(
             response,
             reverse("appointment_detail", args=[self.other_appointment.pk]),
