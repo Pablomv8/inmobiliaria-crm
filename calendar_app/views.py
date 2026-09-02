@@ -712,9 +712,11 @@ def apply_follow_up_decision(request, pk):
         return redirect("appointment_detail", pk=appointment.pk)
 
     with transaction.atomic():
-        appointment = Appointment.objects.select_for_update().select_related(
-            "listing"
-        ).get(pk=appointment.pk)
+        appointment = (
+            Appointment.objects.select_related("listing")
+            .select_for_update(of=("self",))
+            .get(pk=appointment.pk)
+        )
         if appointment.follow_up_action is not None:
             messages.warning(
                 request,

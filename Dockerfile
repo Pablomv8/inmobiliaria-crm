@@ -7,6 +7,7 @@ COPY templates ./templates
 RUN npm run build \
     && cp node_modules/leaflet/dist/leaflet.css static/leaflet.css \
     && cp node_modules/leaflet/dist/leaflet.js static/leaflet.js \
+    && cp node_modules/leaflet/dist/leaflet.js.map static/leaflet.js.map \
     && mkdir -p static/images \
     && cp node_modules/leaflet/dist/images/* static/images/
 

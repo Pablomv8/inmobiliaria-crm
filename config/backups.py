@@ -53,10 +53,14 @@ def create_backup(destination=None):
     ]
     for model in EXCLUDED_MODELS:
         args.extend(["--exclude", model])
-    with transaction.atomic():
-        if settings.DATABASES["default"]["ENGINE"] == "django.db.backends.postgresql":
-            from django.db import connection
+    from django.db import connection
 
+    already_in_transaction = connection.in_atomic_block
+    with transaction.atomic():
+        if (
+            connection.vendor == "postgresql"
+            and not already_in_transaction
+        ):
             with connection.cursor() as cursor:
                 cursor.execute(
                     "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"

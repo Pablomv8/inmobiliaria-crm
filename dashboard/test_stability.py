@@ -12,7 +12,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.db import IntegrityError, connection, transaction
-from django.test import RequestFactory, TestCase, TransactionTestCase, override_settings
+from django.test import RequestFactory, TransactionTestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
@@ -30,7 +30,7 @@ from contacts.models import Contact
 from properties.models import Property
 
 
-class StabilityAndSecurityTests(TestCase):
+class StabilityAndSecurityTests(TransactionTestCase):
     def setUp(self):
         self.temporary_directory = tempfile.TemporaryDirectory()
         self.media_root = Path(self.temporary_directory.name) / "media"

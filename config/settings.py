@@ -147,10 +147,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-    BASE_DIR / 'node_modules' / 'leaflet' / 'dist',
-]
+STATICFILES_DIRS = [BASE_DIR / "static"]
+leaflet_static_dir = BASE_DIR / "node_modules" / "leaflet" / "dist"
+if leaflet_static_dir.exists():
+    STATICFILES_DIRS.append(leaflet_static_dir)
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = '/media/'

@@ -247,9 +247,11 @@ def create_closing_from_contract(request, appointment_id):
             ).first()
             if existing_rental:
                 return redirect("rental_contract_detail", pk=existing_rental.pk)
-            locked_listing = listing.__class__.objects.select_for_update().select_related(
-                "owner",
-            ).get(pk=listing.pk)
+            locked_listing = (
+                listing.__class__.objects.select_related("owner")
+                .select_for_update(of=("self",))
+                .get(pk=listing.pk)
+            )
             property_obj = Property.objects.select_for_update().get(
                 pk=locked_listing.property_id
             )
