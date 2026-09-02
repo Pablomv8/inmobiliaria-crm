@@ -146,7 +146,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
     BASE_DIR / 'node_modules' / 'leaflet' / 'dist',
@@ -154,7 +154,7 @@ STATICFILES_DIRS = [
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = Path(os.getenv("DJANGO_MEDIA_ROOT", BASE_DIR / "media"))
 
 BACKUP_ROOT = Path(os.getenv("CRM_BACKUP_ROOT", BASE_DIR / "backups"))
 BACKUP_MAX_ARCHIVE_BYTES = int(os.getenv("CRM_BACKUP_MAX_ARCHIVE_BYTES", 5 * 1024**3))

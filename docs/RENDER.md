@@ -1,0 +1,65 @@
+# Despliegue del CRM en Render
+
+## Recursos creados
+
+El archivo `render.yaml` crea en Frankfurt:
+
+- un servicio web Docker de pago conectado a la rama `deploy`;
+- una base de datos PostgreSQL 17 de pago, sin acceso público;
+- un disco persistente de 1 GB para datos privados y futuras imágenes.
+
+Los archivos estáticos se compilan dentro de la imagen Docker y se sirven con WhiteNoise. El disco persistente se monta en `/app/data`; las imágenes se guardan en `/app/data/media` y las copias manuales en `/app/data/backups`.
+
+Render despliega automáticamente una revisión de `deploy` únicamente cuando las comprobaciones de GitHub han terminado correctamente.
+
+## Primer despliegue desde Windows
+
+1. Crear una cuenta en Render y activar la autenticación en dos pasos.
+2. Abrir **New > Blueprint** en el panel de Render.
+3. Conectar GitHub y seleccionar `Pablomv8/inmobiliaria-crm`.
+4. Seleccionar la rama `deploy` y el archivo `render.yaml`.
+5. Revisar el coste de los tres recursos y pulsar **Apply**.
+6. Esperar a que la base de datos y el servicio web aparezcan como disponibles.
+7. Abrir la URL `https://inmobiliaria-crm.onrender.com` que indique Render.
+
+No se debe elegir el plan gratuito: no admite el disco persistente y la base de datos gratuita caduca.
+
+## Crear el primer administrador
+
+En la página del servicio web, abrir **Shell** y ejecutar:
+
+```bash
+python manage.py createsuperuser
+```
+
+Después, comprobar el acceso, el dashboard y las dos rutas de salud:
+
+```text
+/health/live/
+/health/ready/
+```
+
+## Dominio del cliente
+
+Cuando se conozca el dominio definitivo:
+
+1. Añadirlo en **Settings > Custom Domains** del servicio.
+2. Crear el registro DNS que muestre Render.
+3. Añadir o actualizar estas variables del servicio:
+
+```env
+DJANGO_ALLOWED_HOSTS=inmobiliaria-crm.onrender.com,crm.dominio-del-cliente.es
+DJANGO_CSRF_TRUSTED_ORIGINS=https://inmobiliaria-crm.onrender.com,https://crm.dominio-del-cliente.es
+```
+
+4. Volver a desplegar y verificar el inicio de sesión desde el dominio nuevo.
+
+Render añade automáticamente el dominio temporal real a ambas listas. Las variables anteriores son necesarias para el dominio personalizado.
+
+## Operación
+
+- Antes de integrar cambios en `deploy`, ejecutar todas las pruebas.
+- Revisar el resultado de GitHub Actions antes de desplegar.
+- Consultar los logs y `/health/ready/` después de cada actualización.
+- Crear el dominio, la cuenta de Render y la facturación a nombre del cliente o de la empresa responsable.
+- Configurar `SENTRY_DSN` posteriormente si se desea recibir alertas de errores.

@@ -1,0 +1,52 @@
+services:
+  - type: web
+    name: inmobiliaria-crm
+    runtime: docker
+    branch: deploy
+    region: frankfurt
+    plan: 0.5c-512mb
+    dockerfilePath: ./Dockerfile
+    autoDeployTrigger: checksPass
+    healthCheckPath: /health/ready/
+    numInstances: 1
+    disk:
+      name: crm-private-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings_production
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: inmobiliaria-crm-db
+          property: connectionString
+      - key: DJANGO_SECURE_SSL_REDIRECT
+        value: "true"
+      - key: DJANGO_HSTS_SECONDS
+        value: "31536000"
+      - key: DJANGO_HSTS_INCLUDE_SUBDOMAINS
+        value: "true"
+      - key: DJANGO_HSTS_PRELOAD
+        value: "true"
+      - key: DJANGO_MEDIA_ROOT
+        value: /app/data/media
+      - key: CRM_BACKUP_ROOT
+        value: /app/data/backups
+      - key: GUNICORN_WORKERS
+        value: "2"
+      - key: GUNICORN_THREADS
+        value: "2"
+      - key: GUNICORN_TIMEOUT
+        value: "60"
+
+databases:
+  - name: inmobiliaria-crm-db
+    databaseName: crm
+    user: crm
+    region: frankfurt
+    plan: 0.1c-256mb
+    diskSizeGB: 1
+    postgresMajorVersion: "17"
+    ipAllowList: []

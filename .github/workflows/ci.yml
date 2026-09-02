@@ -67,3 +67,50 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt
       - run: python manage.py check --deploy
+
+  render-container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir la imagen de Render
+        run: docker build --tag inmobiliaria-crm:render .
+      - name: Arrancar y comprobar el contenedor
+        run: |
+          docker run --detach --name crm-render \
+            --publish 127.0.0.1:10000:10000 \
+            --env PORT=10000 \
+            --env DJANGO_SETTINGS_MODULE=config.settings_production \
+            --env DJANGO_SECRET_KEY=ci-render-container-key-1234567890123456789012345678901234567890 \
+            --env DJANGO_ALLOWED_HOSTS=crm.example.test \
+            --env DJANGO_CSRF_TRUSTED_ORIGINS=https://crm.example.test \
+            --env DATABASE_URL=sqlite:////tmp/render.sqlite3 \
+            --env DJANGO_MEDIA_ROOT=/tmp/media \
+            --env CRM_BACKUP_ROOT=/tmp/backups \
+            inmobiliaria-crm:render
+
+          for attempt in {1..30}; do
+            if curl --fail --silent \
+              --header 'Host: crm.example.test' \
+              --header 'X-Forwarded-Proto: https' \
+              http://127.0.0.1:10000/health/ready/; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              docker logs crm-render
+              exit 1
+            fi
+            sleep 2
+          done
+
+          curl --fail --silent \
+            --header 'Host: crm.example.test' \
+            --header 'X-Forwarded-Proto: https' \
+            http://127.0.0.1:10000/static/css/main.min.css \
+            --output /dev/null
+      - name: Mostrar logs si falla
+        if: failure()
+        run: docker logs crm-render
+      - name: Retirar el contenedor
+        if: always()
+        run: docker rm --force crm-render || true
