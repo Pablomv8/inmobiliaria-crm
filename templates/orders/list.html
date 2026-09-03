@@ -59,18 +59,24 @@
 
     <div class="sm:hidden space-y-3">
         {% for order in orders %}
-            <a href="{% url 'order_detail' order.id %}" class="block bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+            <details class="mobile-card rounded-xl border border-gray-200 bg-white shadow-sm">
+                <summary class="cursor-pointer p-3">
                 <div class="flex justify-between gap-3">
                     <div><h2 class="font-semibold text-gray-900">{{ order.buyer }}</h2><p class="text-xs text-gray-500 mt-1">{{ order.get_operation_type_display }} · {{ order.get_property_type_display }} · {{ order.zone|default:"Cualquier zona" }}</p><p class="mt-1 text-xs text-gray-500"><i class="fa-regular fa-user mr-1"></i>{% if order.agent %}{{ order.agent.get_full_name|default:order.agent.username }}{% else %}Sin asignar{% endif %}</p></div>
-                    <div class="text-right"><span class="text-sm font-semibold text-gray-900">{{ order.max_price }} €</span><p class="text-xs text-blue-700 mt-1">{{ order.get_status_display }}</p></div>
+                    <div class="flex shrink-0 items-start gap-2 text-right"><div><span class="text-sm font-semibold text-gray-900">{{ order.max_price }} €</span><p class="mt-1 text-xs text-blue-700">{{ order.get_status_display }}</p></div><i class="mobile-card-chevron fa-solid fa-chevron-down mt-1 text-xs text-gray-400 transition-transform"></i></div>
                 </div>
-                <div class="grid grid-cols-2 gap-2 mt-4 text-center">
+                <p class="mobile-card-toggle mt-2 text-xs font-semibold text-blue-700"></p>
+                </summary>
+                <div class="border-t border-gray-100 px-3 pb-3">
+                <div class="mt-3 grid grid-cols-2 gap-2 text-center">
                     <div class="rounded-lg bg-indigo-50 p-2"><p class="text-xs text-indigo-600">Operación</p><p class="text-sm font-medium text-indigo-800">{{ order.get_operation_type_display }}</p></div>
                     <div class="rounded-lg bg-gray-50 p-2"><p class="text-xs text-gray-500">Pago</p><p class="text-sm font-medium">{{ order.get_payment_type_display }}</p></div>
                     <div class="rounded-lg bg-gray-50 p-2"><p class="text-xs text-gray-500">Hab.</p><p class="text-sm font-medium">{{ order.bedrooms|default:"—" }}</p></div>
                     <div class="rounded-lg bg-gray-50 p-2"><p class="text-xs text-gray-500">Baños</p><p class="text-sm font-medium">{{ order.bathrooms|default:"—" }}</p></div>
                 </div>
-            </a>
+                <div class="mt-3 flex justify-end"><a href="{% url 'order_detail' order.id %}" class="rounded-lg bg-gray-900 px-3 py-2 text-sm font-semibold text-white">Abrir pedido</a></div>
+                </div>
+            </details>
         {% empty %}<div class="bg-white rounded-2xl border border-dashed p-8 text-center text-gray-500">No hay pedidos.</div>{% endfor %}
     </div>
 
