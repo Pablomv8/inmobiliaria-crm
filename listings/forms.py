@@ -1,6 +1,7 @@
 from django import forms
 
 from contacts.models import Contact
+from config.widgets import CRMDateInput
 
 from .models import Listing, ListingComment
 from users.permissions import assignable_agents, can_manage_assignments
@@ -28,6 +29,7 @@ class ListingForm(forms.ModelForm):
         ]
         labels = {
             "owner": "Propietario",
+            "agent": "Agente asignado",
             "agreed_price": "Precio acordado del inmueble (€)",
             "start_date": "Fecha de inicio",
             "end_date": "Fecha de conclusión",
@@ -43,11 +45,11 @@ class ListingForm(forms.ModelForm):
                 "step": "0.01",
                 "placeholder": "Ej: 250000,00",
             }),
-            "start_date": forms.DateInput(attrs={
+            "start_date": CRMDateInput(attrs={
                 "class": INPUT_CLASS,
                 "type": "date",
             }),
-            "end_date": forms.DateInput(attrs={
+            "end_date": CRMDateInput(attrs={
                 "class": INPUT_CLASS,
                 "type": "date",
             }),

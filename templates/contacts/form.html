@@ -213,6 +213,10 @@ document.addEventListener('DOMContentLoaded', function () {
             maxOptions: 100,
             placeholder: 'Buscar inmueble por dirección...',
             searchField: ['text'],
+            render: {
+                no_results: () => '<div class="no-results">No se encontraron resultados</div>',
+                loading: () => '<div class="spinner">Cargando...</div>',
+            },
         });
     }
 

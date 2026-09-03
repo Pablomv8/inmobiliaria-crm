@@ -223,7 +223,8 @@
     const addressInputs = ['id_street', 'id_number', 'id_postal_code', 'id_city', 'id_province']
         .map(id => document.getElementById(id))
         .filter(Boolean);
-    const propertyMap = L.map('property-location-map').setView([36.7509, -5.8067], 14);
+    const propertyMap = L.map('property-location-map', {zoomControl: false}).setView([36.7509, -5.8067], 14);
+    L.control.zoom({zoomInTitle: 'Acercar', zoomOutTitle: 'Alejar'}).addTo(propertyMap);
     let propertyMarker = null;
     let suggestionTimer = null;
     let suggestionRequest = null;

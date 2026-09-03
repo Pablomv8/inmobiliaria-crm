@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from django import forms
 from django.contrib.auth import get_user_model
+from config.widgets import CRMDateInput, CRMTimeInput
 from listings.models import Listing
 
 from .scheduling import schedule_has_conflict, slot_has_conflict
@@ -104,7 +105,7 @@ class FollowUpDecisionForm(forms.Form):
     new_end_date = forms.DateField(
         required=False,
         label="Nueva fecha de conclusión",
-        widget=forms.DateInput(attrs={
+        widget=CRMDateInput(attrs={
             "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 focus:outline-none",
             "type": "date",
         }),
@@ -178,16 +179,16 @@ class AppointmentEditForm(forms.ModelForm):
             "agent": forms.Select(attrs={
                 "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100",
             }),
-            "date": forms.DateInput(attrs={
+            "date": CRMDateInput(attrs={
                 "type": "date",
                 "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100",
             }),
-            "time": forms.TimeInput(attrs={
+            "time": CRMTimeInput(attrs={
                 "type": "time",
                 "step": "1800",
                 "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100",
             }),
-            "end_time": forms.TimeInput(attrs={
+            "end_time": CRMTimeInput(attrs={
                 "type": "time",
                 "step": "1800",
                 "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100",
@@ -264,6 +265,14 @@ class AppointmentForm(forms.ModelForm):
             "notes"
         ]
 
+        labels = {
+            "appointment_type": "Tipo de cita",
+            "date": "Fecha",
+            "time": "Hora de inicio",
+            "end_time": "Hora de fin",
+            "notes": "Notas",
+        }
+
         widgets = {
 
             "appointment_type": forms.Select(
@@ -272,14 +281,14 @@ class AppointmentForm(forms.ModelForm):
                 }
             ),
 
-            "date": forms.DateInput(
+            "date": CRMDateInput(
                 attrs={
                     "type": "date",
                     "class": "w-full border rounded-lg p-2"
                 }
             ),
 
-            "time": forms.TimeInput(
+            "time": CRMTimeInput(
                 attrs={
                     "type": "time",
                     "id": "id_time",
@@ -288,7 +297,7 @@ class AppointmentForm(forms.ModelForm):
                 }
             ),
 
-            "end_time": forms.TimeInput(
+            "end_time": CRMTimeInput(
                 attrs={
                     "type": "time",
                     "id": "id_end_time",
@@ -375,16 +384,22 @@ class CallForm(forms.ModelForm):
             "notes"
         ]
 
+        labels = {
+            "date": "Fecha",
+            "time": "Hora",
+            "notes": "Notas",
+        }
+
         widgets = {
 
-            "date": forms.DateInput(
+            "date": CRMDateInput(
                 attrs={
                     "type": "date",
                     "class": "w-full border rounded-lg p-2"
                 }
             ),
 
-            "time": forms.TimeInput(
+            "time": CRMTimeInput(
                 attrs={
                     "type": "time",
                     "id": "id_time",
@@ -445,11 +460,11 @@ class CallEditForm(forms.ModelForm):
             "agent": forms.Select(attrs={
                 "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100",
             }),
-            "date": forms.DateInput(attrs={
+            "date": CRMDateInput(attrs={
                 "type": "date",
                 "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100",
             }),
-            "time": forms.TimeInput(attrs={
+            "time": CRMTimeInput(attrs={
                 "type": "time",
                 "step": "1800",
                 "class": "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-100",
@@ -489,21 +504,28 @@ class SaleAppointmentForm(forms.ModelForm):
     class Meta:
         model = Appointment
         fields = ["listing", "date", "time", "end_time", "notes"]
+        labels = {
+            "listing": "Encargo",
+            "date": "Fecha",
+            "time": "Hora de inicio",
+            "end_time": "Hora de fin",
+            "notes": "Notas",
+        }
         widgets = {
             "listing": forms.Select(attrs={
                 "class": "w-full border rounded-lg p-2",
             }),
-            "date": forms.DateInput(attrs={
+            "date": CRMDateInput(attrs={
                 "type": "date",
                 "class": "w-full border rounded-lg p-2",
             }),
-            "time": forms.TimeInput(attrs={
+            "time": CRMTimeInput(attrs={
                 "type": "time",
                 "id": "id_time",
                 "step": "1800",
                 "class": "w-full border rounded-lg p-2",
             }),
-            "end_time": forms.TimeInput(attrs={
+            "end_time": CRMTimeInput(attrs={
                 "type": "time",
                 "id": "id_end_time",
                 "step": "1800",
@@ -577,11 +599,11 @@ class ProposalAppointmentForm(forms.ModelForm):
                 "min": 0,
                 "step": "0.01",
             }),
-            "proposal_date": forms.DateInput(attrs={
+            "proposal_date": CRMDateInput(attrs={
                 "class": "w-full border rounded-xl p-3",
                 "type": "date",
             }),
-            "end_date": forms.DateInput(attrs={
+            "end_date": CRMDateInput(attrs={
                 "class": "w-full border rounded-xl p-3",
                 "type": "date",
             }),
@@ -650,7 +672,7 @@ class CounterOfferForm(forms.ModelForm):
         model = CounterOffer
         fields = ["counteroffer_date", "owner_price", "notes"]
         widgets = {
-            "counteroffer_date": forms.DateInput(attrs={
+            "counteroffer_date": CRMDateInput(attrs={
                 "class": "w-full border rounded-xl p-3",
                 "type": "date",
             }),

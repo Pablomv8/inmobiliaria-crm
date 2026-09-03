@@ -1033,7 +1033,7 @@ class SaleAppointmentFlowTests(TestCase):
             reverse("listing_detail", args=[self.listing.pk])
         )
         self.assertContains(listing_response, "Propuestas de compra")
-        self.assertContains(listing_response, "242000.00")
+        self.assertContains(listing_response, "242000,00")
 
     def test_proposal_accepts_comments_with_author_and_date(self):
         proposal = self.create_registered_proposal()
@@ -1266,8 +1266,8 @@ class SaleAppointmentFlowTests(TestCase):
         listing_response = self.client.get(
             reverse("listing_detail", args=[self.listing.pk])
         )
-        self.assertContains(proposal_response, "247000.00")
-        self.assertContains(listing_response, "247000.00")
+        self.assertContains(proposal_response, "247000,00")
+        self.assertContains(listing_response, "247000,00")
         self.assertContains(
             proposal_response,
             reverse("counteroffer_detail", args=[counteroffer.pk]),

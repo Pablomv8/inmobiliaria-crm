@@ -58,6 +58,18 @@ class OrderForm(forms.ModelForm):
                 "placeholder": "Preferencias o requisitos adicionales...",
             }),
         }
+        labels = {
+            "buyer": "Comprador",
+            "agent": "Agente asignado",
+            "operation_type": "Operación",
+            "zone": "Zona",
+            "max_price": "Precio máximo",
+            "payment_type": "Tipo de pago",
+            "property_type": "Tipo de inmueble",
+            "bedrooms": "Habitaciones",
+            "bathrooms": "Baños",
+            "notes": "Notas",
+        }
 
     def __init__(self, *args, buyer_obj=None, user=None, **kwargs):
         super().__init__(*args, **kwargs)

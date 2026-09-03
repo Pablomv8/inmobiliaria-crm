@@ -1,7 +1,7 @@
 {% load static %}
 
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es-ES">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +11,14 @@
     <link rel="stylesheet" href="{% static 'css/main.min.css' %}">
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.css" rel="stylesheet">
     {% block extra_head %}{% endblock %}
-    <style>[x-cloak] { display: none !important; }</style>
+    <style>
+        [x-cloak] { display: none !important; }
+        .mobile-card > summary { list-style: none; }
+        .mobile-card > summary::-webkit-details-marker { display: none; }
+        .mobile-card-toggle::after { content: "Ver más"; }
+        .mobile-card[open] .mobile-card-toggle::after { content: "Ver menos"; }
+        .mobile-card[open] .mobile-card-chevron { transform: rotate(180deg); }
+    </style>
 
     <script src="https://kit.fontawesome.com/c30b7a5850.js" crossorigin="anonymous"></script>
 
@@ -22,6 +29,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>Chart.defaults.locale = "es-ES";</script>
     <script defer src="{% static 'dashboard-funnel.js' %}"></script>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>

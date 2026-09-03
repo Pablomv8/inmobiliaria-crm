@@ -41,17 +41,22 @@
 
     <div class="space-y-3 sm:hidden">
         {% for contract in contracts %}
-            <a href="{% url 'rental_contract_detail' contract.id %}" class="block rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <details class="mobile-card rounded-xl border border-gray-200 bg-white shadow-sm">
+                <summary class="cursor-pointer p-3">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0"><h2 class="truncate font-semibold text-gray-900">{{ contract.related_property.full_address }}</h2><p class="mt-1 text-xs text-gray-500">{{ contract.contract_date|date:"d/m/Y" }} · {{ contract.tenant }}</p></div>
-                    <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium {% if contract.status == 'signed' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">{{ contract.get_status_display }}</span>
+                    <div class="flex shrink-0 items-center gap-2"><span class="rounded-full px-2.5 py-1 text-xs font-medium {% if contract.status == 'signed' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">{{ contract.get_status_display }}</span><i class="mobile-card-chevron fa-solid fa-chevron-down text-xs text-gray-400 transition-transform"></i></div>
                 </div>
-                <div class="mt-4 grid grid-cols-2 gap-3">
+                <p class="mobile-card-toggle mt-2 text-xs font-semibold text-indigo-700"></p>
+                </summary>
+                <div class="border-t border-gray-100 px-3 pb-3">
+                <div class="mt-3 grid grid-cols-2 gap-2">
                     <div class="rounded-xl bg-gray-50 p-3"><p class="text-xs text-gray-500">Renta mensual</p><p class="mt-1 text-sm font-semibold text-gray-900">{{ contract.rent_price }} €</p></div>
                     <div class="rounded-xl bg-gray-50 p-3 text-right"><p class="text-xs text-gray-500">Comisión</p><p class="mt-1 text-sm font-semibold text-gray-900">{{ contract.commission_amount }} €</p></div>
                 </div>
-                <p class="mt-4 border-t border-gray-100 pt-3 text-xs text-gray-500">Agente: <span class="font-medium text-gray-700">{{ contract.agent.get_full_name|default:contract.agent.username }}</span></p>
-            </a>
+                <div class="mt-3 flex items-center justify-between border-t border-gray-100 pt-3"><p class="text-xs text-gray-500">Agente: <span class="font-medium text-gray-700">{{ contract.agent.get_full_name|default:contract.agent.username }}</span></p><a href="{% url 'rental_contract_detail' contract.id %}" class="text-sm font-semibold text-indigo-700">Abrir alquiler →</a></div>
+                </div>
+            </details>
         {% empty %}
             <div class="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-500">No hay alquileres que coincidan con los filtros.</div>
         {% endfor %}

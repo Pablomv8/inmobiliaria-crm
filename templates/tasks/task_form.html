@@ -244,7 +244,8 @@
     function ensureStreetMap() {
         if (streetMap || !document.getElementById('street-map') || typeof L === 'undefined') return;
 
-        streetMap = L.map('street-map').setView([36.7509, -5.8067], 14);
+        streetMap = L.map('street-map', {zoomControl: false}).setView([36.7509, -5.8067], 14);
+        L.control.zoom({zoomInTitle: 'Acercar', zoomOutTitle: 'Alejar'}).addTo(streetMap);
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',

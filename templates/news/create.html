@@ -172,8 +172,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         info.textContent =
             diff >= 0
-                ? `Margen estimado: +${diff.toLocaleString()} €`
-                : `Ajuste necesario: ${diff.toLocaleString()} €`;
+                ? `Margen estimado: +${diff.toLocaleString("es-ES")} €`
+                : `Ajuste necesario: ${diff.toLocaleString("es-ES")} €`;
     }
 
     client.addEventListener('input', update);

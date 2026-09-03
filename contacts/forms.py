@@ -8,6 +8,7 @@ from config.validators import (
     validate_phone_number,
     validate_spanish_postal_code,
 )
+from config.widgets import CRMDateInput
 from users.permissions import assignable_agents, can_manage_assignments
 
 INPUT_CLASS = """
@@ -313,7 +314,7 @@ class ContactForm(forms.ModelForm):
                 "autocomplete": "address-level1",
             }),
 
-            "birth_date": forms.DateInput(attrs={
+            "birth_date": CRMDateInput(attrs={
                 "type": "date",
                 "class": INPUT_CLASS,
             }),
