@@ -74,13 +74,13 @@
 
 
     <!-- Main Content -->
-    <div class="flex min-w-0 flex-1 flex-col">
+    <div class="flex w-full min-w-0 max-w-full flex-1 flex-col overflow-x-hidden">
 
         <!-- Navbar -->
         {% if request.user.is_authenticated %}{% include 'partials/navbar.html' %}{% endif %}
 
         <!-- Page Content -->
-        <main class="{% if request.user.is_authenticated %}p-4 sm:p-6 lg:p-8{% else %}min-h-dvh{% endif %}">
+        <main class="w-full min-w-0 max-w-full {% if request.user.is_authenticated %}p-4 sm:p-6 lg:p-8{% else %}min-h-dvh{% endif %}">
 
             {% if messages %}
 
