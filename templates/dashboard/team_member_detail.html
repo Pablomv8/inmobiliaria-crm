@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="mx-auto max-w-7xl space-y-10">
+<div class="mx-auto w-full min-w-0 max-w-7xl space-y-6 sm:space-y-10">
     <div>
         <a href="{% url 'team_overview' %}" class="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900">← Volver al equipo</a>
     </div>
@@ -22,11 +22,11 @@
                     </div>
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[32rem]">
-                <a href="{% url 'contact_list' %}?agent={{ worker.id }}" class="rounded-2xl bg-white/10 p-4 hover:bg-white/20"><p class="text-xs text-gray-300">Contactos</p><p class="mt-1 text-2xl font-bold">{{ contacts_total }}</p><p class="mt-1 text-xs text-gray-400">{{ owners_total }} propietarios · {{ buyers_total }} compradores</p></a>
-                <a href="{% url 'news_list' %}?agent={{ worker.id }}" class="rounded-2xl bg-white/10 p-4 hover:bg-white/20"><p class="text-xs text-gray-300">Noticias</p><p class="mt-1 text-2xl font-bold">{{ news_total }}</p><p class="mt-1 text-xs text-gray-400">{{ open_news }} abiertas</p></a>
-                <a href="{% url 'listing_list' %}?agent={{ worker.id }}" class="rounded-2xl bg-white/10 p-4 hover:bg-white/20"><p class="text-xs text-gray-300">Encargos</p><p class="mt-1 text-2xl font-bold">{{ listings_total }}</p><p class="mt-1 text-xs text-gray-400">{{ active_listings }} activos</p></a>
-                <a href="{% url 'order_list' %}?agent={{ worker.id }}" class="rounded-2xl bg-white/10 p-4 hover:bg-white/20"><p class="text-xs text-gray-300">Pedidos</p><p class="mt-1 text-2xl font-bold">{{ orders_total }}</p><p class="mt-1 text-xs text-gray-400">{{ open_orders }} abiertos</p></a>
+            <div class="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3 lg:min-w-[32rem]">
+                <a href="{% url 'contact_list' %}?agent={{ worker.id }}" class="min-w-0 rounded-xl bg-white/10 p-3 hover:bg-white/20 sm:rounded-2xl sm:p-4"><p class="text-xs text-gray-300">Contactos</p><p class="mt-1 text-xl font-bold sm:text-2xl">{{ contacts_total }}</p><p class="mt-1 hidden text-xs text-gray-400 sm:block">{{ owners_total }} propietarios · {{ buyers_total }} compradores</p></a>
+                <a href="{% url 'news_list' %}?agent={{ worker.id }}" class="min-w-0 rounded-xl bg-white/10 p-3 hover:bg-white/20 sm:rounded-2xl sm:p-4"><p class="text-xs text-gray-300">Noticias</p><p class="mt-1 text-xl font-bold sm:text-2xl">{{ news_total }}</p><p class="mt-1 hidden text-xs text-gray-400 sm:block">{{ open_news }} abiertas</p></a>
+                <a href="{% url 'listing_list' %}?agent={{ worker.id }}" class="min-w-0 rounded-xl bg-white/10 p-3 hover:bg-white/20 sm:rounded-2xl sm:p-4"><p class="text-xs text-gray-300">Encargos</p><p class="mt-1 text-xl font-bold sm:text-2xl">{{ listings_total }}</p><p class="mt-1 hidden text-xs text-gray-400 sm:block">{{ active_listings }} activos</p></a>
+                <a href="{% url 'order_list' %}?agent={{ worker.id }}" class="min-w-0 rounded-xl bg-white/10 p-3 hover:bg-white/20 sm:rounded-2xl sm:p-4"><p class="text-xs text-gray-300">Pedidos</p><p class="mt-1 text-xl font-bold sm:text-2xl">{{ orders_total }}</p><p class="mt-1 hidden text-xs text-gray-400 sm:block">{{ open_orders }} abiertos</p></a>
             </div>
         </div>
     </section>

@@ -43,3 +43,15 @@ class DashboardResponsiveLayoutTests(SimpleTestCase):
         self.assertIn("grid min-w-0 grid-cols-2", source)
         self.assertEqual(source.count("hidden text-xs"), 4)
         self.assertIn("sm:rounded-2xl sm:p-5", source)
+
+    def test_worker_summary_is_compact_on_mobile(self):
+        source = get_template(
+            "dashboard/team_member_detail.html"
+        ).template.source
+
+        self.assertIn("grid min-w-0 grid-cols-2 gap-2", source)
+        self.assertEqual(
+            source.count("hidden text-xs text-gray-400 sm:block"),
+            4,
+        )
+        self.assertIn("text-xl font-bold sm:text-2xl", source)
