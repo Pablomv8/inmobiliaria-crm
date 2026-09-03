@@ -78,6 +78,20 @@ python manage.py seed_showcase --purge
 El comando antiguo `python manage.py seed` no debe utilizarse en producción porque
 elimina registros existentes y usa credenciales predecibles.
 
+## Importar las calles de Arcos sin conexión externa
+
+La imagen incluye una instantánea validada del catálogo de calles para evitar que
+un fallo de conexión entre Render y Overpass bloquee la carga inicial. Desde
+**Shell** se ejecuta:
+
+```bash
+python manage.py import_arcos_streets --file tasks/data/arcos_streets.json
+```
+
+El comando crea las calles que falten y actualiza las existentes sin duplicarlas.
+La opción `--prune` debe reservarse para una sincronización deliberada, ya que
+también elimina del catálogo las calles ausentes en la instantánea.
+
 ## Dominio del cliente
 
 Cuando se conozca el dominio definitivo:

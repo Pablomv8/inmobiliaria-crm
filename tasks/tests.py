@@ -1,6 +1,10 @@
 from django.contrib.auth import get_user_model
 from datetime import date, datetime, time
+from io import StringIO
+from pathlib import Path
 
+from django.conf import settings
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -458,6 +462,41 @@ class TaskFormModelValidationTests(TestCase):
 
 
 class StreetImportTests(TestCase):
+    def test_bundled_arcos_snapshot_can_be_imported_idempotently(self):
+        snapshot = Path(settings.BASE_DIR) / "tasks" / "data" / "arcos_streets.json"
+        first_output = StringIO()
+        second_output = StringIO()
+
+        call_command(
+            "import_arcos_streets",
+            "--file",
+            str(snapshot),
+            stdout=first_output,
+        )
+        imported_count = Street.objects.filter(
+            municipality="Arcos de la Frontera",
+        ).count()
+        call_command(
+            "import_arcos_streets",
+            "--file",
+            str(snapshot),
+            stdout=second_output,
+        )
+
+        self.assertGreaterEqual(imported_count, 500)
+        self.assertEqual(
+            Street.objects.filter(municipality="Arcos de la Frontera").count(),
+            imported_count,
+        )
+        self.assertFalse(
+            Street.objects.filter(
+                municipality="Arcos de la Frontera",
+                geometry={},
+            ).exists()
+        )
+        self.assertIn(f"{imported_count} nuevas", first_output.getvalue())
+        self.assertIn(f"{imported_count} actualizadas", second_output.getvalue())
+
     def test_parser_groups_segments_with_the_same_street_name(self):
         rows = parse_overpass_streets({
             "elements": [
