@@ -206,7 +206,7 @@
                 <a href="{% url 'sale_list' %}?status=signed" class="rounded-2xl bg-white border border-indigo-100 p-4 hover:-translate-y-0.5 hover:shadow-md transition"><p class="text-sm text-gray-500">Ventas firmadas</p><p class="text-2xl font-bold mt-2">{{ office_signed_sales }}</p><p class="text-xs text-gray-500 mt-1">{{ office_revenue|floatformat:0 }} € facturados</p></a>
             </div>
 
-            <div class="grid gap-6 xl:grid-cols-2">
+            <div class="grid w-full min-w-0 max-w-full gap-4 sm:gap-6 xl:grid-cols-2">
                 {% include "dashboard/partials/action_center.html" with action_items=office_action_items action_title="Acciones de la oficina" action_subtitle="Pendientes combinados de todos los responsables." %}
                 {% include "dashboard/partials/economics.html" with economics=office_economics economics_title="Resumen económico global" economics_subtitle="Ventas y alquileres firmados por toda la oficina." %}
                 {% include "dashboard/partials/funnel.html" with funnel=office_funnel funnel_title="Embudo comercial global" funnel_subtitle="Conversión acumulada de toda la cartera." funnel_scope="office" %}

@@ -1,5 +1,5 @@
 <div
-    class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm"
+    class="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6"
     data-commercial-funnel
     data-funnel-url="{% url 'dashboard_funnel_data' %}"
     data-funnel-scope="{{ funnel_scope|default:'personal' }}"
@@ -25,7 +25,7 @@
                 Hasta
                 <input type="date" name="funnel_to" value="{{ funnel.period.to_value }}" class="mt-1.5 w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-gray-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100" data-funnel-to>
             </label>
-            <div class="flex gap-2">
+            <div class="flex min-w-0 flex-wrap gap-2">
                 <button type="submit" class="rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-black">Aplicar fechas</button>
                 <button type="button" class="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 {% if not funnel.period.active %}hidden{% endif %}" data-funnel-clear>Limpiar</button>
             </div>
@@ -39,7 +39,7 @@
     </form>
     <div class="mt-6 space-y-3">
         {% for stage in funnel.stages %}
-            <a href="{{ stage.url }}" class="group grid grid-cols-[minmax(6.5rem,9rem)_minmax(0,1fr)_3rem] items-center gap-3 rounded-xl px-2 py-1.5 transition hover:bg-gray-50" data-funnel-stage>
+            <a href="{{ stage.url }}" class="group grid min-w-0 grid-cols-[minmax(5rem,7rem)_minmax(0,1fr)_2.5rem] items-center gap-2 rounded-xl px-1 py-1.5 transition hover:bg-gray-50 sm:grid-cols-[minmax(6.5rem,9rem)_minmax(0,1fr)_3rem] sm:gap-3 sm:px-2" data-funnel-stage>
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 group-hover:text-indigo-700">{{ stage.label }}</p>
                     <p class="mt-0.5 text-[11px] text-gray-400 {% if forloop.first %}hidden{% endif %}" data-funnel-conversion>{{ stage.conversion }}% desde la fase anterior</p>
