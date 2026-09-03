@@ -48,6 +48,31 @@ class NewsCrudTests(TestCase):
         self.assertContains(response, "Noticias")
         self.assertContains(response, reverse("news_create_general"))
 
+    def test_general_news_form_has_searchable_property_selector(self):
+        response = self.client.get(reverse("news_create_general"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "1. Inmueble y responsable")
+        self.assertContains(
+            response,
+            "Buscar inmueble por dirección, tipo o zona...",
+        )
+        self.assertContains(
+            response,
+            "Calle Mayor 10, Madrid · Local",
+        )
+        self.assertContains(response, "new TomSelect(propertySelect")
+
+    def test_property_news_form_shows_fixed_property_summary(self):
+        response = self.client.get(
+            reverse("news_create", args=[self.property.pk]),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.property.full_address)
+        self.assertContains(response, "Ver inmueble")
+        self.assertNotContains(response, 'id="id_related_property"')
+
     def test_news_list_and_detail_show_the_assigned_agent(self):
         news = self.create_news()
 
