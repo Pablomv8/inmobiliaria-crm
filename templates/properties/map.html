@@ -139,7 +139,8 @@
 {{ property_map_data|json_script:"property-map-data" }}
 <script>
     const propertyMapData = JSON.parse(document.getElementById('property-map-data').textContent);
-    const map = L.map('properties-map').setView([36.7509, -5.8067], 14);
+    const map = L.map('properties-map', {zoomControl: false}).setView([36.7509, -5.8067], 14);
+    L.control.zoom({zoomInTitle: 'Acercar', zoomOutTitle: 'Alejar'}).addTo(map);
     const markerByProperty = new Map();
     const statusColors = {
         news: '#0ea5e9',

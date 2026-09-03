@@ -7,6 +7,7 @@ from config.validators import (
     validate_phone_number,
     validate_spanish_postal_code,
 )
+from config.widgets import CRMDateInput
 from users.permissions import assignable_agents, can_manage_assignments
 
 from .geocoding import is_arcos_de_la_frontera
@@ -415,7 +416,7 @@ class OwnerContactForm(forms.ModelForm):
                 "class": SELECT_CLASS,
             }),
 
-            "birth_date": forms.DateInput(attrs={
+            "birth_date": CRMDateInput(attrs={
                 "type": "date",
                 "class": INPUT_CLASS,
             }),

@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
+from config.widgets import CRMDateInput, CRMDateTimeInput, CRMTimeInput
 
 from properties.models import Zone
 
@@ -67,17 +68,16 @@ class TaskForm(forms.ModelForm):
             "streets": forms.CheckboxSelectMultiple,
             "assigned_to": forms.Select(attrs={"class": INPUT_CLASS}),
             "priority": forms.Select(attrs={"class": INPUT_CLASS}),
-            "due_date": forms.DateTimeInput(
-                format="%Y-%m-%dT%H:%M",
+            "due_date": CRMDateTimeInput(
                 attrs={"class": INPUT_CLASS, "type": "datetime-local"},
             ),
-            "schedule_date": forms.DateInput(
+            "schedule_date": CRMDateInput(
                 attrs={"class": INPUT_CLASS, "type": "date"},
             ),
-            "start_time": forms.TimeInput(
+            "start_time": CRMTimeInput(
                 attrs={"class": INPUT_CLASS, "type": "time", "step": "1800"},
             ),
-            "end_time": forms.TimeInput(
+            "end_time": CRMTimeInput(
                 attrs={"class": INPUT_CLASS, "type": "time", "step": "1800"},
             ),
             "repeat_days": forms.Select(attrs={"class": INPUT_CLASS}),

@@ -62,6 +62,7 @@ class NewsForm(forms.ModelForm):
 
         labels = {
             "related_property": "Inmueble",
+            "agent": "Agente asignado",
             "motivation": "Motivación",
             "client_price": "Precio cliente",
             "estimated_price": "Precio estimado",

@@ -3,6 +3,7 @@ from datetime import timedelta
 from django import forms
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from config.widgets import CRMDateInput
 
 from .models import Goal
 
@@ -43,11 +44,11 @@ class GoalForm(forms.ModelForm):
                 "class": INPUT_CLASS,
                 "min": 1,
             }),
-            "start_date": forms.DateInput(attrs={
+            "start_date": CRMDateInput(attrs={
                 "class": INPUT_CLASS,
                 "type": "date",
             }),
-            "end_date": forms.DateInput(attrs={
+            "end_date": CRMDateInput(attrs={
                 "class": INPUT_CLASS,
                 "type": "date",
             }),

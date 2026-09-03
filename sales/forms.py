@@ -2,6 +2,7 @@ from django import forms
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
+from config.widgets import CRMDateInput
 
 from .models import RentalContract, Sale
 from properties.models import Property
@@ -45,6 +46,20 @@ class SaleForm(forms.ModelForm):
             "notes",
         ]
 
+        labels = {
+            "related_property": "Inmueble",
+            "buyer": "Comprador",
+            "agent": "Agente asignado",
+            "sale_price": "Precio de compra (€)",
+            "deposit_amount": "Señal (€)",
+            "earnest_money_amount": "Arras (€)",
+            "seller_commission": "Comisión entregada por el vendedor (€)",
+            "buyer_commission": "Comisión entregada por el comprador (€)",
+            "sale_date": "Fecha de venta",
+            "contract_reference": "Referencia del contrato",
+            "notes": "Notas",
+        }
+
         widgets = {
             "related_property": forms.Select(attrs={
                 "class": INPUT_CLASS
@@ -87,7 +102,7 @@ class SaleForm(forms.ModelForm):
                 "step": "0.01",
             }),
 
-            "sale_date": forms.DateInput(
+            "sale_date": CRMDateInput(
                 attrs={
                     "type": "date",
                     "class": INPUT_CLASS
@@ -135,6 +150,15 @@ class SaleClosingForm(forms.ModelForm):
             "contract_reference",
             "notes",
         ]
+        labels = {
+            "sale_price": "Precio de compra (€)",
+            "deposit_amount": "Señal (€)",
+            "earnest_money_amount": "Arras (€)",
+            "seller_commission": "Comisión entregada por el vendedor (€)",
+            "buyer_commission": "Comisión entregada por el comprador (€)",
+            "contract_reference": "Referencia del contrato",
+            "notes": "Notas",
+        }
         widgets = {
             field: forms.NumberInput(attrs={
                 "class": INPUT_CLASS,
@@ -202,7 +226,7 @@ class SaleCorrectionForm(forms.Form):
     earnest_money_amount = forms.DecimalField(label="Arras (€)", min_value=0, widget=forms.NumberInput(attrs={"class": INPUT_CLASS, "step": "0.01"}))
     seller_commission = forms.DecimalField(label="Comisión del vendedor (€)", min_value=0, widget=forms.NumberInput(attrs={"class": INPUT_CLASS, "step": "0.01"}))
     buyer_commission = forms.DecimalField(label="Comisión del comprador (€)", min_value=0, widget=forms.NumberInput(attrs={"class": INPUT_CLASS, "step": "0.01"}))
-    sale_date = forms.DateField(label="Fecha", widget=forms.DateInput(attrs={"class": INPUT_CLASS, "type": "date"}))
+    sale_date = forms.DateField(label="Fecha", widget=CRMDateInput(attrs={"class": INPUT_CLASS, "type": "date"}))
     contract_reference = forms.CharField(label="Referencia", required=False, widget=forms.TextInput(attrs={"class": INPUT_CLASS}))
     notes = forms.CharField(label="Notas", required=False, widget=forms.Textarea(attrs={"class": INPUT_CLASS, "rows": 3}))
     reason = forms.CharField(label="Motivo de la corrección", widget=forms.Textarea(attrs={"class": INPUT_CLASS, "rows": 3, "placeholder": "Explica por qué se corrige el registro firmado..."}))
@@ -245,11 +269,11 @@ class RentalContractClosingForm(forms.ModelForm):
                 "tenant_commission",
             ]
         } | {
-            "start_date": forms.DateInput(attrs={
+            "start_date": CRMDateInput(attrs={
                 "class": INPUT_CLASS,
                 "type": "date",
             }),
-            "end_date": forms.DateInput(attrs={
+            "end_date": CRMDateInput(attrs={
                 "class": INPUT_CLASS,
                 "type": "date",
             }),
