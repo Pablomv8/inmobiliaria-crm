@@ -636,6 +636,34 @@ class PropertyAutomaticStatusTests(TestCase):
         self.assertEqual(vacant.status, "vacant")
         self.assertEqual(rented.status, "rented")
 
+    def test_vacant_property_detail_supports_comment_without_author(self):
+        manager = get_user_model().objects.create_user(
+            username="property-status-manager",
+            password="test-password",
+            role="manager",
+        )
+        vacant = Property.objects.create(
+            street="Calle Vacía sin responsable",
+            number="4",
+            city="Madrid",
+            property_type="house",
+            occupied_by="vacant",
+        )
+        PropertyComment.objects.create(
+            property=vacant,
+            user=None,
+            text="Comentario importado sin usuario asociado.",
+        )
+        self.client.force_login(manager)
+
+        response = self.client.get(
+            reverse("property_detail", args=[vacant.pk]),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Usuario eliminado")
+        self.assertContains(response, "Comentario importado sin usuario asociado.")
+
     def test_property_comment_marks_contact_and_records_author(self):
         response = self.client.post(
             reverse("property_add_comment", args=[self.property.pk]),
