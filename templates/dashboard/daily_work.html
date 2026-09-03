@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="w-full min-w-0 max-w-full space-y-6">
     <header class="overflow-hidden rounded-3xl bg-gray-900 p-6 text-white shadow-xl sm:p-8">
         <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -28,11 +28,11 @@
     </form>
     {% endif %}
 
-    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-2xl border border-indigo-200 bg-indigo-50 p-5"><p class="text-sm font-medium text-indigo-700">Pendientes de hoy</p><p class="mt-2 text-3xl font-bold text-indigo-950">{{ pending_today }}</p><p class="mt-1 text-xs text-indigo-700">Citas, llamadas y tareas planificadas</p></div>
-        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5"><p class="text-sm font-medium text-emerald-700">Completados hoy</p><p class="mt-2 text-3xl font-bold text-emerald-950">{{ completed_today }}</p><p class="mt-1 text-xs text-emerald-700">Actividad cerrada durante la jornada</p></div>
-        <div class="rounded-2xl border border-red-200 bg-red-50 p-5"><p class="text-sm font-medium text-red-700">Tareas vencidas</p><p class="mt-2 text-3xl font-bold text-red-950">{{ overdue_count }}</p><p class="mt-1 text-xs text-red-700">Requieren atención inmediata</p></div>
-        <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5"><p class="text-sm font-medium text-amber-700">Decisiones pendientes</p><p class="mt-2 text-3xl font-bold text-amber-950">{{ decision_count }}</p><p class="mt-1 text-xs text-amber-700">Resultados comerciales por resolver</p></div>
+    <section class="grid min-w-0 grid-cols-2 gap-2 sm:gap-4 xl:grid-cols-4">
+        <div class="min-w-0 rounded-xl border border-indigo-200 bg-indigo-50 p-3 sm:rounded-2xl sm:p-5"><p class="text-xs font-medium text-indigo-700 sm:text-sm">Pendientes de hoy</p><p class="mt-1 text-2xl font-bold text-indigo-950 sm:mt-2 sm:text-3xl">{{ pending_today }}</p><p class="mt-1 hidden text-xs text-indigo-700 sm:block">Citas, llamadas y tareas planificadas</p></div>
+        <div class="min-w-0 rounded-xl border border-emerald-200 bg-emerald-50 p-3 sm:rounded-2xl sm:p-5"><p class="text-xs font-medium text-emerald-700 sm:text-sm">Completados hoy</p><p class="mt-1 text-2xl font-bold text-emerald-950 sm:mt-2 sm:text-3xl">{{ completed_today }}</p><p class="mt-1 hidden text-xs text-emerald-700 sm:block">Actividad cerrada durante la jornada</p></div>
+        <div class="min-w-0 rounded-xl border border-red-200 bg-red-50 p-3 sm:rounded-2xl sm:p-5"><p class="text-xs font-medium text-red-700 sm:text-sm">Tareas vencidas</p><p class="mt-1 text-2xl font-bold text-red-950 sm:mt-2 sm:text-3xl">{{ overdue_count }}</p><p class="mt-1 hidden text-xs text-red-700 sm:block">Requieren atención inmediata</p></div>
+        <div class="min-w-0 rounded-xl border border-amber-200 bg-amber-50 p-3 sm:rounded-2xl sm:p-5"><p class="text-xs font-medium text-amber-700 sm:text-sm">Decisiones pendientes</p><p class="mt-1 text-2xl font-bold text-amber-950 sm:mt-2 sm:text-3xl">{{ decision_count }}</p><p class="mt-1 hidden text-xs text-amber-700 sm:block">Resultados comerciales por resolver</p></div>
     </section>
 
     <div class="grid gap-6 2xl:grid-cols-12">
