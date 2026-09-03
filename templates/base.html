@@ -18,6 +18,22 @@
         .mobile-card-toggle::after { content: "Ver más"; }
         .mobile-card[open] .mobile-card-toggle::after { content: "Ver menos"; }
         .mobile-card[open] .mobile-card-chevron { transform: rotate(180deg); }
+        .list-filter-toggle { display: none; }
+        @media (max-width: 639px) {
+            form[data-list-filters] {
+                margin-bottom: 1rem !important;
+                padding: .5rem !important;
+            }
+            .list-filter-toggle {
+                display: flex;
+            }
+            [data-list-filter-panel] {
+                padding: .5rem .25rem .25rem;
+            }
+            [data-list-filter-panel][hidden] {
+                display: none !important;
+            }
+        }
     </style>
 
     <script src="https://kit.fontawesome.com/c30b7a5850.js" crossorigin="anonymous"></script>
@@ -123,6 +139,38 @@
 {% block extra_js %}{% endblock %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const mobileFilterMedia = window.matchMedia('(max-width: 639px)');
+    document.querySelectorAll('form[data-list-filters]').forEach(form => {
+        const panel = document.createElement('div');
+        panel.dataset.listFilterPanel = '';
+        while (form.firstChild) panel.appendChild(form.firstChild);
+
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'list-filter-toggle w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50';
+        const ignoredParameters = new Set(['page']);
+        const activeFilters = Array.from(new URLSearchParams(window.location.search).entries())
+            .filter(([name, value]) => value && !ignoredParameters.has(name)).length;
+
+        const updateToggle = () => {
+            const expanded = toggle.getAttribute('aria-expanded') === 'true';
+            toggle.innerHTML = `<span><i class="fa-solid fa-sliders mr-2 text-indigo-600"></i>${expanded ? 'Ocultar filtros' : 'Mostrar filtros'}${activeFilters ? ` <span class="ml-1 text-indigo-700">(${activeFilters})</span>` : ''}</span><i class="fa-solid fa-chevron-down text-xs text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}"></i>`;
+            panel.hidden = mobileFilterMedia.matches && !expanded;
+        };
+
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.addEventListener('click', () => {
+            toggle.setAttribute(
+                'aria-expanded',
+                toggle.getAttribute('aria-expanded') === 'true' ? 'false' : 'true'
+            );
+            updateToggle();
+        });
+        mobileFilterMedia.addEventListener('change', updateToggle);
+        form.append(toggle, panel);
+        updateToggle();
+    });
+
     function fieldLabel(field) {
         if (field.type === 'hidden' || field.type === 'radio' || field.type === 'checkbox') return null;
         if (field.id) {
