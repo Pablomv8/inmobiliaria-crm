@@ -44,7 +44,6 @@
     --color-yellow-200: oklch(94.5% 0.129 101.54);
     --color-yellow-300: oklch(90.5% 0.182 98.111);
     --color-yellow-500: oklch(79.5% 0.184 86.047);
-    --color-yellow-600: oklch(68.1% 0.162 75.834);
     --color-yellow-700: oklch(55.4% 0.135 66.442);
     --color-yellow-800: oklch(47.6% 0.114 61.907);
     --color-green-50: oklch(98.2% 0.018 155.826);
@@ -114,7 +113,6 @@
     --color-violet-800: oklch(43.2% 0.232 292.759);
     --color-violet-900: oklch(38% 0.189 293.745);
     --color-violet-950: oklch(28.3% 0.141 291.089);
-    --color-purple-50: oklch(97.7% 0.014 308.299);
     --color-purple-100: oklch(94.6% 0.033 307.174);
     --color-purple-600: oklch(55.8% 0.288 302.321);
     --color-purple-700: oklch(49.6% 0.265 301.924);
@@ -943,9 +941,6 @@
   }
   .grid-cols-\[minmax\(5rem\,7rem\)_minmax\(0\,1fr\)_2\.5rem\] {
     grid-template-columns: minmax(5rem,7rem) minmax(0,1fr) 2.5rem;
-  }
-  .grid-cols-\[minmax\(6\.5rem\,9rem\)_minmax\(0\,1fr\)_3rem\] {
-    grid-template-columns: minmax(6.5rem,9rem) minmax(0,1fr) 3rem;
   }
   .flex-col {
     flex-direction: column;
@@ -2813,6 +2808,11 @@
   .sm\:w-28 {
     @media (width >= 40rem) {
       width: calc(var(--spacing) * 28);
+    }
+  }
+  .sm\:w-auto {
+    @media (width >= 40rem) {
+      width: auto;
     }
   }
   .sm\:min-w-48 {
