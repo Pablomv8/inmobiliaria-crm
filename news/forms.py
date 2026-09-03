@@ -31,6 +31,12 @@ class NewsForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["related_property"].queryset = Property.objects.filter(
             is_archived=False,
+        ).select_related("zone").order_by("street", "number")
+        self.fields["related_property"].empty_label = (
+            "Busca y selecciona un inmueble"
+        )
+        self.fields["related_property"].label_from_instance = (
+            self._property_option_label
         )
 
         if property_obj is not None:
@@ -49,6 +55,13 @@ class NewsForm(forms.ModelForm):
                 self.fields["agent"].initial = user
         else:
             self.fields.pop("agent")
+
+    @staticmethod
+    def _property_option_label(property_obj):
+        details = [property_obj.get_property_type_display()]
+        if property_obj.zone_id:
+            details.append(property_obj.zone.name)
+        return f"{property_obj.full_address} · {' · '.join(details)}"
 
     class Meta:
         model = News
