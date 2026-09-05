@@ -16,7 +16,10 @@
                     {% if task.task_type == "zone_sweep" and task.zone %}<p class="mt-2 text-sm text-gray-300"><i class="fa-solid fa-location-dot mr-1"></i>{{ task.zone.name }}</p>{% endif %}
                 </div>
             </div>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
+                {% if task.status != "done" and task.status != "cancelled" %}
+                    <button type="button" data-complete-task data-url="{% url 'task_update_status' task.id %}" onclick="completeTask(this)" class="rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-wait disabled:opacity-60"><i class="fa-solid fa-check mr-1.5"></i>Completar tarea</button>
+                {% endif %}
                 <a href="{% url 'task_update' task.id %}" class="rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-100">Editar</a>
                 {% if request.user.is_superuser or request.user.role == "admin" or request.user.role == "manager" %}
                     <button type="button" onclick="openDeleteModal()" class="rounded-xl bg-red-500/20 px-4 py-2.5 text-sm font-semibold text-red-100 hover:bg-red-500/30">Eliminar</button>
@@ -113,6 +116,34 @@
 
 {% block extra_js %}
 <script>
+    function getCookie(name) {
+        return document.cookie.split(';').map(item => item.trim()).find(item => item.startsWith(name + '='))?.split('=')[1] || '';
+    }
+
+    function completeTask(button) {
+        if (button.disabled) return;
+
+        const originalContent = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Completando...';
+
+        fetch(button.dataset.url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': decodeURIComponent(getCookie('csrftoken')),
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({status: 'done'}),
+        }).then(response => {
+            if (!response.ok) throw new Error();
+            button.innerHTML = '<i class="fa-solid fa-check mr-1.5"></i>Completada';
+            window.setTimeout(() => window.location.reload(), 250);
+        }).catch(() => {
+            button.disabled = false;
+            button.innerHTML = originalContent;
+        });
+    }
+
     function openDeleteModal() {
         const modal = document.getElementById('deleteModal');
         modal.classList.remove('hidden');
