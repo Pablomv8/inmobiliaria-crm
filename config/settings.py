@@ -153,6 +153,12 @@ if leaflet_static_dir.exists():
     STATICFILES_DIRS.append(leaflet_static_dir)
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+PWA_CACHE_VERSION = (
+    os.getenv("PWA_CACHE_VERSION")
+    or os.getenv("RENDER_GIT_COMMIT")
+    or "development-v1"
+)
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = Path(os.getenv("DJANGO_MEDIA_ROOT", BASE_DIR / "media"))
 
