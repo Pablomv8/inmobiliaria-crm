@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from datetime import date, datetime, time
 
-from django.test import TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -488,6 +488,37 @@ class TaskTypeFlowTests(TestCase):
             "success": True,
             "status": "Completada",
         })
+        self.assertEqual(task.status, "done")
+        self.assertIsNotNone(task.completed_at)
+
+    @override_settings(CSRF_COOKIE_HTTPONLY=True)
+    def test_quick_complete_works_with_production_csrf_cookie(self):
+        task = Task.objects.create(
+            task_type="custom",
+            title="Completar con CSRF HttpOnly",
+            description="Reproduce la configuración de producción.",
+            assigned_to=self.agent,
+            status="pending",
+        )
+        secure_client = Client(enforce_csrf_checks=True)
+        secure_client.force_login(self.agent)
+
+        page_response = secure_client.get(reverse("task_list"))
+        token = page_response.context["csrf_token"]
+        self.assertContains(page_response, "data-task-csrf-token")
+        self.assertContains(page_response, "getCsrfToken()")
+        self.assertTrue(
+            page_response.cookies["csrftoken"].get("httponly")
+        )
+
+        response = secure_client.post(
+            reverse("task_update_status", args=[task.pk]),
+            {"status": "done"},
+            headers={"X-CSRFToken": str(token)},
+        )
+
+        task.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(task.status, "done")
         self.assertIsNotNone(task.completed_at)
 
