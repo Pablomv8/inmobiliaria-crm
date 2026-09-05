@@ -430,6 +430,67 @@ class TaskTypeFlowTests(TestCase):
         self.assertContains(street_response, "Calles seleccionadas")
         self.assertContains(street_response, self.street.name)
 
+    def test_pending_task_has_quick_complete_action_in_list_and_detail(self):
+        task = Task.objects.create(
+            task_type="custom",
+            title="Completar desde acceso rápido",
+            description="Comprobar el botón.",
+            assigned_to=self.agent,
+            status="pending",
+        )
+
+        list_response = self.client.get(reverse("task_list"))
+        detail_response = self.client.get(
+            reverse("task_detail", args=[task.pk])
+        )
+
+        self.assertContains(list_response, "data-complete-task", count=2)
+        self.assertContains(list_response, "Completar tarea")
+        self.assertContains(detail_response, "data-complete-task", count=1)
+        self.assertContains(detail_response, "Completar tarea")
+
+    def test_completed_task_does_not_show_quick_complete_action(self):
+        task = Task.objects.create(
+            task_type="custom",
+            title="Tarea ya completada",
+            description="No debe mostrar el botón.",
+            assigned_to=self.agent,
+            status="done",
+            completed_at=timezone.now(),
+        )
+
+        list_response = self.client.get(reverse("task_list"))
+        detail_response = self.client.get(
+            reverse("task_detail", args=[task.pk])
+        )
+
+        self.assertNotContains(list_response, "data-complete-task")
+        self.assertNotContains(detail_response, "data-complete-task")
+
+    def test_assigned_agent_can_complete_task_with_quick_action(self):
+        task = Task.objects.create(
+            task_type="custom",
+            title="Finalizar gestión",
+            description="Tarea asignada al agente.",
+            assigned_to=self.agent,
+            status="in_progress",
+        )
+        self.client.force_login(self.agent)
+
+        response = self.client.post(
+            reverse("task_update_status", args=[task.pk]),
+            {"status": "done"},
+        )
+
+        task.refresh_from_db()
+        self.assertEqual(response.status_code, 200)
+        self.assertJSONEqual(response.content, {
+            "success": True,
+            "status": "Completada",
+        })
+        self.assertEqual(task.status, "done")
+        self.assertIsNotNone(task.completed_at)
+
 
 class TaskFormModelValidationTests(TestCase):
     def test_form_exposes_only_the_new_task_fields(self):
