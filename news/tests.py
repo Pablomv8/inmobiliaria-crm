@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
+from contacts.models import Contact
 from properties.models import Property
 
 from .models import News, NewsComment
@@ -62,6 +63,7 @@ class NewsCrudTests(TestCase):
             "Calle Mayor 10, Madrid · Local",
         )
         self.assertContains(response, "new TomSelect(propertySelect")
+        self.assertContains(response, "news-assignment-grid")
 
     def test_property_news_form_shows_fixed_property_summary(self):
         response = self.client.get(
@@ -85,6 +87,28 @@ class NewsCrudTests(TestCase):
         self.assertContains(list_response, self.user.username)
         self.assertContains(detail_response, "Agente asignado")
         self.assertContains(detail_response, self.user.username)
+
+    def test_news_detail_shows_linked_property_owner(self):
+        owner = Contact.objects.create(
+            name="Lucía",
+            last_name="Romero",
+            phone="612345678",
+            is_owner=True,
+            assigned_agent=self.user,
+        )
+        owner.properties.add(self.property)
+        news = self.create_news()
+
+        response = self.client.get(reverse("news_detail", args=[news.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Propietario")
+        self.assertContains(response, "Lucía Romero")
+        self.assertContains(response, "612345678")
+        self.assertContains(
+            response,
+            f'href="{reverse("contact_detail", args=[owner.pk])}"',
+        )
 
     def test_news_without_agent_is_shown_as_unassigned(self):
         news = News.objects.create(
