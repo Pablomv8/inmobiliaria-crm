@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from config.health import live, ready
+from config.pwa_views import manifest, offline, service_worker
 
 handler400 = "config.error_views.bad_request"
 handler403 = "config.error_views.permission_denied"
@@ -25,6 +26,9 @@ handler500 = "config.error_views.server_error"
 from .comment_views import comment_edit, comment_hide
 
 urlpatterns = [
+    path("manifest.webmanifest", manifest, name="pwa_manifest"),
+    path("service-worker.js", service_worker, name="pwa_service_worker"),
+    path("offline/", offline, name="pwa_offline"),
     path("health/live/", live, name="health_live"),
     path("health/ready/", ready, name="health_ready"),
     path('admin/', admin.site.urls),
