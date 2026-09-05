@@ -61,3 +61,21 @@ class DashboardResponsiveLayoutTests(SimpleTestCase):
 
         self.assertNotIn("Actividad reciente", source)
         self.assertNotIn("recent_activities", source)
+
+    def test_recent_assignments_cannot_overflow_on_mobile(self):
+        source = get_template("dashboard/home.html").template.source
+
+        self.assertIn(
+            "grid w-full min-w-0 max-w-full gap-4 overflow-hidden",
+            source,
+        )
+        self.assertEqual(
+            source.count(
+                "w-full min-w-0 max-w-full overflow-hidden rounded-2xl"
+            ),
+            2,
+        )
+        self.assertGreaterEqual(
+            source.count("flex w-full min-w-0 max-w-full"),
+            2,
+        )
