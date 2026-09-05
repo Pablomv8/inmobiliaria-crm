@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
+<input type="hidden" data-task-csrf-token value="{{ csrf_token }}">
 <div class="mx-auto max-w-7xl space-y-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -176,6 +177,12 @@
         return document.cookie.split(';').map(item => item.trim()).find(item => item.startsWith(name + '='))?.split('=')[1] || '';
     }
 
+    function getCsrfToken() {
+        const renderedToken = document.querySelector('[data-task-csrf-token]')?.value;
+        if (renderedToken && renderedToken !== 'NOTPROVIDED') return renderedToken;
+        return decodeURIComponent(getCookie('csrftoken'));
+    }
+
     function completeTask(button) {
         if (button.disabled) return;
 
@@ -186,7 +193,7 @@
         fetch(button.dataset.url, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': decodeURIComponent(getCookie('csrftoken')),
+                'X-CSRFToken': getCsrfToken(),
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: new URLSearchParams({status: 'done'}),
@@ -196,7 +203,8 @@
             window.setTimeout(() => window.location.reload(), 250);
         }).catch(() => {
             button.disabled = false;
-            button.innerHTML = originalContent;
+            button.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1.5"></i>No se pudo completar';
+            window.setTimeout(() => { button.innerHTML = originalContent; }, 1800);
         });
     }
 
@@ -204,7 +212,7 @@
         fetch(select.dataset.url, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': decodeURIComponent(getCookie('csrftoken')),
+                'X-CSRFToken': getCsrfToken(),
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: new URLSearchParams({[fieldName]: select.value}),
