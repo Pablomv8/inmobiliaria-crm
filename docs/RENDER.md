@@ -39,6 +39,59 @@ Después, comprobar el acceso, el dashboard y las dos rutas de salud:
 /health/ready/
 ```
 
+## Datos temporales para una presentación
+
+Para preparar una base de demostración completa, abrir **Shell** en el servicio web
+y ejecutar:
+
+```bash
+python manage.py seed_showcase
+```
+
+El comando genera y muestra dos contraseñas aleatorias: una para el superusuario y
+otra para el manager y los agentes. Hay que guardarlas al ejecutar el comando,
+porque Django no permite consultarlas posteriormente. Las cuentas principales son:
+
+```text
+admin_demo  Superusuario
+pablo       Manager
+carlos      Agente
+marta       Agente
+```
+
+También se crean dos agentes auxiliares para mostrar el flujo integral, datos
+geolocalizados de Arcos, contactos, noticias, encargos, pedidos, agenda, tareas,
+objetivos, propuestas, ventas y alquileres. Ejecutarlo de nuevo actualiza la misma
+demostración sin duplicarla.
+
+Opcionalmente se pueden fijar las contraseñas mediante las variables de entorno
+`DEMO_SEED_PASSWORD` y `DEMO_ADMIN_PASSWORD`. Deben ser distintas y contener al
+menos 12 caracteres. No se deben incluir sus valores en el repositorio.
+
+Al terminar la presentación, se pueden retirar únicamente los datos reconocibles
+de la demostración con:
+
+```bash
+python manage.py seed_showcase --purge
+```
+
+El comando antiguo `python manage.py seed` no debe utilizarse en producción porque
+elimina registros existentes y usa credenciales predecibles.
+
+## Importar las calles de Arcos sin conexión externa
+
+La imagen incluye una instantánea validada del catálogo de calles para evitar que
+un fallo de conexión entre Render y Overpass bloquee la carga inicial. Desde
+**Shell** se ejecuta:
+
+```bash
+python manage.py import_arcos_streets --file tasks/data/arcos_streets.json
+```
+
+El comando crea las calles que falten y actualiza las existentes sin duplicarlas.
+La opción `--prune` debe reservarse para una sincronización deliberada, ya que
+también elimina del catálogo las calles ausentes en la instantánea.
+
 ## Dominio del cliente
 
 Cuando se conozca el dominio definitivo:
