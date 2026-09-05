@@ -144,6 +144,10 @@ def news_detail(request, pk):
         pk=pk,
     )
     comments = news.comments.select_related("user").order_by("-created_at")
+    owners = news.related_property.contacts.filter(
+        is_owner=True,
+        is_archived=False,
+    ).order_by("name", "last_name")
     timeline = []
 
     for comment in comments:
@@ -177,6 +181,7 @@ def news_detail(request, pk):
         {
             "news": news,
             "comments": comments,
+            "owners": owners,
             "form": NewsCommentForm(),
             "has_comments": bool(comments),
             "timeline": timeline,

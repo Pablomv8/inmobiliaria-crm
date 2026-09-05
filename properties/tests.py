@@ -865,6 +865,29 @@ class OwnerContactFormTests(TestCase):
         self.assertContains(response, "Domicilio del propietario")
         self.assertNotContains(response, "Gestión comercial")
         self.assertContains(response, "Notas internas")
+        self.assertContains(response, "min-w-0")
+        self.assertContains(response, "sm:w-auto", count=2)
+
+    def test_existing_owner_selector_has_a_search_box(self):
+        Contact.objects.create(
+            name="Ana",
+            last_name="Propietaria",
+            phone="612345678",
+            email="ana@example.com",
+            is_owner=True,
+            assigned_agent=self.agent,
+        )
+
+        response = self.client.get(
+            reverse("add_owner_to_property", args=[self.property.pk])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="owner-contact-select"')
+        self.assertContains(response, "new TomSelect(ownerSelect")
+        self.assertContains(response, "Buscar propietario...")
+        self.assertContains(response, "Ana Propietaria")
+        self.assertContains(response, "ana@example.com")
 
     def test_owner_form_applies_contact_data_validations(self):
         form = OwnerContactForm(data={

@@ -10,18 +10,37 @@
 {% endif %}
 
 <style>
-    .ts-wrapper .ts-control {
+    .news-assignment-grid,
+    .news-assignment-grid > * {
+        min-width: 0;
+        max-width: 100%;
+    }
+    .news-assignment-grid .ts-wrapper {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+    .news-assignment-grid .ts-wrapper .ts-control {
         min-height: 48px;
+        min-width: 0;
+        overflow: hidden;
         border: 1px solid rgb(209 213 219);
         border-radius: 0.75rem;
         padding: 0.65rem 1rem;
         box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
     }
-    .ts-wrapper.focus .ts-control {
+    .news-assignment-grid .ts-control .item {
+        min-width: 0;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .news-assignment-grid .ts-wrapper.focus .ts-control {
         border-color: rgb(99 102 241);
         box-shadow: 0 0 0 4px rgb(224 231 255);
     }
-    .ts-dropdown {
+    .news-assignment-grid .ts-dropdown {
         overflow: hidden;
         border-radius: 0.75rem;
     }
@@ -53,37 +72,39 @@
                 <p class="mt-2 text-sm text-gray-500">Localiza el inmueble por su dirección y asigna la oportunidad a la persona que realizará el seguimiento.</p>
             </div>
 
-            <div class="grid gap-5 md:grid-cols-2">
+            <div class="news-assignment-grid grid min-w-0 gap-5 md:grid-cols-2">
                 {% if form.related_property %}
-                    <div class="md:col-span-2">
+                    <div class="min-w-0 max-w-full md:col-span-2">
                         <label for="{{ form.related_property.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Inmueble</label>
                         {{ form.related_property }}
                         {% if form.related_property.errors %}<p class="mt-1 text-sm text-red-600">{{ form.related_property.errors.0 }}</p>{% endif %}
                         <p class="mt-2 text-xs text-gray-500"><i class="fa-solid fa-magnifying-glass mr-1 text-indigo-500"></i>Escribe una dirección, tipo o zona para filtrar los inmuebles.</p>
                     </div>
                 {% else %}
-                    <div class="md:col-span-2 flex flex-col gap-4 rounded-2xl border border-indigo-100 bg-indigo-50/40 p-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex w-full min-w-0 max-w-full flex-col gap-4 overflow-hidden rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5 md:col-span-2">
                         <div class="min-w-0">
-                            <p class="truncate font-bold text-gray-900">{{ property.full_address }}</p>
-                            <p class="mt-1 text-sm text-gray-600">{{ property.get_property_type_display }}{% if property.zone %} · {{ property.zone }}{% endif %}</p>
+                            <p class="break-words font-bold text-gray-900">{{ property.full_address }}</p>
+                            <p class="mt-1 break-words text-sm text-gray-600">{{ property.get_property_type_display }}{% if property.zone %} · {{ property.zone }}{% endif %}</p>
                         </div>
                         <a href="{% url 'property_detail' property.id %}" class="shrink-0 text-sm font-semibold text-indigo-700 hover:text-indigo-900">Ver inmueble →</a>
                     </div>
                 {% endif %}
 
                 {% if form.agent %}
-                    <div class="md:col-span-2">
+                    <div class="min-w-0 max-w-full md:col-span-2">
                         <label for="{{ form.agent.id_for_label }}" class="mb-2 block text-sm font-semibold text-gray-700">Agente asignado</label>
                         {{ form.agent }}
                         {% if form.agent.errors %}<p class="mt-1 text-sm text-red-600">{{ form.agent.errors.0 }}</p>{% endif %}
                         <p class="mt-2 text-xs text-gray-500">La noticia y sus métricas pasarán a la cartera del agente seleccionado.</p>
                     </div>
                 {% else %}
-                    <div class="md:col-span-2 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-900">
-                        <i class="fa-solid fa-user-check mr-2 text-emerald-700"></i>
-                        <span class="font-semibold">Agente de la noticia:</span>
-                        {% if news and news.agent %}{{ news.agent.get_full_name|default:news.agent.username }}{% else %}{{ request.user.get_full_name|default:request.user.username }}{% endif %}
-                        {% if not news %}<span class="ml-1 text-emerald-700">(se asignará al guardar)</span>{% endif %}
+                    <div class="flex min-w-0 max-w-full items-start gap-3 overflow-hidden rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-900 md:col-span-2">
+                        <i class="fa-solid fa-user-check mt-0.5 shrink-0 text-emerald-700"></i>
+                        <div class="min-w-0 break-words">
+                            <span class="font-semibold">Agente de la noticia:</span>
+                            {% if news and news.agent %}{{ news.agent.get_full_name|default:news.agent.username }}{% else %}{{ request.user.get_full_name|default:request.user.username }}{% endif %}
+                            {% if not news %}<span class="text-emerald-700">(se asignará al guardar)</span>{% endif %}
+                        </div>
                     </div>
                 {% endif %}
             </div>

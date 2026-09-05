@@ -21,3 +21,13 @@ class CompactMobileCardTests(SimpleTestCase):
                 source = get_template(template_name).template.source
                 self.assertIn('<details class="mobile-card', source)
                 self.assertIn("mobile-card-toggle", source)
+
+    def test_task_cards_cannot_overflow_the_mobile_viewport(self):
+        source = get_template("tasks/task_list.html").template.source
+
+        self.assertIn(
+            "mobile-card w-full min-w-0 max-w-full overflow-hidden",
+            source,
+        )
+        self.assertIn("whitespace-normal break-words", source)
+        self.assertIn("grid grid-cols-2 gap-2", source)

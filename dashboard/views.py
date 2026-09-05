@@ -1098,11 +1098,6 @@ def dashboard(request):
             "buyer",
             "zone",
         ).order_by("-created_at")[:5],
-        "recent_activities": (
-            Activity.objects.all()
-            if chart_is_office
-            else Activity.objects.filter(user=user)
-        ).select_related("user")[:6],
     }
 
     if show_office_dashboard:

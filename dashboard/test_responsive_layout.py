@@ -55,3 +55,9 @@ class DashboardResponsiveLayoutTests(SimpleTestCase):
             4,
         )
         self.assertIn("text-xl font-bold sm:text-2xl", source)
+
+    def test_home_omits_recent_activity_for_both_dashboard_modes(self):
+        source = get_template("dashboard/home.html").template.source
+
+        self.assertNotIn("Actividad reciente", source)
+        self.assertNotIn("recent_activities", source)
