@@ -58,15 +58,21 @@ class PwaTests(SimpleTestCase):
     def test_base_registers_worker_and_exposes_install_ui(self):
         source = get_template("base.html").template.source
         navbar = get_template("partials/navbar.html").template.source
+        sidebar = get_template("partials/sidebar.html").template.source
+        login = get_template("users/login.html").template.source
 
         self.assertIn('rel="manifest"', source)
+        self.assertIn("pwa/favicon-32.png", source)
         self.assertIn("navigator.serviceWorker.register", source)
         self.assertIn("beforeinstallprompt", source)
         self.assertIn("data-pwa-install", navbar)
+        self.assertIn("branding/sigo-logo.png", sidebar)
+        self.assertIn("branding/sigo-logo.png", login)
 
     def test_required_icon_dimensions(self):
         icon_dir = Path(settings.BASE_DIR) / "static" / "pwa"
         expected = {
+            "favicon-32.png": (32, 32),
             "apple-touch-icon.png": (180, 180),
             "icon-192.png": (192, 192),
             "icon-512.png": (512, 512),
