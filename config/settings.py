@@ -33,6 +33,13 @@ DEBUG = env_bool("DJANGO_DEBUG", True)
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,[::1]")
 
+# Preserve the origin on HTTPS cross-origin requests. Map tile providers such as
+# OpenStreetMap require an accurate Referer so they can identify web traffic.
+SECURE_REFERRER_POLICY = os.getenv(
+    "DJANGO_SECURE_REFERRER_POLICY",
+    "strict-origin-when-cross-origin",
+).strip()
+
 AUTH_USER_MODEL = 'users.User'
 # Application definition
 
